@@ -139,16 +139,31 @@
 왼쪽으로 갈 때는 좌우를 반대로 합니다. 참고: [All About Table Tennis – Footwork](https://www.allabouttabletennis.com/table-tennis-footwork.html), [ActiveSG – Proper footwork](https://www.activesgcircle.gov.sg/learn/table-tennis/what-is-the-proper-footwork-for-table-tennis), [Modern Cross-step](https://protabletennis.net/content/modern-cross-step)
 - 참고: [Critical Features of the Forehand Topspin](https://protabletennis.net/content/critical-features-forehand-topspin), [How to Play a Backhand Push](https://www.experttabletennis.com/how-to-play-a-backhand-push-in-table-tennis/), [Backhand Push (tabletennisteacher)](https://tabletennisteacher.com/learn-backhand-push/)
 
+## 휴고범
+
+우리가 플레이하는 캐릭터 중 하나. 점수판에 이름이 표시됩니다.
+
+- **스플릿 스텝**: 상대가 공을 치는 순간 두 발로 살짝 뛰었다가 넓게 착지
+- **준비 자세**: 다른 캐릭터보다 넓고 낮은 스탠스, 기다릴 때 발끝으로 리듬
+- **휴고범 드라이브**: 더 깊이 앉아 라켓을 낮게 뺐다가 골반을 크게 돌려 머리 위까지 크게 마무리
+- **PERFECT**: "촤!" 외치며 반대 손을 번쩍
+- 모든 캐릭터 공통: 드래그가 빠를수록 팔로우스루가 크고, 좌우로 끌면 마무리도 그쪽으로 기움
+
 ## 모드
 
 - **연습 랠리**: 리턴이 쉬워집니다.
 - **11점 경기**: 11점 · 2점 차로 승리. 난이도(입문 / 보통 / 도전) 선택 가능.
 
-캐릭터: 나 = **초록 줄무늬 저지 · 안경 선수** (기본, 설정에서 파란 선수로 변경 가능), AI = 빨간 선수. 점수판 YOU 옆에 내 캐릭터 얼굴이 표시되고, 온라인에서는 상대에게도 내가 고른 캐릭터로 보입니다.
+캐릭터: 나 = **휴고범** (초록 줄무늬 저지 · 안경, 기본 · 설정에서 파란 선수로 변경 가능), AI = 빨간 선수. 점수판 YOU 옆에 내 캐릭터 얼굴이 표시되고, 온라인에서는 상대에게도 내가 고른 캐릭터로 보입니다.
 
 ## 패치 내역
 
 최신 순. 버전 옆 코드를 누르면 해당 변경 내용을 볼 수 있습니다.
+
+### v1.19 — 휴고범 ([1b46f7a](https://github.com/hooni9807/spin-tt/commit/1b46f7a)) · 2026-10-13
+- 초록 줄무늬 저지 캐릭터 이름을 **휴고범**으로, 점수판에 이름 표시
+- 시그니처 동작: 스플릿 스텝 · 발끝 리듬 · 낮고 넓은 스탠스 · 크게 마무리하는 드라이브 · PERFECT 시 "촤!"
+- 스윙 모션이 실제 드래그 속도 · 방향을 따라 크기와 마무리 방향이 바뀜 (모든 캐릭터)
 
 ### v1.18 — 새 캐릭터: 초록 줄무늬 저지 · 안경 선수 ([ad77ca3](https://github.com/hooni9807/spin-tt/commit/ad77ca3)) · 2026-10-13
 - 짧은 머리 · 검은 사각 안경 · 남색 바탕 초록/연두 세로 줄무늬 저지 · 검은 반바지 · 검은 시계
