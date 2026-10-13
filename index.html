@@ -315,7 +315,12 @@ else step(dir,home(dir)+dir*stance*(st.mode==='cross'?.6:.35)+lead);            
 const me={x:null,vx:0,crouch:.3},foe={x:null,vx:0,crouch:.3},ARM_REACH=78,mySwing={type:'drive',t:-10};
 // While the finger is drawing at a live ball the figure already plays that stroke (drag up = drive, down = cut ...).
 function liveStroke(){const g=gesture,t=P.classify(paddle.vx,paddle.vy,{rise:g.y-paddle.y,drop:paddle.y-g.y,dx:paddle.x-g.x,side:g.side});if(t!=='short')g.stroke=racketType==='defense'?'chop':t;return g.stroke;}   // the defender cuts every swing
-function drawingPrep(){if(!down||!gesture||gesture.held||!ball||ball.owner!=='ai'||ball.held||time-mySwing.t<.65||gesture.distance<(touchInput?18:12)||!liveStroke())return null;mySwing.type=gesture.stroke;return P.clamp(gesture.distance/90,0,1);}let lastShot='drive',aiShot='short',lastRenderT=performance.now();
+// The figure loads its racket in time with the incoming ball: from the net to the PERFECT point it eases into the backswing
+// of the stroke this ball calls for (low for a loop off backspin, high for a defender's chop), so the swing lands on the beat.
+function expectStroke(){const inc=P.incoming(ball);return racketType==='defense'?'chop':inc==='cut'?'loop':inc==='smash'?'block':'drive';}
+function drawingPrep(){if(!ball||ball.owner!=='ai'||ball.held||ball.y>1.37||time-mySwing.t<.65)return null;
+if(down&&gesture&&!gesture.held&&gesture.distance>=(touchInput?18:12)&&liveStroke()){mySwing.type=gesture.stroke;return .35+P.clamp(gesture.distance/90,0,1)*.65;}
+mySwing.type=expectStroke();return P.clamp((1.37-ball.y)/1.45,0,1)*.35;}let lastShot='drive',aiShot='short',lastRenderT=performance.now();
 function person(st,hipY,target,angle,look,s,type,face,side,stroke,since,prep=null){
 const R=RACKETS[type],skin='#f2cda8',pants=look.pants,x=st.x,moving=P.clamp(Math.abs(st.vx)/160,0,1),dir=Math.sign(st.vx)||1;
 const pose=strokePose(stroke,since,side,s,{x:x+side*15*s,y:hipY-50*s+st.crouch*18*s},target,angle,st.crouch,look,st.amp??1,st.dirX||0,prep);
@@ -360,12 +365,22 @@ for(let i=0;i<n;i++){g.strokeStyle='#7d5cff55';g.strokeRect(i*pw+2,top+2,pw-4,bh
 g.strokeStyle='#8f6bff22';g.lineWidth=1;for(let x=-4;x<=4;x+=.5){const a=project(x,-1.5,-.76),b=project(x,3.6,-.76);g.beginPath();g.moveTo(a.x,a.y);g.lineTo(b.x,b.y);g.stroke();}
 for(let y=-1.5;y<=3.6;y+=.5){const a=project(-4,y,-.76),b=project(4,y,-.76);g.beginPath();g.moveTo(a.x,a.y);g.lineTo(b.x,b.y);g.stroke();}
 arenaCache={w:W,h:H,c};return c;}
-function render(){ctx.clearRect(0,0,W,H);ctx.drawImage(arenaBg(),0,0,W,H);const nowR=performance.now(),rdt=Math.min((nowR-lastRenderT)/1000,.05);lastRenderT=nowR;
+// Camera focus: as the ball comes off my end of the table the view eases in on it, then back out after the hit.
+// Pointer input is mapped back through the same zoom in move(), so hit detection stays in unzoomed court space.
+const cam={z:1,fx:0,fy:0,t:performance.now()};
+function render(){const nowC=performance.now(),cdt=Math.min((nowC-cam.t)/1000,.05);cam.t=nowC;
+const focus=!!(ball&&!ball.held&&ball.owner==='ai'&&ball.bounces===1&&ball.y<.4&&ball.y>-.95);   // from the bounce near my end line through the hit window
+if(focus){const p=project(ball.x,ball.y,ball.z);cam.fx=lerp(cam.fx||p.x,p.x,Math.min(1,cdt*10));cam.fy=lerp(cam.fy||H,lerp(p.y,H,.6),Math.min(1,cdt*10));}
+cam.z=lerp(cam.z,focus?CAM_ZOOM:1,Math.min(1,cdt*(focus?7:4)));if(cam.z<1.002)cam.z=1;
+ctx.save();if(cam.z>1){ctx.translate(cam.fx,cam.fy);ctx.scale(cam.z,cam.z);ctx.translate(-cam.fx,-cam.fy);}renderScene();ctx.restore();}
+const CAM_ZOOM=1.18;
+function renderScene(){ctx.clearRect(0,0,W,H);ctx.drawImage(arenaBg(),0,0,W,H);const nowR=performance.now(),rdt=Math.min((nowR-lastRenderT)/1000,.05);lastRenderT=nowR;
 const opponent=project(net?P.clamp(-net.opp.x,-.9,.9):ball?P.clamp(ball.x,-.7,.7):0,2.8,.18),aiScale=Math.min(P.clamp(W/800,.7,1),H/460)*.65,aiSide=net?-(net.opp.side||1):ball&&ball.x<0?-1:1;
 // AI faces us: its forehand (black) is on our left.
 foe.stanceK=1+Math.abs(foe.lean||0)*.6;stepBody(foe,opponent.x-aiSide*34*aiScale,rdt,ball&&ball.owner==='you'?.55:.25,aiScale);
 foe.depth=lerp(foe.depth||0,ball&&ball.owner==='you'&&!ball.held?P.clamp((ball.y-1.9)/.9,0,1):.2,Math.min(1,rdt*5));   // backs off as a deep ball comes
-person(foe,H*.25-20*aiScale-foe.depth*16*aiScale,{x:foe.x+aiSide*34*aiScale,y:opponent.y},aiSide*.35,net?LOOKS[net.opp.ch]||LOOKS.ai:LOOKS.ai,aiScale,net?net.opp.rk:'shake',aiSide<0?BLACK:RED,aiSide,net?net.opp.shot:aiShot,net?time-net.opp.hitT:time-lastAIHit);
+const foePrep=!net&&ball&&ball.owner==='you'&&!ball.held&&ball.y>1.37&&time-lastAIHit>.65?P.clamp((ball.y-1.37)/1.43,0,1)*.35:null;
+person(foe,H*.25-20*aiScale-foe.depth*16*aiScale,{x:foe.x+aiSide*34*aiScale,y:opponent.y},aiSide*.35,net?LOOKS[net.opp.ch]||LOOKS.ai:LOOKS.ai,aiScale,net?net.opp.rk:'shake',aiSide<0?BLACK:RED,aiSide,foePrep!=null?'drive':net?net.opp.shot:aiShot,net?time-net.opp.hitT:time-lastAIHit,foePrep);
 ctx.save();const a=project(-.76,0),b=project(.76,0),c=project(.76,2.74),d=project(-.76,2.74);ctx.shadowColor='#7d5cff66';ctx.shadowBlur=40;polygon([a,b,c,d],'#16113a');ctx.restore();polygon([a,b,{x:b.x,y:b.y+13},{x:a.x,y:a.y+13}],'#0e0b26');polygon([b,c,{x:c.x,y:c.y+10},{x:b.x,y:b.y+13}],'#120e30');for(const x of [-.66,.66]){let f=project(x,.15),g=project(x,2.45);line(f,{x:f.x-5,y:f.y+H*.115},'#2a2152',8);line(g,{x:g.x+4,y:g.y+H*.09},'#231b46',5);}ctx.lineWidth=2;ctx.save();ctx.shadowColor='#9b7bff';ctx.shadowBlur=12;polygon([a,b,c,d],'#1d1648','#b49bff');ctx.restore();line(project(0,0),project(0,2.74),'#b49bff80',1);const n1=project(-.82,1.37),n2=project(.82,1.37),n3=project(.82,1.37,.1525),n4=project(-.82,1.37,.1525);polygon([n1,n2,n3,n4],'#c9b8ff30');for(let i=0;i<=26;i++){const x=-.82+i*1.64/26;line(project(x,1.37),project(x,1.37,.1525),'#d9ccff70',.7);}for(let i=0;i<5;i++)line(project(-.82,1.37,i*.038),project(.82,1.37,i*.038),'#d9ccff80',.7);line(n4,n3,'#f3eeff',2);line(n1,n4,'#e6dcff',3);line(n2,n3,'#e6dcff',3);ctx.fillStyle='#b49bff33';ctx.font=`italic bold ${W*.027}px Arial`;ctx.textAlign='center';ctx.fillText('SPIN LAB',W/2,H*.55);
 if(ball&&!(ball.held&&!ball.tossed)){const shadow=project(ball.x,ball.y);ctx.beginPath();ctx.ellipse(shadow.x,shadow.y,9*shadow.scale,3*shadow.scale,0,0,Math.PI*2);ctx.fillStyle='#00000070';ctx.fill();const sp=SPECIALS[ball.type];trail.forEach((p,i)=>{const q=project(p.x,p.y,p.z);ctx.beginPath();ctx.arc(q.x,q.y,(sp?6:3)*q.scale,0,Math.PI*2);ctx.fillStyle=sp?`rgba(${sp.rgb},${i/trail.length*.8})`:`rgba(255,70,120,${i/trail.length*.55})`;ctx.fill();});const p=project(ball.x,ball.y,ball.z);ctx.beginPath();ctx.arc(p.x,p.y,7*p.scale,0,Math.PI*2);ctx.fillStyle='#fff7dc';ctx.shadowBlur=sp?24:14;ctx.shadowColor=sp?sp.glow:'#ffffffb0';ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle='#ddaa6850';ctx.stroke();line({x:p.x-2,y:p.y-2},{x:p.x+2,y:p.y-4},'#ffffff',2);if(ball.held){const st=serveTiming(ball),col={hold:'#8fd3ff',toss:'#f3c65c',ready:'#f3c65c',perfect:'#baff78',low:'#f69b75'}[st];ctx.save();ctx.strokeStyle=col;ctx.lineWidth=st==='perfect'?4:2;ctx.setLineDash(st==='hold'?[3,4]:[]);ctx.beginPath();ctx.arc(p.x,p.y,(st==='perfect'?22:28)*p.scale,0,Math.PI*2);ctx.stroke();ctx.fillStyle=col;ctx.font='bold 10px Arial';ctx.textAlign='center';ctx.fillText({hold:'TAP → TOSS',toss:'TOSS',ready:'READY',perfect:'HIT!',low:'LOW'}[st],p.x,p.y-32*p.scale);ctx.restore();}else timingRing(p);}
 fx=fx.filter(f=>time-f.t<.4);fx.forEach(f=>{const t=(time-f.t)/.4;ctx.beginPath();ctx.arc(f.x,f.y,12+t*(f.special?90:35),0,Math.PI*2);ctx.strokeStyle=f.special?`rgba(${f.special},${1-t})`:`rgba(245,202,133,${1-t})`;ctx.stroke();});if(down&&samples.length>1){ctx.beginPath();samples.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.save();ctx.strokeStyle='#ff2d55c0';ctx.shadowColor='#ff2d55';ctx.shadowBlur=16;ctx.lineWidth=8;ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke();ctx.restore();}   // neon swing streak
@@ -432,9 +447,9 @@ if((!remote||time-ball.passT>.45)&&(ball.y<-1||ball.y>(net?4.1:3.15)||Math.abs(b
 function move(e){
 if(activePointer!==null&&e.pointerId!==activePointer)return;
 const r=canvas.getBoundingClientRect(),now=performance.now(),offset=e.pointerType==='touch'?32:0;
-paddle.x=P.clamp(e.clientX-r.left,10,W-10);paddle.y=P.clamp(e.clientY-r.top-offset,10,H-10);
+const sx=e.clientX-r.left,sy=e.clientY-r.top-offset;paddle.x=P.clamp(cam.z>1?cam.fx+(sx-cam.fx)/cam.z:sx,10,W-10);paddle.y=P.clamp(cam.z>1?cam.fy+(sy-cam.fy)/cam.z:sy,10,H-10);   // undo the camera zoom
 samples.push({x:paddle.x,y:paddle.y,t:now});samples=samples.filter(p=>now-p.t<110);
-if(samples.length>1){const first=samples[0],delta=Math.max(8,now-first.t)/1000;const sensitivity=touchInput?P.clamp(700/W,1,2):1;paddle.vx=(paddle.x-first.x)/delta*sensitivity;paddle.vy=(paddle.y-first.y)/delta*sensitivity;}else paddle.vx=paddle.vy=0;
+if(samples.length>1){const first=samples[0],delta=Math.max(8,now-first.t)/1000;const sensitivity=(touchInput?P.clamp(700/W,1,2):1)*cam.z;paddle.vx=(paddle.x-first.x)/delta*sensitivity;paddle.vy=(paddle.y-first.y)/delta*sensitivity;}else paddle.vx=paddle.vy=0;
 if(down&&gesture)gesture.distance=Math.max(gesture.distance,Math.hypot(paddle.x-gesture.x,paddle.y-gesture.y));
 if(down&&gesture&&Math.hypot(paddle.vx,paddle.vy)>=55&&gesture.distance>=(touchInput?18:12)){
 const rise=gesture.y-paddle.y;
