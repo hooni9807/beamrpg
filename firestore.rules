@@ -1,0 +1,26 @@
+rules_version = '2';
+// SPIN LAB ranking: anyone may read the boards and add a well-formed record; nobody may edit or delete.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function valid(maxValue) {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['name', 'value', 'level', 'character', 'racket', 'detail', 'at'])
+        && d.keys().hasAll(['name', 'value', 'level', 'character', 'racket', 'detail', 'at'])
+        && d.name is string && d.name.size() >= 1 && d.name.size() <= 12
+        && d.value is int && d.value >= 1 && d.value <= maxValue
+        && d.level is string && d.level.size() <= 10
+        && d.character is string && d.character.size() <= 10
+        && d.racket is string && d.racket.size() <= 10
+        && d.detail is string && d.detail.size() <= 20
+        && d.at == request.time;
+    }
+    match /rally/{id} {
+      allow read: if true;
+      allow create: if valid(300);
+    }
+    match /wins/{id} {
+      allow read: if true;
+      allow create: if valid(70);
+    }
+  }
+}
