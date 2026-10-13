@@ -230,7 +230,9 @@ back:[[-6,18,-.8,.6,-.3],[22,-2,.05,.5,0],[46,-46,.7,.3,.5]],
 short:[[16,4,.2,.4,0],[28,-6,.2,.4,0],[36,-12,.15,.4,.1]],
 block:[[14,0,-.15,.5,0],[24,-4,-.3,.5,0],[28,-6,-.35,.5,0]],   // racket in front, face closed (tilted forward), no swing
 cut:[[12,-8,.95,.45,.2],[30,10,.85,.55,0],[48,14,.7,.6,-.3]],
-chop:[[36,-56,1.1,.25,.5],[38,6,.85,.65,0],[6,52,.5,1,-.6]],
+// defender's chop (수비 커트): step back, racket up and back beside the head with the torso turned and weight on the back foot,
+// open face brushing the bottom of the falling ball at the waist, then a long follow-through to knee height, arm almost straight.
+chop:[[46,-44,1.3,.35,1],[40,38,.95,.8,.1],[12,72,.5,1,-.75]],
 smash:[[58,-30,1.4,.35,1],[40,-38,.5,.35,0],[-30,30,-.7,.6,-1]],
 side:[[60,6,1.3,.5,.8],[32,0,.45,.5,0],[-26,2,-.35,.4,-.8]],
 chiquita:[[-10,24,-1.25,.65,-.3],[18,-4,-.2,.5,0],[46,-52,.8,.3,.5]]};
@@ -265,7 +267,7 @@ back:'백드라이브 · ① 라켓을 배 앞으로 당기고 팔꿈치는 앞�
 block:'디펜스 쇼트 · ① 공 앞에 라켓을 세우고 각도를 앞으로 숙이기 ② 튀어 오르는 순간 갖다 대기 ③ 힘을 빼고 밀지 않기',
 short:'쇼트 · ① 라켓을 몸 앞에 두고 백스윙은 짧게 ② 공이 튀어 오를 때 앞으로 밀기 ③ 팔을 길게 뻗지 말고 바로 준비 자세로',
 cut:'커트 · ① 라켓을 가슴 쪽으로 당기고 면을 열기 ② 앞·아래로 공 밑을 깎기 ③ 팔을 거의 편 채 치는 방향으로 마무리',
-chop:'수비 커트 · ① 어깨 높이까지 라켓을 들기 ② 공이 떨어질 때 위에서 아래로 길게 깎기 ③ 무릎 높이까지 내리고 자세는 낮게',
+chop:'수비 커트 · ① 한 발 물러나 몸을 틀고 라켓을 머리 옆까지 들기 (체중은 뒷발) ② 떨어지는 공의 아랫부분을 열린 면으로 허리 높이에서 깎기 ③ 팔을 거의 펴서 무릎 높이까지, 체중은 앞발로',
 smash:'스매시 · ① 높은 공에 라켓을 어깨 뒤로 크게 ② 높은 타점에서 몸 전체로 내려치기 ③ 몸 앞을 가로질러 마무리',
 side:'사이드스핀 · ① 라켓을 몸 바깥쪽으로 빼기 ② 공 옆을 옆으로 쓸기 ③ 몸 앞을 가로질러 마무리',
 chiquita:'치키타 · ① 손목을 안쪽으로 감아 라켓 끝을 아래로 ② 공 옆을 감아 올리며 손목을 펴기 ③ 바깥 위로 높게 마무리'};
@@ -297,7 +299,7 @@ else step(dir,home(dir)+dir*stance*(st.mode==='cross'?.6:.35)+lead);            
 }
 const me={x:null,vx:0,crouch:.3},foe={x:null,vx:0,crouch:.3},ARM_REACH=78,mySwing={type:'drive',t:-10};
 // While the finger is drawing at a live ball the figure already plays that stroke (drag up = drive, down = cut ...).
-function liveStroke(){const g=gesture,t=P.classify(paddle.vx,paddle.vy,{rise:g.y-paddle.y,drop:paddle.y-g.y,dx:paddle.x-g.x,side:g.side});if(t!=='short')g.stroke=t;return g.stroke;}
+function liveStroke(){const g=gesture,t=P.classify(paddle.vx,paddle.vy,{rise:g.y-paddle.y,drop:paddle.y-g.y,dx:paddle.x-g.x,side:g.side});if(t!=='short')g.stroke=racketType==='defense'?'chop':t;return g.stroke;}   // the defender cuts every swing
 function drawingPrep(){if(!down||!gesture||gesture.held||!ball||ball.owner!=='ai'||ball.held||time-mySwing.t<.65||gesture.distance<(touchInput?18:12)||!liveStroke())return null;mySwing.type=gesture.stroke;return P.clamp(gesture.distance/90,0,1);}let lastShot='drive',aiShot='short',lastRenderT=performance.now();
 function person(st,hipY,target,angle,look,s,type,face,side,stroke,since,prep=null){
 const R=RACKETS[type],skin='#f2cda8',pants=look.pants,x=st.x,moving=P.clamp(Math.abs(st.vx)/160,0,1),dir=Math.sign(st.vx)||1;
