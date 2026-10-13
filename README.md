@@ -95,7 +95,19 @@
 | 스매시 | 어깨 뒤로 크게 | 높은 타점에서 몸 전체로 | 몸 앞을 가로질러 |
 | 치키타 | 손목을 안쪽으로 감기 | 공 옆을 감아 올리며 손목 펴기 | 바깥 위로 높게 |
 
-- 공이 오면 무릎을 굽힌 준비 자세, 좌우 이동은 사이드스텝으로 뛰어갑니다.
+- 공이 오면 무릎을 굽힌 준비 자세를 잡습니다.
+
+### 풋워크 (좌우 이동)
+
+발이 한 걸음씩 땅을 딛고 움직이며, 남은 거리에 따라 스텝이 바뀝니다 (멀리 → 교차스텝 → 사이드스텝 → 원스텝).
+
+| 스텝 | 언제 | 발 순서 (오른쪽으로 갈 때) |
+|---|---|---|
+| 원스텝 | 아주 가까울 때 | 오른발만 옆으로 내딛고, 왼발은 따라옴 |
+| 사이드스텝 (샤세) | 중간 거리 | **왼발이 먼저** 오른발 쪽으로 붙고 → 오른발이 벌려 나감. 발은 교차하지 않음 |
+| 교차스텝 | 멀리 | 왼발이 오른발 앞을 **가로질러** 넓게 → 오른발이 다시 나감 |
+
+왼쪽으로 갈 때는 좌우를 반대로 합니다. 참고: [All About Table Tennis – Footwork](https://www.allabouttabletennis.com/table-tennis-footwork.html), [ActiveSG – Proper footwork](https://www.activesgcircle.gov.sg/learn/table-tennis/what-is-the-proper-footwork-for-table-tennis), [Modern Cross-step](https://protabletennis.net/content/modern-cross-step)
 - 참고: [Critical Features of the Forehand Topspin](https://protabletennis.net/content/critical-features-forehand-topspin), [How to Play a Backhand Push](https://www.experttabletennis.com/how-to-play-a-backhand-push-in-table-tennis/), [Backhand Push (tabletennisteacher)](https://tabletennisteacher.com/learn-backhand-push/)
 
 ## 모드
@@ -108,6 +120,11 @@
 ## 패치 내역
 
 최신 순. 버전 옆 코드를 누르면 해당 변경 내용을 볼 수 있습니다.
+
+### v1.14 — 실제 탁구 풋워크 ([6d3a617](https://github.com/hooni9807/spin-tt/commit/6d3a617)) · 2026-10-13
+- 좌우 이동 시 발이 한 걸음씩 딛는 실제 탁구 스텝: 원스텝 · 사이드스텝(샤세) · 교차스텝
+- 사이드스텝은 반대쪽 발이 먼저 붙고 가는 쪽 발이 나감, 교차스텝은 뒷발이 앞발을 가로지름
+- 거리에 따라 교차스텝 → 사이드스텝 → 원스텝으로 자연스럽게 전환 (나 · AI 모두)
 
 ### v1.13 — AI 리턴 강화 ([4447c41](https://github.com/hooni9807/spin-tt/commit/4447c41)) · 2026-10-13
 - AI가 공을 너무 못 받던 문제 수정 (좌우 코스가 생기며 양 끝 공 감점이 커졌던 것이 원인)
