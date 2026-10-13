@@ -41,10 +41,11 @@ const type=forcedType||classify(vx,vy,gesture),speed=Math.hypot(vx,vy),power=cla
 let forward=type==='lightning'?5.6:type==='thunder'?6.2:type==='phantom'?1.8:type==='chop'?3.2:type==='short'?2:type==='smash'?4.7:type==='chiquita'?5:type==='loop'?2.35+power*.65:type==='back'?3+power*.9:2.5+power*1.2;
 forward*=boost[type]||1;
 const spin=type==='phantom'?-2.6:type==='lightning'?.3:type==='thunder'?0:type==='chop'?-1.8:type==='cut'?-1:type==='loop'?2.2:type==='back'?1.3:type==='drive'?1:type==='chiquita'?2.4:type==='side'?.35:0;
-const side=type==='side'?Math.sign(vx)*1.2:type==='chiquita'?(x>=0?-1:1)*5:0,target=type==='short'?1.85:type==='phantom'?1.75:type==='thunder'?2.5:2.3,gravity=6+spin*.55,netDistance=1.37-y;
+const dirX=speed?vx/speed:0,corner=Math.abs(dirX)>.3?Math.sign(dirX)*.5:null;
+const side=type==='side'?Math.sign(vx)*1.2:type==='chiquita'?Math.sign(corner??(x>=0?-1:1))*5:0,target=type==='short'?1.85:type==='phantom'?1.75:type==='thunder'?2.5:2.3,gravity=6+spin*.55,netDistance=1.37-y;
 // shortcut: arcade landing calibration, replace with measured contact physics for a simulator.
 if(netDistance>0&&target>1.37){const fraction=netDistance/(target-y),needed=.22-height*(1-fraction);if(needed>0)forward=Math.min(forward,Math.sqrt(.5*gravity*netDistance*(target-1.37)/needed));}
-const flight=(target-y)/forward,targetX=type==='chiquita'||type==='thunder'?(x>=0?-.5:.5):type==='lightning'?(x>=0?.5:-.5):clamp(x+vx/1800*(practice?.4:.55),-.6,.6);
+const flight=(target-y)/forward,targetX=type==='chiquita'||type==='thunder'?corner??(x>=0?-.5:.5):type==='lightning'?corner??(x>=0?.5:-.5):clamp(x*.3+dirX*(practice?.55:.7),-.62,.62); // horizontal part of the swing sets the course
 return {type,speed,vx:(targetX-x)/flight-.15*side*flight,vy:forward,vz:(.5*gravity*flight*flight-height)/flight,spin,side};
 }
 // ponytail: brute-force search over launch angles, fine for one call per serve.
@@ -131,28 +132,45 @@ head(R.w+2,R.h+2);ctx.fillStyle='#d9b77c';ctx.fill();
 head(R.w,R.h);ctx.fillStyle=face;ctx.fill();ctx.strokeStyle='#ffffff30';ctx.lineWidth=1;ctx.stroke();
 ctx.fillStyle='#ffffff70';ctx.font='7px Arial';ctx.textAlign='center';ctx.fillText('SPIN',0,0);ctx.restore();
 }
-// Stroke poses after contact: [contact, finish] as [x, y, angle, crouch].
-// x/y are body units from the racket-side shoulder (x outward, y down), mirrored by side.
+// Strokes as [backswing, contact, finish], each [x, y, racket angle, crouch, weight].
+// x/y: body units from the racket-side shoulder (x outward, y down), mirrored by side.
+// weight: +1 on the racket-side foot, -1 on the other foot. Based on common coaching cues:
+// forehand topspin = racket below the ball with weight on the back foot, hips turn and brush up,
+// finish high in front of the head with weight on the front foot; push/cut = racket to the chest,
+// open face, forward and down under the ball, arm nearly straight at the finish.
 const STROKES={
-loop:[[46,8,.75,.75],[-2,-60,-.45,.15]],   // low under the ball, brush up to the forehead
-drive:[[44,-2,.55,.5],[6,-42,-.25,.3]],    // flatter forward swing, finish at the eyes
-back:[[24,-2,.1,.5],[48,-44,.65,.3]],      // from the belly, elbow forward, flick out and up
-short:[[30,-6,.2,.4],[38,-14,.15,.4]],     // compact block / push, almost no follow-through
-cut:[[36,0,.75,.55],[14,38,.5,.8]],        // high to low under the ball, stay low
-chop:[[40,4,.85,.65],[8,50,.5,1]],         // defender: long chop finishing near the knee
-smash:[[40,-38,.5,.35],[-28,28,-.7,.6]],   // high contact, whole body comes through and down
-side:[[32,0,.45,.5],[-24,2,-.35,.4]]};     // horizontal sweep across the body
-STROKES.chiquita=STROKES.back;STROKES.lightning=STROKES.drive;STROKES.thunder=STROKES.smash;STROKES.phantom=STROKES.chop;
+loop:[[42,58,1.3,.9,1],[44,10,.75,.7,.3],[-4,-60,-.45,.25,-1]],
+drive:[[48,16,1.1,.6,.8],[44,-2,.55,.5,.2],[4,-44,-.25,.35,-.8]],
+back:[[-6,18,-.8,.6,-.3],[22,-2,.05,.5,0],[46,-46,.7,.3,.5]],
+short:[[16,4,.2,.4,0],[28,-6,.2,.4,0],[36,-12,.15,.4,.1]],
+cut:[[12,-8,.95,.45,.2],[30,10,.85,.55,0],[48,14,.7,.6,-.3]],
+chop:[[36,-56,1.1,.25,.5],[38,6,.85,.65,0],[6,52,.5,1,-.6]],
+smash:[[58,-30,1.4,.35,1],[40,-38,.5,.35,0],[-30,30,-.7,.6,-1]],
+side:[[60,6,1.3,.5,.8],[32,0,.45,.5,0],[-26,2,-.35,.4,-.8]],
+chiquita:[[-10,24,-1.25,.65,-.3],[18,-4,-.2,.5,0],[46,-52,.8,.3,.5]]};
+STROKES.lightning=STROKES.drive;STROKES.thunder=STROKES.smash;STROKES.phantom=STROKES.chop;
 const lerp=(a,b,t)=>a+(b-a)*t,ease=t=>1-(1-t)*(1-t);
 function strokePose(type,since,side,s,shoulder,target,angle,crouch){
-const k=STROKES[type];if(!k||since<0||since>.72)return {target,angle,crouch,twist:0};
-const at=f=>({x:shoulder.x+side*f[0]*s,y:shoulder.y+f[1]*s,a:side*f[2],c:f[3]}),C=at(k[0]),F=at(k[1]);
-const mix=(A,B,t,tw)=>({target:{x:lerp(A.x,B.x,t),y:lerp(A.y,B.y,t)},angle:lerp(A.a,B.a,t),crouch:lerp(A.c,B.c,t),twist:tw});
-const ready={x:target.x,y:target.y,a:angle,c:crouch};
-if(since<.06)return mix(ready,C,since/.06,since/.06);
-if(since<.4){const t=ease((since-.06)/.34);return mix(C,F,t,1-2*t);}
-const t=P.clamp((since-.52)/.2,0,1);return mix(F,ready,t,t-1);
+const k=STROKES[type];if(!k||since<0||since>.8)return {target,angle,crouch,twist:0};
+const at=f=>({x:shoulder.x+side*f[0]*s,y:shoulder.y+f[1]*s,a:side*f[2],c:f[3],w:f[4]}),B=at(k[0]),C=at(k[1]),F=at(k[2]),R={x:target.x,y:target.y,a:angle,c:crouch,w:0};
+const mix=(A,Z,t)=>({target:{x:lerp(A.x,Z.x,t),y:lerp(A.y,Z.y,t)},angle:lerp(A.a,Z.a,t),crouch:lerp(A.c,Z.c,t),twist:lerp(A.w,Z.w,t)});
+if(since<.07)return mix(R,B,ease(since/.07));            // quick backswing
+if(since<.15)return mix(B,C,((since-.07)/.08)**2);        // accelerate into contact
+if(since<.48)return mix(C,F,ease((since-.15)/.33));       // follow-through
+return mix(F,R,P.clamp((since-.6)/.2,0,1));               // hold, then back to ready
 }
+// Coaching cue per stroke, shown after each hit so the player can copy the form.
+const GUIDE={
+loop:'루프 드라이브 · ① 무릎 굽히고 라켓을 공보다 낮게, 체중은 오른발 ② 골반을 돌리며 공 뒤를 위로 쓸기 ③ 라켓은 이마 앞까지, 체중은 왼발로',
+drive:'드라이브 · ① 허리 높이로 라켓을 뒤로, 체중은 오른발 ② 몸통을 돌리며 앞으로 밀어치기 ③ 눈높이에서 마무리, 체중은 왼발로',
+back:'백드라이브 · ① 라켓을 배 앞으로 당기고 팔꿈치는 앞으로 ② 팔꿈치를 축으로 앞·위로 튕기기 ③ 라켓은 눈높이 앞에서 멈추기',
+short:'쇼트 · ① 라켓을 몸 앞에 두고 백스윙은 짧게 ② 공이 튀어 오를 때 앞으로 밀기 ③ 팔을 길게 뻗지 말고 바로 준비 자세로',
+cut:'커트 · ① 라켓을 가슴 쪽으로 당기고 면을 열기 ② 앞·아래로 공 밑을 깎기 ③ 팔을 거의 편 채 치는 방향으로 마무리',
+chop:'수비 커트 · ① 어깨 높이까지 라켓을 들기 ② 공이 떨어질 때 위에서 아래로 길게 깎기 ③ 무릎 높이까지 내리고 자세는 낮게',
+smash:'스매시 · ① 높은 공에 라켓을 어깨 뒤로 크게 ② 높은 타점에서 몸 전체로 내려치기 ③ 몸 앞을 가로질러 마무리',
+side:'사이드스핀 · ① 라켓을 몸 바깥쪽으로 빼기 ② 공 옆을 옆으로 쓸기 ③ 몸 앞을 가로질러 마무리',
+chiquita:'치키타 · ① 손목을 안쪽으로 감아 라켓 끝을 아래로 ② 공 옆을 감아 올리며 손목을 펴기 ③ 바깥 위로 높게 마무리'};
+GUIDE.lightning=GUIDE.drive;GUIDE.thunder=GUIDE.smash;GUIDE.phantom=GUIDE.chop;
 // Body follows its target with side-shuffle steps (trailing foot pushes, lead foot reaches).
 // ponytail: fixed run speed in screen px, scale with W if very wide screens look slow.
 function stepBody(st,target,dt,crouch){const prev=st.x??target,max=650*dt;st.x=prev+P.clamp((target-prev)*Math.min(1,dt*10),-max,max);st.vx=(st.x-prev)/Math.max(dt,1e-3);st.phase+=Math.abs(st.vx)*dt*.03;st.crouch+=(crouch-st.crouch)*Math.min(1,dt*6);}
@@ -160,7 +178,7 @@ const me={x:null,vx:0,phase:0,crouch:.3},foe={x:null,vx:0,phase:0,crouch:.3};let
 function person(st,hipY,target,angle,color,s,type,face,side,stroke,since){
 const R=RACKETS[type],skin='#f2cda8',pants='#33404f',x=st.x,moving=P.clamp(Math.abs(st.vx)/160,0,1),dir=Math.sign(st.vx)||1;
 const pose=strokePose(stroke,since,side,s,{x:x+side*15*s,y:hipY-50*s+st.crouch*18*s},target,angle,st.crouch);
-const cr=pose.crouch,hop=Math.abs(Math.sin(st.phase))*4*s*moving,hy=hipY+cr*18*s-hop,cx=x+dir*moving*6*s+pose.twist*side*6*s,ground=hipY+30*s;
+const cr=pose.crouch,hop=Math.abs(Math.sin(st.phase))*4*s*moving,hy=hipY+cr*18*s-hop,cx=x+dir*moving*6*s+pose.twist*side*8*s,ground=hipY+30*s;
 const shoulder={x:cx+side*15*s,y:hy-50*s},tgt=pose.target,ang=pose.angle,d=(R.h+R.hl*.55)*s,hand={x:tgt.x-Math.sin(ang)*d,y:tgt.y+Math.cos(ang)*d},elbow={x:(shoulder.x+hand.x)/2,y:(shoulder.y+hand.y)/2+12*s};
 ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
 ctx.beginPath();ctx.ellipse(x,ground+2*s,(32+cr*8)*s,6*s,0,0,Math.PI*2);ctx.fillStyle='#183e3420';ctx.fill();
@@ -198,7 +216,7 @@ const motion=swingMemory&&time<=swingMemory.until?swingMemory:null,state=serveTi
 const p=project(ball.x,ball.y,ball.z),dist=Math.hypot(p.x-paddle.x,p.y-paddle.y);if(dist>Math.max(touchInput?70:58,W*.08)*RACKETS[racketType].reach)return;
 const speed=Math.hypot(motion.vx,motion.vy)||1,up=-motion.vy/speed,right=motion.vx/speed;
 const spin=up>.3?up:up<-.3?up*.6:0,side=Math.abs(right)>.3?right*1.2:0; // up = topspin, down = backspin (cut), sideways = side spin
-const plan=P.planServe(spin,P.clamp(2.3+speed/1500*.9,2.3,3.2),ball.x,ball.z,-ball.x*.6,side)||P.planServe(0,2.4,ball.x,P.clamp(ball.z,.15,.4),0,0);
+const plan=P.planServe(spin,P.clamp(2.3+speed/1500*.9,2.3,3.2),ball.x,ball.z,P.clamp(right*.55,-.55,.55),side)||P.planServe(0,2.4,ball.x,P.clamp(ball.z,.15,.4),0,0);
 Object.assign(ball,{held:false,tossed:false,serving:true,vx:plan.vx,vy:plan.vy,vz:plan.vz,spin,side,type:'serve',aiAttempt:false});
 lastHit=time;lastShot=spin<0?'cut':spin>0?'loop':Math.abs(side)?'side':'short';swingMemory=null;
 const parts=[spin>0?'상회전':spin<0?'하회전(커트)':'',side>0?'우회전':side<0?'좌회전':''].filter(Boolean),label='서브 · '+(parts.join(' + ')||'무회전'),quality=state==='perfect'?'PERFECT':'GOOD';
@@ -224,7 +242,7 @@ const before=charge;if(special)charge=0;else charge=Math.min(100,charge+(quality
 rally++;best=Math.max(best,rally);updateScore();$('shot').firstChild.textContent=names[shot.type][0];$('shot-sub').textContent=names[shot.type][1]+(playerSide>0?' · 포핸드':' · 백핸드');$('timing').textContent=quality;
 $('spin').textContent=shot.spin<0?'BACK SPIN':shot.side?'SIDE SPIN':shot.spin>0?'TOP SPIN':'FLAT';
 fx.push({x:p.x,y:p.y,t:time,special:special&&SPECIALS[R.special].rgb});if(touchInput)navigator.vibrate?.(special?40:15);beep(special?950:shot.type==='smash'?760:490);toast(names[shot.type][1]+' · '+quality+(before<100&&charge===100?' · ✦ 필살기 충전 완료!':''),1.25);
-$('coach').textContent=special?SPECIALS[R.special].coach:charge===100?`필살기가 충전됐어요. 다음 타격에 ${SPECIALS[R.special].name}이(가) 자동으로 나갑니다.`:'금색 원이 줄어들어 초록색 HIT! 원과 겹칠 때 스윙하세요. 두 번 클릭하거나 탭하면 스매시도 가능합니다.';
+$('coach').textContent=special?SPECIALS[R.special].coach+' '+GUIDE[shot.type]:charge===100?`필살기가 충전됐어요. 다음 타격에 ${SPECIALS[R.special].name}이(가) 자동으로 나갑니다.`:GUIDE[shot.type]||'';
 }
 function update(dt){time+=dt;if(time>toastUntil)$('toast').textContent=ball&&ball.held?(ball.tossed?'떨어질 때 스윙! ↓커트 ↑상회전 →우회전 ←좌회전 (섞기 가능)':'내 서브 · 화면을 눌러 공을 토스하세요'):ball&&ball.owner==='ai'?(P.timing(ball)==='perfect'?'HIT! 지금 스윙 · 두 번 탭 / 클릭은 스매시':ball.bounces?(ball.y>0?'WAIT · 내 쪽 끝선을 넘어올 때까지 기다리세요':'READY · 테이블 밖에서 스윙!'):'WAIT · 바운드를 기다리세요'):'상대 리턴을 기다리세요';if(!ball){wait-=dt;if(wait<=0)myServe()?holdServe():serve();return;}if(ball.held){if(!ball.tossed)ballToHand();else{ball.vz-=6*dt;ball.z+=ball.vz*dt;if(ball.vz<0&&ball.z<ball.tossZ){ball.tossed=false;toast('놓쳤어요 · 다시 토스하세요',1.5);}}hit();return;}hit();if(!ball)return;const prevY=ball.y,prevZ=ball.z;P.step(ball,dt);if((prevY-1.37)*(ball.y-1.37)<0){const z=prevZ+(ball.z-prevZ)*(1.37-prevY)/(ball.y-prevY);if(z<.1525){point(ball.owner==='ai','네트에 걸렸어요');return;}}
 if(ball.serving&&ball.z<=0&&ball.vz<0){if(Math.abs(ball.x)>.76||ball.y<0||ball.y>=1.37){point(false,'서브 실패');return;}ball.serving=false;ball.z=0;ball.vz=-ball.vz*.8;ball.vy*=1.03;beep(270);}
