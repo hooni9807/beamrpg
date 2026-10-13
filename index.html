@@ -39,7 +39,8 @@ html,body{overscroll-behavior:none;touch-action:manipulation;-webkit-text-size-a
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function classify(vx,vy,gesture={}){
 if(gesture.rise>12&&vy<-55&&gesture.side)return gesture.side==='right'?'loop':'back';
-if(Math.hypot(vx,vy)<310)return 'short';
+if(gesture.drop>16&&gesture.drop>Math.abs(gesture.dx||0)*.6&&vy>-60)return 'cut';   // dragged down overall: a cut, even if slow
+if(Math.hypot(vx,vy)<160)return 'short';
 if(vy>Math.abs(vx)*.6)return 'cut';
 if(Math.abs(vx)>Math.abs(vy)*1.3)return 'side';
 return 'drive';
@@ -367,7 +368,7 @@ const quality=state==='perfect'&&distance<Math.max(touchInput?42:28,W*.04)*R.rea
 if(motion&&motion.side)playerSide=motion.side==='right'?1:-1;else updateSide();
 const special=charge===100;if(special&&R.special==='chiquita')playerSide=-1;
 const boost=racketType==='jpen'&&playerSide>0?{loop:1.25,drive:1.25,side:1.25}:R.boost;
-const still=tap&&!smash;let shot=P.shot(smash||still?0:motion.vx*R.power,smash?-1450:still?-200:motion.vy*R.power,ball.z,ball.x,ball.y,mode==='practice',motion?{side:motion.side,rise:motion.rise}:{},special?R.special:smash&&racketType!=='defense'?'smash':tap||(racketType==='defense'?'chop':smash?'smash':undefined),boost);
+const still=tap&&!smash;let shot=P.shot(smash||still?0:motion.vx*R.power,smash?-1450:still?-200:motion.vy*R.power,ball.z,ball.x,ball.y,mode==='practice',motion?{side:motion.side,rise:motion.rise,drop:motion.drop,dx:motion.dx}:{},special?R.special:smash&&racketType!=='defense'?'smash':tap||(racketType==='defense'?'chop':smash?'smash':undefined),boost);
 const inc=P.incoming(ball),resp=P.family(shot.type),verdict=special?'ok':P.judge(inc,resp,quality==='PERFECT',racketType==='defense');   // specials always get through
 if(verdict!=='ok')shot=P.miss(shot,ball.y,ball.z,verdict);
 Object.assign(ball,shot,{owner:'you',bounces:0,aiAttempt:false});lastHit=time;lastShot=shot.type;smashUntil=-1;lastTap=null;
@@ -398,14 +399,14 @@ if(samples.length>1){const first=samples[0],delta=Math.max(8,now-first.t)/1000;c
 if(down&&gesture)gesture.distance=Math.max(gesture.distance,Math.hypot(paddle.x-gesture.x,paddle.y-gesture.y));
 if(down&&gesture&&Math.hypot(paddle.vx,paddle.vy)>=55&&gesture.distance>=(touchInput?18:12)){
 const rise=gesture.y-paddle.y;
-if(!gesture.side||paddle.vy>=-55||rise>12){const previous=samples.length>1?samples[samples.length-2]:paddle;swingMemory={vx:paddle.vx,vy:paddle.vy,side:gesture.side,rise,fromX:previous.x,fromY:previous.y,x:paddle.x,y:paddle.y,until:time+.28};}
+if(!gesture.side||paddle.vy>=-55||rise>12){const previous=samples.length>1?samples[samples.length-2]:paddle;swingMemory={vx:paddle.vx,vy:paddle.vy,side:gesture.side,rise,drop:paddle.y-gesture.y,dx:paddle.x-gesture.x,fromX:previous.x,fromY:previous.y,x:paddle.x,y:paddle.y,until:time+.28};}
 }
 if(down&&playing&&!paused)hit();
 }
 canvas.addEventListener('pointerdown',e=>{
 if(!playing||paused||activePointer!==null||e.button>0)return;e.preventDefault();touchInput=e.pointerType==='touch';if(ball&&ball.held&&!ball.tossed)toss();swingMemory=null;samples=[];move(e);activePointer=e.pointerId;
 const target=ball?project(ball.x,ball.y,ball.z):{x:W/2,y:H*.65};
-gesture={x:paddle.x,y:paddle.y,t:performance.now(),distance:0,side:paddle.y+(touchInput?32:0)>target.y+8?(paddle.x>=target.x?'right':'left'):null};down=true;canvas.setPointerCapture(e.pointerId);
+gesture={x:paddle.x,y:paddle.y,t:performance.now(),distance:0,live:!!ball&&ball.owner==='ai'&&!['wait','none'].includes(P.timing(ball)),side:paddle.y+(touchInput?32:0)>target.y+8?(paddle.x>=target.x?'right':'left'):null};down=true;canvas.setPointerCapture(e.pointerId);
 });
 canvas.addEventListener('pointermove',move);
 canvas.addEventListener('pointerup',e=>{
@@ -416,7 +417,7 @@ if(lastTap&&lastTap.touch===touchInput&&now-lastTap.t<(touchInput?360:320)&&Math
 release();
 });
 // Holding still on one spot turns into a defense short for as long as the finger stays down.
-function holdCheck(){if(down&&gesture&&gesture.distance<(touchInput?18:12)&&performance.now()-gesture.t>280){if(!gesture.held){gesture.held=true;smashUntil=-1;}hit('block');}}
+function holdCheck(){if(down&&gesture&&gesture.live&&gesture.distance<(touchInput?18:12)&&performance.now()-gesture.t>280){if(!gesture.held){gesture.held=true;smashUntil=-1;}hit('block');}}
 function release(){down=false;gesture=null;activePointer=null;samples=[];paddle.vx=paddle.vy=0;}
 function cancelPointer(e){if(e.pointerId!==activePointer)return;swingMemory=null;release();lastTap=null;smashUntil=-1;}
 canvas.addEventListener('pointercancel',cancelPointer);canvas.addEventListener('lostpointercapture',cancelPointer);
