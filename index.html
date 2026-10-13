@@ -317,7 +317,7 @@ function person(st,hipY,target,angle,look,s,type,face,side,stroke,since,prep=nul
 const R=RACKETS[type],skin='#f2cda8',pants=look.pants,x=st.x,moving=P.clamp(Math.abs(st.vx)/160,0,1),dir=Math.sign(st.vx)||1;
 const pose=strokePose(stroke,since,side,s,{x:x+side*15*s,y:hipY-50*s+st.crouch*18*s},target,angle,st.crouch,look,st.amp??1,st.dirX||0,prep);
 const cr=pose.crouch,stepping=st.feet?Math.max(...[-1,1].map(k=>st.feet[k].t<1?Math.sin(Math.PI*st.feet[k].t):0)):0,split=look.split&&st.splitT!=null&&time-st.splitT<.24?Math.sin(Math.PI*(time-st.splitT)/.24):0,bob=look.split&&!stepping&&!split&&!(since>=0&&since<.8)?Math.sin(time*7)*1.2*s:0,hop=stepping*3*s+split*8*s+bob,hy=hipY+cr*18*s-hop,cx=x+dir*moving*6*s+pose.twist*side*8*s,ground=hipY+30*s;
-const shoulder={x:cx+side*15*s,y:hy-50*s},ang=pose.angle,d=(R.h+R.hl*.55)*s;let tgt=pose.target,hand={x:tgt.x-Math.sin(ang)*d,y:tgt.y+Math.cos(ang)*d};
+const shoulder={x:cx+side*15*s,y:hy-50*s},ang=pose.angle,racketScale=s*.78,d=(R.h+R.hl*.55)*racketScale;let tgt=pose.target,hand={x:tgt.x-Math.sin(ang)*d,y:tgt.y+Math.cos(ang)*d};
 {const dx=hand.x-shoulder.x,dy=hand.y-shoulder.y,len=Math.hypot(dx,dy),k=Math.max(0,len-ARM_REACH*s)/(len||1);tgt={x:tgt.x-dx*k,y:tgt.y-dy*k};hand={x:hand.x-dx*k,y:hand.y-dy*k};}   // the arm never stretches past its reach
 const elbow={x:(shoulder.x+hand.x)/2,y:(shoulder.y+hand.y)/2+12*s};
 ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
@@ -343,7 +343,7 @@ for(const [dx,dy,r] of [[-7,-88,3.2],[0,-90,3.4],[7,-88,3]]){ctx.beginPath();ctx
 if(look.glasses)for(const k of [-1,1]){line({x:hx+k*14.5*s,y:hy-77*s},{x:hx+k*10*s,y:hy-74*s},'#111',1.6*s);ctx.fillStyle='#111';ctx.fillRect(hx+k*14.2*s-(k<0?1.6*s:0),hy-80*s,1.6*s,5*s);}}
 else{ctx.beginPath();ctx.arc(hx,hy-77*s,13*s,Math.PI,0);ctx.fillStyle=look.hair;ctx.fill();}
 line(shoulder,elbow,look.sleeve,8*s);line(elbow,hand,skin,7*s);
-racket(tgt.x,tgt.y,ang,type,face,s);
+racket(tgt.x,tgt.y,ang,type,face,racketScale);
 ctx.beginPath();ctx.arc(hand.x,hand.y,5*s,0,Math.PI*2);ctx.fillStyle=skin;ctx.fill();
 if(shout){ctx.font=`bold ${14*s}px Arial`;ctx.textAlign='center';ctx.fillStyle='#173e34';ctx.fillText(look.shout,hx+side*22*s,hy-98*s);}
 ctx.restore();
