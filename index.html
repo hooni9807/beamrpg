@@ -111,7 +111,7 @@ shake:{name:'쉐이크핸드 ALC 카본',special:'chiquita',skill:'올라운드:
 w:24.5,h:24.5,hw:10,hl:30,grip:'#c9c3b6',gripHi:'#e9e5dc',ply:'#5a554a55',wood:'#e9d4a8',flare:true,lens:'#3b3b3b',reach:1,power:1},
 cpen:{name:'중국식 펜홀더',special:'lightning',skill:'빠른 쇼트: 쇼트 속도 ×1.5',boost:{short:1.5},w:24,h:26,hw:8,hl:15,grip:'#9c7a4c',reach:.95,power:1.08},
 jpen:{name:'일본식 펜홀더',special:'thunder',skill:'포핸드 강타: 포핸드 드라이브 속도 ×1.25',w:19,h:28,hw:11,hl:19,grip:'#c9a46b',square:true,reach:.9,power:1.18},
-defense:{name:'수비수 라켓',special:'phantom',skill:'수비 특화: 드라이브·스매시 등 모든 스윙이 강한 커트(CHOP)로 나감',w:27,h:28.5,hw:10,hl:30,grip:'#b58c58',gripHi:'#e2c08a',tape:'#7a1f1f',reach:1.2,power:.85}};
+defense:{name:'수비수 라켓',pips:true,special:'phantom',skill:'수비 특화: 드라이브·스매시 등 모든 스윙이 강한 커트(CHOP)로 나감 · 백핸드 롱핌플',w:27,h:28.5,hw:10,hl:30,grip:'#b58c58',gripHi:'#e2c08a',tape:'#7a1f1f',reach:1.2,power:.85}};
 const BLACK='#1b1b1b',RED='#c8312f';
 // Character looks. 'jersey' is drawn from the user's photo: short tousled dark hair, black square glasses,
 // navy jersey with green / lime vertical stripes and a lime V collar, black shorts, black watch on the left wrist.
@@ -199,7 +199,11 @@ ctx.save();ctx.clip(bladePath(R,1.2));const cut=H*(R.square?.66:.66);
 const rub=new Path2D();rub.moveTo(-R.w-3,-H-3);rub.lineTo(R.w+3,-H-3);rub.lineTo(R.w+3,cut-H*.05);rub.quadraticCurveTo(0,cut+H*.2,-R.w-3,cut-H*.05);rub.closePath();
 const gr=ctx.createLinearGradient(-R.w,-H,R.w*.6,H*.6);gr.addColorStop(0,red?'#e0484a':'#3a3a3a');gr.addColorStop(.45,red?'#c62a2c':'#1e1e1e');gr.addColorStop(1,red?'#a81f22':'#141414');
 ctx.fillStyle=gr;ctx.fill(rub);
-ctx.fillStyle='#ffffff10';ctx.beginPath();ctx.ellipse(-R.w*.32,-H*.42,R.w*.42,H*.26,-.5,0,Math.PI*2);ctx.fill();   // sheen
+if(R.pips&&red){   // defender's backhand: long pimples (OX, no sponge) - rows of tall thin pips, matte, each with a shadow and a lit top
+if(!R.pipPaths){R.pipPaths=[[.35,.45,.85,'#6e1214'],[0,0,.75,'#d8393b'],[-.25,-.25,.28,'#ff9a8c']].map(([ox,oy,rr,col])=>{const p=new Path2D();   // built once, 3 fills per frame
+for(let py=-H,row=0;py<cut;py+=2.4,row++)for(let px=-R.w+(row%2)*1.2;px<R.w;px+=2.4){p.moveTo(px+ox+rr,py+oy);p.arc(px+ox,py+oy,rr,0,Math.PI*2);}return [p,col];});}
+for(const [p,col] of R.pipPaths){ctx.fillStyle=col;ctx.fill(p);}}
+else{ctx.fillStyle='#ffffff10';ctx.beginPath();ctx.ellipse(-R.w*.32,-H*.42,R.w*.42,H*.26,-.5,0,Math.PI*2);ctx.fill();}   // sheen on smooth (inverted) rubber
 ctx.fillStyle='#ffffff55';ctx.font='bold 4.2px Arial';ctx.textAlign='center';ctx.fillText('SPIN LAB',0,cut-H*.1);
 ctx.restore();
 ctx.strokeStyle=R.tape||'#202020';ctx.lineWidth=1.6;ctx.stroke(blade);   // edge tape
