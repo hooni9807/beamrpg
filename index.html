@@ -43,8 +43,8 @@ if(Math.hypot(vx,vy)<160)return 'short';
 if(vy>Math.abs(vx)*.6)return 'cut';
 return 'drive';
 }
-// Hit window behind my end line (y<0). Widened ~1.5x so there is time to draw the swing.
-function timing(b){if(!b||b.owner!=='ai')return 'none';if(b.bounces!==1||b.y>.08||b.y<-.9)return 'wait';if(b.y<-.55)return 'late';return b.y<=-.05?'perfect':'ready';}
+// Hit window only once the ball has come out past my end line (y<0), like a real drive/push taken beside the body.
+function timing(b){if(!b||b.owner!=='ai')return 'none';if(b.bounces!==1||b.y>0||b.y<-.95)return 'wait';if(b.y<-.6)return 'late';return b.y<=-.08?'perfect':'ready';}
 // AI return chance. Specials and smashes stay hard to return; wide balls and spin only nibble at it.
 // Five AI levels: return chance, serve speed, return speed, mix of drive/cut (rest smash) and how wide it aims.
 // Korean club divisions: 7부 (easiest) up to 1부, then 선수부 (pro players).
@@ -247,14 +247,15 @@ back:[[-8,16,-.8,.6,-.3],[24,-4,.08,.5,0],[50,-40,.7,.3,.5]]};LEE_STROKES.carbon
 const STROKE_SETS={hugo:HUGO_STROKES,lee:LEE_STROKES};
 STROKES.carbon=STROKES.loop;STROKES.lightning=STROKES.drive;STROKES.thunder=STROKES.smash;STROKES.phantom=STROKES.chop;
 const lerp=(a,b,t)=>a+(b-a)*t,ease=t=>1-(1-t)*(1-t);
-function strokePose(type,since,side,s,shoulder,target,angle,crouch,look={},amp=1,dirX=0){
-const k=look.strokes&&STROKE_SETS[look.strokes]?.[type]||STROKES[type];if(!k||since<0||since>.8)return {target,angle,crouch,twist:0};
+// since = seconds after contact. prep (0..1, while the finger is still drawing) walks backswing -> just before contact.
+function strokePose(type,since,side,s,shoulder,target,angle,crouch,look={},amp=1,dirX=0,prep=null){
+const k=look.strokes&&STROKE_SETS[look.strokes]?.[type]||STROKES[type];if(!k||prep==null&&(since<0||since>.8))return {target,angle,crouch,twist:0};
 const at=f=>({x:shoulder.x+side*f[0]*s,y:shoulder.y+f[1]*s,a:side*f[2],c:f[3],w:f[4]}),B=at(k[0]),C=at(k[1]),F0=at(k[2]),F={...F0,x:C.x+(F0.x-C.x)*amp+dirX*16*s,y:C.y+(F0.y-C.y)*amp},R={x:target.x,y:target.y,a:angle,c:crouch,w:0};
 const mix=(A,Z,t)=>({target:{x:lerp(A.x,Z.x,t),y:lerp(A.y,Z.y,t)},angle:lerp(A.a,Z.a,t),crouch:lerp(A.c,Z.c,t),twist:lerp(A.w,Z.w,t)});
-if(since<.07)return mix(R,B,ease(since/.07));            // quick backswing
-if(since<.15)return mix(B,C,((since-.07)/.08)**2);        // accelerate into contact
-if(since<.48)return mix(C,F,ease((since-.15)/.33));       // follow-through
-return mix(F,R,P.clamp((since-.6)/.2,0,1));               // hold, then back to ready
+if(prep!=null)return prep<.35?mix(R,B,ease(prep/.35)):mix(B,C,(prep-.35)/.65*.85);   // drawing: backswing, then into the stroke
+if(since<.05)return mix(B,C,since/.05);                   // contact lands on the hit itself
+if(since<.33)return mix(C,F,ease((since-.05)/.28));       // follow-through
+return mix(F,R,P.clamp((since-.45)/.2,0,1));               // hold, then back to ready
 }
 // Coaching cue per stroke, shown after each hit so the player can copy the form.
 const GUIDE={
@@ -294,12 +295,17 @@ if(st.mode==='one'){if(dir*(home(dir)+lead-F[dir].x)>3*s)step(dir,home(dir)+lead
 if(st.last===dir)step(-dir,st.mode==='cross'&&Math.abs(remain)>stance*2?home(dir)+dir*stance*.3+lead:home(-dir)+dir*stance*.5+lead); // far foot: cross over / close in
 else step(dir,home(dir)+dir*stance*(st.mode==='cross'?.6:.35)+lead);                                                         // near foot steps out
 }
-const me={x:null,vx:0,crouch:.3},foe={x:null,vx:0,crouch:.3};let lastShot='drive',aiShot='short',lastRenderT=performance.now();
-function person(st,hipY,target,angle,look,s,type,face,side,stroke,since){
+const me={x:null,vx:0,crouch:.3},foe={x:null,vx:0,crouch:.3},ARM_REACH=78,mySwing={type:'drive',t:-10};
+// While the finger is drawing at a live ball the figure already plays that stroke (drag up = drive, down = cut ...).
+function liveStroke(){const g=gesture,t=P.classify(paddle.vx,paddle.vy,{rise:g.y-paddle.y,drop:paddle.y-g.y,dx:paddle.x-g.x,side:g.side});if(t!=='short')g.stroke=t;return g.stroke;}
+function drawingPrep(){if(!down||!gesture||gesture.held||!ball||ball.owner!=='ai'||ball.held||time-mySwing.t<.65||gesture.distance<(touchInput?18:12)||!liveStroke())return null;mySwing.type=gesture.stroke;return P.clamp(gesture.distance/90,0,1);}let lastShot='drive',aiShot='short',lastRenderT=performance.now();
+function person(st,hipY,target,angle,look,s,type,face,side,stroke,since,prep=null){
 const R=RACKETS[type],skin='#f2cda8',pants=look.pants,x=st.x,moving=P.clamp(Math.abs(st.vx)/160,0,1),dir=Math.sign(st.vx)||1;
-const pose=strokePose(stroke,since,side,s,{x:x+side*15*s,y:hipY-50*s+st.crouch*18*s},target,angle,st.crouch,look,st.amp??1,st.dirX||0);
+const pose=strokePose(stroke,since,side,s,{x:x+side*15*s,y:hipY-50*s+st.crouch*18*s},target,angle,st.crouch,look,st.amp??1,st.dirX||0,prep);
 const cr=pose.crouch,stepping=st.feet?Math.max(...[-1,1].map(k=>st.feet[k].t<1?Math.sin(Math.PI*st.feet[k].t):0)):0,split=look.split&&st.splitT!=null&&time-st.splitT<.24?Math.sin(Math.PI*(time-st.splitT)/.24):0,bob=look.split&&!stepping&&!split&&!(since>=0&&since<.8)?Math.sin(time*7)*1.2*s:0,hop=stepping*3*s+split*8*s+bob,hy=hipY+cr*18*s-hop,cx=x+dir*moving*6*s+pose.twist*side*8*s,ground=hipY+30*s;
-const shoulder={x:cx+side*15*s,y:hy-50*s},tgt=pose.target,ang=pose.angle,d=(R.h+R.hl*.55)*s,hand={x:tgt.x-Math.sin(ang)*d,y:tgt.y+Math.cos(ang)*d},elbow={x:(shoulder.x+hand.x)/2,y:(shoulder.y+hand.y)/2+12*s};
+const shoulder={x:cx+side*15*s,y:hy-50*s},ang=pose.angle,d=(R.h+R.hl*.55)*s;let tgt=pose.target,hand={x:tgt.x-Math.sin(ang)*d,y:tgt.y+Math.cos(ang)*d};
+{const dx=hand.x-shoulder.x,dy=hand.y-shoulder.y,len=Math.hypot(dx,dy),k=Math.max(0,len-ARM_REACH*s)/(len||1);tgt={x:tgt.x-dx*k,y:tgt.y-dy*k};hand={x:hand.x-dx*k,y:hand.y-dy*k};}   // the arm never stretches past its reach
+const elbow={x:(shoulder.x+hand.x)/2,y:(shoulder.y+hand.y)/2+12*s};
 ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
 ctx.beginPath();ctx.ellipse(x,ground+2*s,(32+cr*8)*s,6*s,0,0,Math.PI*2);ctx.fillStyle='#183e3420';ctx.fill();
 for(const k of (st.feet&&st.feet[1].t<1?[-1,1]:[1,-1])){
@@ -341,7 +347,7 @@ const bodyTarget=P.clamp(paddle.x-playerSide*58*playerScale,30*playerScale,W-30*
 stepBody(me,bodyTarget,rdt,(ball&&ball.owner==='ai'?.55:.25)+(L.crouchK||0),playerScale);
 const angle=P.clamp((paddle.vx-paddle.vy*.3)/2400,-.9,.9)+playerSide*.3;
 me.holding=!!(ball&&ball.held&&ball.owner==='you'&&!ball.tossed);me.tossing=!!(ball&&ball.held&&ball.owner==='you'&&ball.tossed&&time-ball.tossT<.5);
-person(me,H-40*playerScale,paddle,angle,LOOKS[charType],playerScale,racketType,playerSide>0?BLACK:RED,playerSide,lastShot,time-lastHit);
+person(me,H-40*playerScale,paddle,angle,LOOKS[charType],playerScale,racketType,playerSide>0?BLACK:RED,playerSide,mySwing.type,time-mySwing.t,drawingPrep());
 if(me.holding){ctx.beginPath();ctx.arc(me.free.x,me.free.y-4*playerScale,6.5*playerScale,0,Math.PI*2);ctx.fillStyle='#fff7dc';ctx.fill();ctx.strokeStyle='#ddaa6890';ctx.stroke();}}
 // Racket side follows where the paddle is relative to the ball (10px dead zone stops flicker).
 function updateSide(){const ref=ball?project(ball.x,ball.y,ball.z).x:W/2;if(paddle.x>ref+10)playerSide=1;else if(paddle.x<ref-10)playerSide=-1;}
@@ -352,7 +358,7 @@ const speed=Math.hypot(motion.vx,motion.vy)||1,up=-motion.vy/speed,right=motion.
 const spin=up>=0?Math.max(up,.3):Math.min(up*.6,-.25),side=0; // always spun: up = topspin, down = backspin (cut); sideways only picks the course
 const plan=P.planServe(spin,P.clamp(2.3+speed/1500*.9,2.3,3.2),ball.x,ball.z,P.clamp(right*.55,-.55,.55),side)||P.planServe(0,2.4,ball.x,P.clamp(ball.z,.15,.4),0,0);
 Object.assign(ball,{held:false,tossed:false,serving:true,vx:plan.vx,vy:plan.vy,vz:plan.vz,spin,side,type:'serve',aiAttempt:false});
-lastHit=time;lastShot=spin<0?'cut':'loop';swingMemory=null;
+lastHit=time;lastShot=spin<0?'cut':'loop';mySwing.type=lastShot;mySwing.t=time;swingMemory=null;
 const label='서브 · '+(spin>0?'상회전':'하회전(커트)'),quality=state==='perfect'?'PERFECT':'GOOD';
 $('shot').firstChild.textContent='SERVE';$('shot-sub').textContent=label;$('timing').textContent=quality;
 $('spin').textContent=spin>0?'TOP SPIN':'BACK SPIN';
@@ -376,7 +382,7 @@ const boost=racketType==='jpen'&&playerSide>0?{loop:1.25,drive:1.25,side:1.25}:R
 const still=tap&&!smash;let shot=P.shot(smash||still?0:motion.vx*R.power,smash?-1450:still?-200:motion.vy*R.power,ball.z,ball.x,ball.y,mode==='practice',motion?{side:motion.side,rise:motion.rise,drop:motion.drop,dx:motion.dx}:{},special?R.special:smash&&racketType!=='defense'?'smash':tap||(racketType==='defense'?'chop':smash?'smash':undefined),boost);
 const inc=P.incoming(ball),resp=P.family(shot.type),verdict=special?'ok':P.judge(inc,resp,quality==='PERFECT',racketType==='defense');   // specials always get through
 if(verdict!=='ok')shot=P.miss(shot,ball.y,ball.z,verdict);
-Object.assign(ball,shot,{owner:'you',bounces:0,aiAttempt:false});lastHit=time;lastShot=shot.type;smashUntil=-1;lastTap=null;
+Object.assign(ball,shot,{owner:'you',bounces:0,aiAttempt:false});lastHit=time;lastShot=shot.type;mySwing.type=shot.type;mySwing.t=time;smashUntil=-1;lastTap=null;
 const sp=motion?Math.hypot(motion.vx,motion.vy):0;me.amp=motion?P.clamp(.55+sp/2000,.55,1.25):tap?.45:1;me.dirX=motion?P.clamp(motion.vx/(sp||1),-1,1):0;swingMemory=null;
 if(quality==='PERFECT'&&verdict==='ok')me.shoutT=time;
 const before=charge;if(special)charge=0;else if(verdict==='ok')charge=Math.min(100,charge+(quality==='PERFECT'?30:20)+(racketType==='shake'?10:0));updateSpecial();
@@ -391,7 +397,7 @@ function update(dt){time+=dt;statusToast();holdCheck();if(!ball){wait-=dt;if(wai
 if(ball.held){if(!ball.tossed)ballToHand();else{ball.vz-=6*dt;ball.z+=ball.vz*dt;if(ball.vz<0&&ball.z<ball.tossZ){ball.tossed=false;toast('놓쳤어요 · 다시 토스하세요',1.5);}}hit();return;}hit();if(!ball)return;const prevY=ball.y,prevZ=ball.z;P.step(ball,dt);if((prevY-1.37)*(ball.y-1.37)<0){const z=prevZ+(ball.z-prevZ)*(1.37-prevY)/(ball.y-prevY);if(z<.1525){point(ball.owner==='ai','네트에 걸렸어요');return;}}
 if(ball.serving&&ball.z<=0&&ball.vz<0){const own=ball.owner==='you'?ball.y>=0&&ball.y<1.37:ball.y>1.37&&ball.y<=2.74;if(Math.abs(ball.x)>.76||!own){point(ball.owner==='ai','서브 실패');return;}ball.serving=false;ball.z=0;ball.vz=-ball.vz*.8;ball.vy*=1.03;beep(270);}
 else if(ball.z<=0&&ball.vz<0&&!(ball.bounces===1&&(ball.y<0||ball.y>2.74))){if(Math.abs(ball.x)>.76||ball.y<0||ball.y>2.74){point(ball.owner==='ai','테이블 밖으로 나갔어요');return;}const valid=ball.owner==='ai'?ball.y<1.37:ball.y>1.37;if(!valid){point(ball.owner==='ai','자기 코트에 떨어졌어요');return;}ball.bounces++;if(ball.bounces>1){point(ball.owner==='you','두 번 바운드');return;}ball.z=0;ball.vz=-ball.vz*(ball.spin<0?.68:.8);ball.vy*=ball.spin<0?.78:1.03;beep(270);}
-if(!net&&ball.owner==='you'&&ball.bounces===1&&ball.y>2.44&&!ball.aiAttempt){ball.aiAttempt=true;const dif=difficulty;const chance=P.aiChance(ball,dif,mode==='practice');if(Math.abs(ball.x)<.87&&ball.z<.8&&Math.random()<chance){const L=P.LEVELS[dif]||P.LEVELS.b4,speed=L.speed,mix=mode==='practice'?P.LEVELS.b7.mix:L.mix,r=Math.random(),kind=P.incoming(ball)==='drive'&&Math.random()<AI_BLOCK?'block':r<mix[0]?'drive':r<mix[1]?'cut':'smash';
+if(!net&&ball.owner==='you'&&ball.bounces===1&&ball.y>2.8&&!ball.aiAttempt){ball.aiAttempt=true;const dif=difficulty;const chance=P.aiChance(ball,dif,mode==='practice');if(Math.abs(ball.x)<.87&&ball.z<.8&&Math.random()<chance){const L=P.LEVELS[dif]||P.LEVELS.b4,speed=L.speed,mix=mode==='practice'?P.LEVELS.b7.mix:L.mix,r=Math.random(),kind=P.incoming(ball)==='drive'&&Math.random()<AI_BLOCK?'block':r<mix[0]?'drive':r<mix[1]?'cut':'smash';
 Object.assign(ball,P.aiReturn(kind,ball.x,ball.y,ball.z,speed,(Math.random()-.5)*(mode==='practice'?.5:L.aim)),{bounces:0,owner:'ai'});lastAIHit=time;aiShot={drive:'loop',cut:'cut',side:'side',smash:'smash',block:'block'}[ball.type];rally++;best=Math.max(best,rally);updateScore();beep(390);if(kind==='block')toast('상대가 막았어요! 뜬 공 · 더블탭 스매시 찬스 ⚡',1.4);}}
 const remote=net&&ball.owner==='you'&&ball.bounces===1&&ball.y>2.74;if(remote)ball.passT??=time; // the far player's swing is still on the wire: give it time to arrive
 if((!remote||time-ball.passT>.45)&&(ball.y<-1||ball.y>(net?4.1:3.15)||Math.abs(ball.x)>1.2||ball.z<-.65)){point(ball.owner==='you'&&ball.bounces===1||ball.owner==='ai'&&ball.bounces===0,ball.bounces===1?'공을 놓쳤어요':'아웃');return;}trail.push({x:ball.x,y:ball.y,z:ball.z});if(trail.length>(SPECIALS[ball.type]?28:14))trail.shift();}
@@ -419,6 +425,7 @@ if(e.pointerId!==activePointer)return;move(e);const now=performance.now();
 if(gesture&&!gesture.held&&gesture.distance<(touchInput?18:12)&&now-gesture.t<(touchInput?260:200)){
 if(lastTap&&lastTap.touch===touchInput&&now-lastTap.t<(touchInput?360:320)&&Math.hypot(paddle.x-lastTap.x,paddle.y-lastTap.y)<(touchInput?48:40)){smashUntil=time+.7;lastTap=null;toast('스매시 준비! ⚡',.8);hit();}else{lastTap={x:paddle.x,y:paddle.y,t:now,touch:touchInput};hit('short');}
 }else lastTap=null;
+if(gesture&&gesture.stroke&&time-mySwing.t>.65){mySwing.type=gesture.stroke;mySwing.t=time;}   // drawn but never met the ball: swing in the air
 release();
 });
 // Holding still on one spot turns into a defense short for as long as the finger stays down.
