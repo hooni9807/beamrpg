@@ -91,8 +91,9 @@ if(['loop','drive','back','chiquita','lightning','carbon'].includes(t))return 'd
 function family(t){return ['cut','chop','phantom'].includes(t)?'cut':['smash','thunder'].includes(t)?'smash':t==='short'||t==='block'?t:'drive';}
 function judge(inc,resp,perfect,defender){if(!inc)return 'ok';
 if(inc==='cut')return resp==='cut'||resp==='drive'?'ok':'net';
-if(inc==='drive')return resp==='block'||resp==='drive'||defender&&resp==='cut'?'ok':'over';
-if(inc==='smash')return defender||perfect&&(resp==='short'||resp==='block')?'ok':'over';
+// the defender's chop stops drives and smashes, but only with PERFECT timing (and its PERFECT window is narrower)
+if(inc==='drive')return resp==='block'||resp==='drive'||defender&&perfect&&resp==='cut'?'ok':'over';
+if(inc==='smash')return perfect&&(resp==='short'||resp==='block'||defender&&resp==='cut')?'ok':'over';
 return resp==='smash'||resp==='short'||resp==='block'?'ok':'over';}       // spin ball
 // AI return of a given kind from (x,y,z) towards my half; spin/side change gravity and drift, so aim with them.
 function aiReturn(kind,x,y,z,speed,aimX){if(kind==='smash'&&z<.25)kind='drive'; // a low ball can't be smashed
@@ -117,7 +118,7 @@ shake:{name:'쉐이크핸드 ALC 카본',special:'chiquita',skill:'올라운드:
 w:24.5,h:24.5,hw:10,hl:30,grip:'#c9c3b6',gripHi:'#e9e5dc',ply:'#5a554a55',wood:'#e9d4a8',flare:true,lens:'#3b3b3b',reach:1,power:1},
 cpen:{name:'중국식 펜홀더',special:'lightning',skill:'빠른 쇼트: 쇼트 속도 ×1.5',boost:{short:1.5},w:24,h:26,hw:8,hl:15,grip:'#9c7a4c',reach:.95,power:1.08},
 jpen:{name:'일본식 펜홀더',special:'thunder',skill:'포핸드 강타: 포핸드 드라이브 속도 ×1.25',w:19,h:28,hw:11,hl:19,grip:'#c9a46b',square:true,reach:.9,power:1.18},
-defense:{name:'수비수 라켓',pips:true,special:'phantom',skill:'수비 특화: 드라이브·스매시 등 모든 스윙이 강한 커트(CHOP)로 나감 · 백핸드 롱핌플',w:27,h:28.5,hw:10,hl:30,grip:'#b58c58',gripHi:'#e2c08a',tape:'#7a1f1f',reach:1.2,power:.85}};
+defense:{name:'수비수 라켓',pips:true,special:'phantom',perfect:.65,skill:'수비 특화: 스윙은 강한 커트(CHOP) · 드라이브 · 스매시는 PERFECT 커트로만 방어 (PERFECT 범위 65%) · 뜬 공은 꾹 눌러 스매시 · 탭 쇼트 · 백핸드 롱핌플',w:27,h:28.5,hw:10,hl:30,grip:'#b58c58',gripHi:'#e2c08a',tape:'#7a1f1f',reach:1.2,power:.85}};
 const BLACK='#1b1b1b',RED='#c8312f';
 // Character looks. 'jersey' is drawn from the user's photo: short tousled dark hair, black square glasses,
 // navy jersey with green / lime vertical stripes and a lime V collar, black shorts, black watch on the left wrist.
@@ -320,7 +321,7 @@ const me={x:null,vx:0,crouch:.3},foe={x:null,vx:0,crouch:.3},ARM_REACH=78,mySwin
 function liveStroke(){const g=gesture,t=P.classify(paddle.vx,paddle.vy,{rise:g.y-paddle.y,drop:paddle.y-g.y,dx:paddle.x-g.x,side:g.side});if(t!=='short')g.stroke=racketType==='defense'?'chop':t;return g.stroke;}   // the defender cuts every swing
 // The figure loads its racket in time with the incoming ball: from the net to the PERFECT point it eases into the backswing
 // of the stroke this ball calls for (low for a loop off backspin, high for a defender's chop), so the swing lands on the beat.
-function expectStroke(){const inc=P.incoming(ball);return racketType==='defense'?'chop':inc==='cut'?'loop':inc==='smash'?'block':'drive';}
+function expectStroke(){const inc=P.incoming(ball);return ball.chance?'smash':racketType==='defense'?'chop':inc==='cut'?'loop':inc==='smash'?'block':'drive';}
 function drawingPrep(){if(!ball||ball.owner!=='ai'||ball.held||ball.y>1.37||time-mySwing.t<.65)return null;
 if(down&&gesture&&!gesture.held&&gesture.distance>=(touchInput?18:12)&&liveStroke()){mySwing.type=gesture.stroke;return .35+P.clamp(gesture.distance/90,0,1)*.65;}
 mySwing.type=expectStroke();return P.clamp((1.37-ball.y)/1.45,0,1)*.35;}let lastShot='drive',aiShot='short',lastRenderT=performance.now();
@@ -426,7 +427,7 @@ const quality=state==='perfect'&&distance<Math.max(touchInput?42:28,W*.04)*R.rea
 if(motion&&motion.side)playerSide=motion.side==='right'?1:-1;else updateSide();
 const special=charge===100;if(special&&R.special==='chiquita')playerSide=-1;
 const boost=racketType==='jpen'&&playerSide>0?{loop:1.25,drive:1.25,side:1.25}:R.boost;
-const still=tap&&!smash;let shot=P.shot(smash||still?0:motion.vx*R.power,smash?-1450:still?-200:motion.vy*R.power,ball.z,ball.x,ball.y,mode==='practice',motion?{side:motion.side,rise:motion.rise,drop:motion.drop,dx:motion.dx}:{},special?R.special:smash&&racketType!=='defense'?'smash':tap||(racketType==='defense'?'chop':smash?'smash':undefined),boost);
+const still=tap&&!smash;let shot=P.shot(smash||still?0:motion.vx*R.power,smash?-1450:still?-200:motion.vy*R.power,ball.z,ball.x,ball.y,mode==='practice',motion?{side:motion.side,rise:motion.rise,drop:motion.drop,dx:motion.dx}:{},special?R.special:smash&&(racketType!=='defense'||ball.chance)?'smash':tap||(racketType==='defense'?'chop':smash?'smash':undefined),boost);
 const inc=P.incoming(ball),resp=P.family(shot.type),verdict=special?'ok':P.judge(inc,resp,quality==='PERFECT',racketType==='defense');   // specials always get through
 if(verdict!=='ok')shot=P.miss(shot,ball.y,ball.z,verdict);
 const kill=verdict==='ok'&&!special&&shot.type==='smash'&&!!ball.chance;   // smashing a chance ball
