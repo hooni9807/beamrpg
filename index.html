@@ -88,7 +88,7 @@ function resize(){
 const r=canvas.getBoundingClientRect();if(r.width<=0||r.height<=0)return;
 const x=paddle.x/W,y=paddle.y/H;
 if(Math.abs(r.width-W)>5&&playing&&!paused)pause();
-if(r.width!==W||r.height!==H){swingMemory=null;release();lastTap=null;smashUntil=-1;me.x=foe.x=null;}
+if(r.width!==W||r.height!==H){swingMemory=null;release();lastTap=null;smashUntil=-1;me.x=foe.x=null;me.feet=foe.feet=null;}
 W=r.width;H=r.height;const d=Math.min(devicePixelRatio||1,2);canvas.width=W*d;canvas.height=H*d;ctx.setTransform(d,0,0,d,0,0);
 paddle.x=P.clamp(x*W,10,W-10);paddle.y=P.clamp(y*H,10,H-10);
 }
@@ -172,20 +172,42 @@ smash:'스매시 · ① 높은 공에 라켓을 어깨 뒤로 크게 ② 높은 
 side:'사이드스핀 · ① 라켓을 몸 바깥쪽으로 빼기 ② 공 옆을 옆으로 쓸기 ③ 몸 앞을 가로질러 마무리',
 chiquita:'치키타 · ① 손목을 안쪽으로 감아 라켓 끝을 아래로 ② 공 옆을 감아 올리며 손목을 펴기 ③ 바깥 위로 높게 마무리'};
 GUIDE.lightning=GUIDE.drive;GUIDE.thunder=GUIDE.smash;GUIDE.phantom=GUIDE.chop;
-// Body follows its target with side-shuffle steps (trailing foot pushes, lead foot reaches).
-// ponytail: fixed run speed in screen px, scale with W if very wide screens look slow.
-function stepBody(st,target,dt,crouch){const prev=st.x??target,max=650*dt;st.x=prev+P.clamp((target-prev)*Math.min(1,dt*10),-max,max);st.vx=(st.x-prev)/Math.max(dt,1e-3);st.phase+=Math.abs(st.vx)*dt*.03;st.crouch+=(crouch-st.crouch)*Math.min(1,dt*6);}
-const me={x:null,vx:0,phase:0,crouch:.3},foe={x:null,vx:0,phase:0,crouch:.3};let lastShot='drive',aiShot='short',lastRenderT=performance.now();
+// Footwork, from coaching guides (right-hander, mirrored by direction on screen):
+//  one-step  - short move: only the foot on the moving side steps out
+//  shuffle   - medium move: the far foot closes in first, then the near foot steps out; feet never cross
+//  cross     - long move: the far foot crosses wide past the near foot, then the near foot steps out again
+// The body glides at a capped speed; feet plant and step one at a time.
+// ponytail: run speed scales with the figure, not the table; tune 440/560 if moves feel slow.
+function stepBody(st,target,dt,crouch,s=1){
+const prev=st.x??target,max=(st.mode==='cross'?560:440)*s*dt;st.x=prev+P.clamp((target-prev)*Math.min(1,dt*10),-max,max);st.vx=(st.x-prev)/Math.max(dt,1e-3);st.crouch+=(crouch-st.crouch)*Math.min(1,dt*6);
+const stance=(17+st.crouch*12)*s,home=k=>st.x+k*stance;
+if(!st.feet){st.feet={'-1':{x:home(-1),from:0,to:0,t:1},'1':{x:home(1),from:0,to:0,t:1}};}
+const F=st.feet;for(const k of [-1,1]){const f=F[k];if(f.t<1){f.t=Math.min(1,f.t+dt/.1);f.x=lerp(f.from,f.to,ease(f.t));}}
+if(F[-1].t<.5||F[1].t<.5)return; // next foot may lift once the other is halfway down: cadence rises with speed
+const step=(k,to)=>{const f=F[k];if(f.t<1)return;f.from=f.x;f.to=to;f.t=0;st.last=k;};
+const remain=target-st.x,dir=Math.sign(Math.abs(st.vx)>20?st.vx:remain);
+if(Math.abs(remain)<2*s&&Math.abs(st.vx)<20){st.mode=null;st.dir=0;
+for(const k of [-1,1])if(Math.abs(F[k].x-home(k))>4*s){step(k,home(k));return;}return;}   // settle into the ready stance
+if(!dir)return;
+if(dir!==st.dir)st.dir=dir,st.last=dir; // new move or new direction: far foot goes first
+st.mode=Math.abs(remain)<stance*.9?'one':Math.abs(remain)>stance*4?'cross':'shuffle'; // re-picked every step: cross -> shuffle -> one as the target nears
+const lead=st.vx*.12; // land where the body will be when the foot comes down
+const lag=k=>Math.abs(F[k].x-home(k)),stray=lag(-1)>lag(1)?-1:1;if(lag(stray)>stance*2.5&&F[stray].t>=1){step(stray,home(stray)+lead);return;} // a foot left far behind (e.g. after a reversal) catches up first
+if(st.mode==='one'){if(dir*(home(dir)+lead-F[dir].x)>3*s)step(dir,home(dir)+lead);else if(lag(-dir)>stance*.8)step(-dir,home(-dir)+lead);return;} // one step out, the other foot just follows
+if(st.last===dir)step(-dir,st.mode==='cross'&&Math.abs(remain)>stance*2?home(dir)+dir*stance*.3+lead:home(-dir)+dir*stance*.5+lead); // far foot: cross over / close in
+else step(dir,home(dir)+dir*stance*(st.mode==='cross'?.6:.35)+lead);                                                         // near foot steps out
+}
+const me={x:null,vx:0,crouch:.3},foe={x:null,vx:0,crouch:.3};let lastShot='drive',aiShot='short',lastRenderT=performance.now();
 function person(st,hipY,target,angle,color,s,type,face,side,stroke,since){
 const R=RACKETS[type],skin='#f2cda8',pants='#33404f',x=st.x,moving=P.clamp(Math.abs(st.vx)/160,0,1),dir=Math.sign(st.vx)||1;
 const pose=strokePose(stroke,since,side,s,{x:x+side*15*s,y:hipY-50*s+st.crouch*18*s},target,angle,st.crouch);
-const cr=pose.crouch,hop=Math.abs(Math.sin(st.phase))*4*s*moving,hy=hipY+cr*18*s-hop,cx=x+dir*moving*6*s+pose.twist*side*8*s,ground=hipY+30*s;
+const cr=pose.crouch,stepping=st.feet?Math.max(...[-1,1].map(k=>st.feet[k].t<1?Math.sin(Math.PI*st.feet[k].t):0)):0,hop=stepping*3*s,hy=hipY+cr*18*s-hop,cx=x+dir*moving*6*s+pose.twist*side*8*s,ground=hipY+30*s;
 const shoulder={x:cx+side*15*s,y:hy-50*s},tgt=pose.target,ang=pose.angle,d=(R.h+R.hl*.55)*s,hand={x:tgt.x-Math.sin(ang)*d,y:tgt.y+Math.cos(ang)*d},elbow={x:(shoulder.x+hand.x)/2,y:(shoulder.y+hand.y)/2+12*s};
 ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
 ctx.beginPath();ctx.ellipse(x,ground+2*s,(32+cr*8)*s,6*s,0,0,Math.PI*2);ctx.fillStyle='#183e3420';ctx.fill();
-for(const k of [-1,1]){
-const ph=st.phase+(k===dir?Math.PI:0),swing=Math.sin(ph); // trailing foot moves first, then the lead foot
-const foot={x:x+k*(17+cr*12)*s+dir*swing*moving*8*s,y:ground-Math.max(0,swing)*moving*6*s},hip={x:cx+k*8*s,y:hy},knee={x:(hip.x+foot.x)/2+k*(2+cr*8)*s,y:(hip.y+foot.y)/2+cr*2*s};
+for(const k of (st.feet&&st.feet[1].t<1?[-1,1]:[1,-1])){
+const f=st.feet?st.feet[k]:{x:x+k*(17+cr*12)*s,t:1},lift=f.t<1?Math.sin(Math.PI*f.t)*7*s:0;
+const foot={x:f.x,y:ground-lift},hip={x:cx+k*8*s,y:hy},knee={x:(hip.x+foot.x)/2+k*(2+cr*8)*s,y:(hip.y+foot.y)/2+cr*2*s-lift*.3};
 line(hip,knee,pants,8*s);line(knee,foot,pants,7*s);ctx.beginPath();ctx.ellipse(foot.x+k*3*s,foot.y+1*s,9*s,4*s,0,0,Math.PI*2);ctx.fillStyle='#f4f1e6';ctx.fill();}
 const free=st.holding?{x:cx-side*22*s,y:hy-34*s}:st.tossing?{x:cx-side*20*s,y:hy-78*s}:{x:cx-side*(26-pose.twist*6)*s,y:hy-(24+pose.twist*10)*s};st.free=free;line({x:cx-side*15*s,y:hy-50*s},free,skin,7*s);
 ctx.beginPath();ctx.roundRect(cx-18*s,hy-60*s,36*s,64*s,12*s);ctx.fillStyle=color;ctx.fill();
@@ -199,13 +221,13 @@ ctx.restore();
 function render(){ctx.clearRect(0,0,W,H);const nowR=performance.now(),rdt=Math.min((nowR-lastRenderT)/1000,.05);lastRenderT=nowR;
 const opponent=project(ball?P.clamp(ball.x,-.7,.7):0,2.8,.18),aiScale=Math.min(P.clamp(W/800,.7,1),H/460)*.65,aiSide=ball&&ball.x<0?-1:1;
 // AI faces us: its forehand (black) is on our left.
-stepBody(foe,opponent.x-aiSide*34*aiScale,rdt,ball&&ball.owner==='you'?.55:.25);
+stepBody(foe,opponent.x-aiSide*34*aiScale,rdt,ball&&ball.owner==='you'?.55:.25,aiScale);
 person(foe,H*.25-20*aiScale,{x:foe.x+aiSide*34*aiScale,y:opponent.y},aiSide*.35,'#d6453d',aiScale,'shake',aiSide<0?BLACK:RED,aiSide,aiShot,time-lastAIHit);
 ctx.save();const a=project(-.76,0),b=project(.76,0),c=project(.76,2.74),d=project(-.76,2.74);ctx.shadowColor='#3e5b3930';ctx.shadowBlur=25;ctx.shadowOffsetY=23;polygon([a,b,c,d],'#205d4c');ctx.restore();polygon([a,b,{x:b.x,y:b.y+13},{x:a.x,y:a.y+13}],'#164133');polygon([b,c,{x:c.x,y:c.y+10},{x:b.x,y:b.y+13}],'#1a4d3e');for(const x of [-.66,.66]){let f=project(x,.15),g=project(x,2.45);line(f,{x:f.x-5,y:f.y+H*.115},'#8b9a80',8);line(g,{x:g.x+4,y:g.y+H*.09},'#899a80',5);}ctx.lineWidth=2;polygon([a,b,c,d],'#286a55','#d5e3bb');line(project(0,0),project(0,2.74),'#c5dab090',1);const n1=project(-.82,1.37),n2=project(.82,1.37),n3=project(.82,1.37,.1525),n4=project(-.82,1.37,.1525);polygon([n1,n2,n3,n4],'#ced9b560');for(let i=0;i<=26;i++){const x=-.82+i*1.64/26;line(project(x,1.37),project(x,1.37,.1525),'#e4ecc994',.7);}for(let i=0;i<5;i++)line(project(-.82,1.37,i*.038),project(.82,1.37,i*.038),'#e2ecc7a0',.7);line(n4,n3,'#f4f2d2',2);line(n1,n4,'#e9f0cd',3);line(n2,n3,'#e9f0cd',3);ctx.fillStyle='#d4e2b340';ctx.font=`italic bold ${W*.027}px Arial`;ctx.textAlign='center';ctx.fillText('SPIN LAB',W/2,H*.55);
 if(ball&&!(ball.held&&!ball.tossed)){const shadow=project(ball.x,ball.y);ctx.beginPath();ctx.ellipse(shadow.x,shadow.y,9*shadow.scale,3*shadow.scale,0,0,Math.PI*2);ctx.fillStyle='#0f302950';ctx.fill();const sp=SPECIALS[ball.type];trail.forEach((p,i)=>{const q=project(p.x,p.y,p.z);ctx.beginPath();ctx.arc(q.x,q.y,(sp?6:3)*q.scale,0,Math.PI*2);ctx.fillStyle=sp?`rgba(${sp.rgb},${i/trail.length*.8})`:`rgba(255,247,207,${i/trail.length*.35})`;ctx.fill();});const p=project(ball.x,ball.y,ball.z);ctx.beginPath();ctx.arc(p.x,p.y,7*p.scale,0,Math.PI*2);ctx.fillStyle='#fff7dc';ctx.shadowBlur=sp?24:8;ctx.shadowColor=sp?sp.glow:'#ffffff50';ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle='#ddaa6850';ctx.stroke();line({x:p.x-2,y:p.y-2},{x:p.x+2,y:p.y-4},'#ffffff',2);if(ball.held){const st=serveTiming(ball),col={hold:'#8fd3ff',toss:'#f3c65c',ready:'#f3c65c',perfect:'#baff78',low:'#f69b75'}[st];ctx.save();ctx.strokeStyle=col;ctx.lineWidth=st==='perfect'?4:2;ctx.setLineDash(st==='hold'?[3,4]:[]);ctx.beginPath();ctx.arc(p.x,p.y,(st==='perfect'?22:28)*p.scale,0,Math.PI*2);ctx.stroke();ctx.fillStyle=col;ctx.font='bold 10px Arial';ctx.textAlign='center';ctx.fillText({hold:'TAP → TOSS',toss:'TOSS',ready:'READY',perfect:'HIT!',low:'LOW'}[st],p.x,p.y-32*p.scale);ctx.restore();}else timingRing(p);}
 fx=fx.filter(f=>time-f.t<.4);fx.forEach(f=>{const t=(time-f.t)/.4;ctx.beginPath();ctx.arc(f.x,f.y,12+t*(f.special?90:35),0,Math.PI*2);ctx.strokeStyle=f.special?`rgba(${f.special},${1-t})`:`rgba(245,202,133,${1-t})`;ctx.stroke();});if(down&&samples.length>1){ctx.beginPath();samples.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.strokeStyle='#e38a4a55';ctx.lineWidth=5;ctx.lineCap='round';ctx.stroke();}
 const playerScale=Math.min(P.clamp(W/700,.65,1),H/460);updateSide();
-const bodyTarget=P.clamp(paddle.x-playerSide*58*playerScale,30*playerScale,W-30*playerScale);stepBody(me,bodyTarget,rdt,ball&&ball.owner==='ai'?.55:.25);
+const bodyTarget=P.clamp(paddle.x-playerSide*58*playerScale,30*playerScale,W-30*playerScale);stepBody(me,bodyTarget,rdt,ball&&ball.owner==='ai'?.55:.25,playerScale);
 const angle=P.clamp((paddle.vx-paddle.vy*.3)/2400,-.9,.9)+playerSide*.3;
 me.holding=!!(ball&&ball.held&&!ball.tossed);me.tossing=!!(ball&&ball.held&&ball.tossed&&time-ball.tossT<.5);
 person(me,H-40*playerScale,paddle,angle,'#2f6fd6',playerScale,racketType,playerSide>0?BLACK:RED,playerSide,lastShot,time-lastHit);
