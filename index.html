@@ -152,7 +152,7 @@ function beep(freq=420){if(!sound)return;try{audio||=new (window.AudioContext||w
 function toast(message,duration=1.5){$('toast').textContent=message;toastUntil=time+duration;}
 function reset(){you=cpu=rally=0;matchBest=0;$('rank-submit').hidden=true;ball=null;wait=.65;trail=[];fx=[];lastHit=lastAIHit=-10;charge=0;lastTap=null;smashUntil=-1;swingMemory=null;release();updateSpecial();$('shot').firstChild.textContent='READY';$('shot-sub').textContent='첫 스윙을 기다리는 중';$('timing').textContent='—';$('spin').textContent='—';updateScore();}
 function updateScore(){matchBest=Math.max(matchBest,rally);$('you').textContent=String(you).padStart(2,'0');$('cpu').textContent=String(cpu).padStart(2,'0');$('rally').textContent=rally;$('best').textContent=best;store.set('best',best);}
-function begin(){reset();clearSave();$('resume').hidden=true;playing=true;paused=false;down=false;updateSpecial();$('overlay').classList.add('hidden');$('pause').disabled=false;$('pause').textContent='일시정지 Ⅱ';toast('공이 내 쪽 끝선을 넘어 나오면 스윙하세요!',3);}
+function begin(){reset();clearSave();$('resume').hidden=true;playing=true;paused=false;down=false;updateSpecial();$('overlay').classList.add('hidden');$('pause').disabled=false;$('pause').textContent='일시정지 Ⅱ';toast('공이 내 쪽 끝선을 넘어 나오면 스윙하세요!',3);courtWrap.scrollIntoView({block:'nearest'});}
 function myServe(){const n=you+cpu;return (n>=20?n%2:Math.floor(n/2)%2)===1;}
 function holdServe(){ball={x:0,y:-.15,z:-.3,vx:0,vy:0,vz:0,spin:0,side:0,bounces:0,owner:'you',held:true,tossed:false};trail=[];toast('내 서브 · 화면을 눌러 공을 토스하세요',2.5);}
 // Free hand (screen) -> world position just behind my end line.
@@ -583,7 +583,9 @@ $('net-nick').value=store.get('nick')||'';updatePvpMe();
 $('rank-send').onclick=sendRank;$('rank-name').onkeydown=e=>{if(e.key==='Enter')sendRank();};document.querySelectorAll('.rank-tabs button').forEach(b=>b.onclick=()=>showBoard(b.dataset.board));showBoard('pvp');
 // iOS Safari ignores user-scalable=no: block its pinch gestures and multi-touch zoom over the court.
 for(const ev of ['gesturestart','gesturechange','gestureend'])document.addEventListener(ev,e=>e.preventDefault(),{passive:false});
-document.querySelector('.court-wrap').addEventListener('touchmove',e=>{if(e.touches.length>1||e.target===canvas)e.preventDefault();},{passive:false});
+// In-app browsers (KakaoTalk) show/hide their address bar whenever the page scrolls, which jumps the court mid-rally.
+// While a rally is live nothing on the page may scroll, wherever the finger lands.
+document.addEventListener('touchmove',e=>{if(e.touches.length>1||e.target===canvas||(playing&&!paused))e.preventDefault();},{passive:false});
 let lastTouchEnd=0;document.addEventListener('touchend',e=>{const now=Date.now();if(now-lastTouchEnd<350&&e.target===canvas)e.preventDefault();lastTouchEnd=now;},{passive:false});   // double tap on the court = smash, never zoom
 function frame(t){const elapsed=Math.min((t-last)/1000||0,.1);last=t;for(let left=elapsed;left>1e-6&&playing&&!paused;left-=1/60)(net&&net.role==='guest'?guestUpdate:update)(Math.min(left,1/60));if(net&&net.conn.open&&t-net.sent>33){net.sent=t;net.conn.send(net.role==='host'?snapshot():{t:'P',...me4net()});}if(samples.length&&t-samples.at(-1).t>120){paddle.vx=paddle.vy=0;}$('speed').innerHTML=Math.round(Math.hypot(paddle.vx,paddle.vy))+' <small>px/s</small>';$('meter').style.width=Math.min(100,Math.hypot(paddle.vx,paddle.vy)/18)+'%';render();requestAnimationFrame(frame);}requestAnimationFrame(frame);
 </script></body></html>
