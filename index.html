@@ -39,7 +39,8 @@ if(vy>Math.abs(vx)*.6)return 'cut';
 if(Math.abs(vx)>Math.abs(vy)*1.3)return 'side';
 return 'drive';
 }
-function timing(b){if(!b||b.owner!=='ai')return 'none';if(b.bounces!==1||b.y>0||b.y<-.65)return 'wait';if(b.y<-.4)return 'late';return b.y<=-.08?'perfect':'ready';}
+// Hit window behind my end line (y<0). Widened ~1.5x so there is time to draw the swing.
+function timing(b){if(!b||b.owner!=='ai')return 'none';if(b.bounces!==1||b.y>.08||b.y<-.9)return 'wait';if(b.y<-.55)return 'late';return b.y<=-.05?'perfect':'ready';}
 // AI return chance. Specials and smashes stay hard to return; wide balls and spin only nibble at it.
 // Five AI levels: return chance, serve speed, return speed, mix of drive/cut/side (rest smash) and how wide it aims.
 const LEVELS={easy:{base:.72,serve:2.3,speed:2,mix:[.5,.85,1],aim:.8},casual:{base:.8,serve:2.4,speed:2.3,mix:[.5,.82,.97],aim:.85},
@@ -158,7 +159,7 @@ $('special-status').textContent=ready?'✦ 충전 완료 · 다음 타격에 자
 function timingRing(p){
 const state=P.timing(ball);if(state==='none'||ball.y>1.7)return;
 const color={wait:'#f5f5e5',ready:'#f3c65c',perfect:'#baff78',late:'#f69b75'}[state];
-const outer=state==='wait'?43:state==='perfect'?22:state==='late'?30:22+P.clamp((ball.y+.08)/.08,0,1)*24;
+const outer=state==='wait'?43:state==='perfect'?22:state==='late'?30:22+P.clamp((ball.y+.05)/.13,0,1)*24;
 ctx.save();ctx.lineWidth=2;ctx.strokeStyle=color;ctx.globalAlpha=.5;ctx.beginPath();ctx.arc(p.x,p.y,22*p.scale,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;
 ctx.lineWidth=state==='perfect'?4:2;ctx.setLineDash(state==='wait'?[4,5]:[]);ctx.beginPath();ctx.arc(p.x,p.y,outer*p.scale,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
 ctx.fillStyle=color;ctx.font='bold 10px Arial';ctx.textAlign='center';ctx.fillText({wait:'WAIT',ready:'READY',perfect:'HIT!',late:'LATE'}[state],p.x,p.y-outer*p.scale-8);
@@ -368,7 +369,7 @@ fx.push({x:p.x,y:p.y,t:time,special:special&&SPECIALS[R.special].rgb});if(touchI
 else toast(names[shot.type][1]+' · '+quality+(before<100&&charge===100?' · ✦ 필살기 충전 완료!':''),1.25);
 $('coach').textContent=verdict!=='ok'?`${FAM[inc]} 공은 ${ANSWER[inc]}(으)로 넘길 수 있어요.`:special?SPECIALS[R.special].coach+' '+GUIDE[shot.type]:charge===100?`필살기가 충전됐어요. 다음 타격에 ${SPECIALS[R.special].name}이(가) 자동으로 나갑니다.`:GUIDE[shot.type]||'';
 }
-function statusToast(){if(time>toastUntil)$('toast').textContent=ball&&ball.held?(ball.owner!=='you'?'상대 서브를 기다리세요':ball.tossed?'떨어질 때 스윙! ↓커트 ↑상회전 →우회전 ←좌회전 (섞기 가능)':'내 서브 · 화면을 눌러 공을 토스하세요'):ball&&ball.owner==='ai'?(P.timing(ball)==='perfect'?'HIT! 지금 스윙 · 두 번 탭 / 클릭은 스매시':ball.bounces?(ball.y>0?'WAIT · 내 쪽 끝선을 넘어올 때까지 기다리세요':'READY · 테이블 밖에서 스윙!'):'WAIT · 바운드를 기다리세요'):'상대 리턴을 기다리세요';}
+function statusToast(){if(time>toastUntil)$('toast').textContent=ball&&ball.held?(ball.owner!=='you'?'상대 서브를 기다리세요':ball.tossed?'떨어질 때 스윙! ↓커트 ↑상회전 →우회전 ←좌회전 (섞기 가능)':'내 서브 · 화면을 눌러 공을 토스하세요'):ball&&ball.owner==='ai'?(P.timing(ball)==='perfect'?'HIT! 지금 스윙 · 두 번 탭 / 클릭은 스매시':ball.bounces?(ball.y>.08?'WAIT · 내 쪽 끝선을 넘어올 때까지 기다리세요':'READY · 테이블 밖에서 스윙!'):'WAIT · 바운드를 기다리세요'):'상대 리턴을 기다리세요';}
 function update(dt){time+=dt;statusToast();holdCheck();if(!ball){wait-=dt;if(wait<=0)myServe()?holdServe():net?oppServe():serve();return;}if(ball.held&&ball.owner!=='you')return;
 if(ball.held){if(!ball.tossed)ballToHand();else{ball.vz-=6*dt;ball.z+=ball.vz*dt;if(ball.vz<0&&ball.z<ball.tossZ){ball.tossed=false;toast('놓쳤어요 · 다시 토스하세요',1.5);}}hit();return;}hit();if(!ball)return;const prevY=ball.y,prevZ=ball.z;P.step(ball,dt);if((prevY-1.37)*(ball.y-1.37)<0){const z=prevZ+(ball.z-prevZ)*(1.37-prevY)/(ball.y-prevY);if(z<.1525){point(ball.owner==='ai','네트에 걸렸어요');return;}}
 if(ball.serving&&ball.z<=0&&ball.vz<0){const own=ball.owner==='you'?ball.y>=0&&ball.y<1.37:ball.y>1.37&&ball.y<=2.74;if(Math.abs(ball.x)>.76||!own){point(ball.owner==='ai','서브 실패');return;}ball.serving=false;ball.z=0;ball.vz=-ball.vz*.8;ball.vy*=1.03;beep(270);}
@@ -376,7 +377,7 @@ else if(ball.z<=0&&ball.vz<0&&!(ball.bounces===1&&(ball.y<0||ball.y>2.74))){if(M
 if(!net&&ball.owner==='you'&&ball.bounces===1&&ball.y>2.44&&!ball.aiAttempt){ball.aiAttempt=true;const dif=difficulty;const chance=P.aiChance(ball,dif,mode==='practice');if(Math.abs(ball.x)<.87&&ball.z<.8&&Math.random()<chance){const L=P.LEVELS[dif]||P.LEVELS.normal,speed=L.speed,mix=mode==='practice'?P.LEVELS.easy.mix:L.mix,r=Math.random(),kind=r<mix[0]?'drive':r<mix[1]?'cut':r<mix[2]?'side':'smash';
 Object.assign(ball,P.aiReturn(kind,ball.x,ball.y,ball.z,speed,(Math.random()-.5)*(mode==='practice'?.5:L.aim)),{bounces:0,owner:'ai'});lastAIHit=time;aiShot={drive:'loop',cut:'cut',side:'side',smash:'smash'}[ball.type];rally++;best=Math.max(best,rally);updateScore();beep(390);}}
 const remote=net&&ball.owner==='you'&&ball.bounces===1&&ball.y>2.74;if(remote)ball.passT??=time; // the far player's swing is still on the wire: give it time to arrive
-if((!remote||time-ball.passT>.45)&&(ball.y<-.7||ball.y>(net?4.1:3.15)||Math.abs(ball.x)>1.2||ball.z<-.65)){point(ball.owner==='you'&&ball.bounces===1||ball.owner==='ai'&&ball.bounces===0,ball.bounces===1?'공을 놓쳤어요':'아웃');return;}trail.push({x:ball.x,y:ball.y,z:ball.z});if(trail.length>(SPECIALS[ball.type]?28:14))trail.shift();}
+if((!remote||time-ball.passT>.45)&&(ball.y<-1||ball.y>(net?4.1:3.15)||Math.abs(ball.x)>1.2||ball.z<-.65)){point(ball.owner==='you'&&ball.bounces===1||ball.owner==='ai'&&ball.bounces===0,ball.bounces===1?'공을 놓쳤어요':'아웃');return;}trail.push({x:ball.x,y:ball.y,z:ball.z});if(trail.length>(SPECIALS[ball.type]?28:14))trail.shift();}
 function move(e){
 if(activePointer!==null&&e.pointerId!==activePointer)return;
 const r=canvas.getBoundingClientRect(),now=performance.now(),offset=e.pointerType==='touch'?32:0;
@@ -386,7 +387,7 @@ if(samples.length>1){const first=samples[0],delta=Math.max(8,now-first.t)/1000;c
 if(down&&gesture)gesture.distance=Math.max(gesture.distance,Math.hypot(paddle.x-gesture.x,paddle.y-gesture.y));
 if(down&&gesture&&Math.hypot(paddle.vx,paddle.vy)>=55&&gesture.distance>=(touchInput?18:12)){
 const rise=gesture.y-paddle.y;
-if(!gesture.side||paddle.vy>=-55||rise>12){const previous=samples.length>1?samples[samples.length-2]:paddle;swingMemory={vx:paddle.vx,vy:paddle.vy,side:gesture.side,rise,fromX:previous.x,fromY:previous.y,x:paddle.x,y:paddle.y,until:time+.18};}
+if(!gesture.side||paddle.vy>=-55||rise>12){const previous=samples.length>1?samples[samples.length-2]:paddle;swingMemory={vx:paddle.vx,vy:paddle.vy,side:gesture.side,rise,fromX:previous.x,fromY:previous.y,x:paddle.x,y:paddle.y,until:time+.28};}
 }
 if(down&&playing&&!paused)hit();
 }
