@@ -22,5 +22,33 @@ service cloud.firestore {
       allow read: if true;
       allow create: if valid(70);
     }
+
+    // PvP rating. Each device signs in anonymously and may only write its own doc, one result at a time,
+    // with the exact rating step: win +9+streak (10, 11, 12 ...), loss -9+streak (-10, -11, -12 ...).
+    function pvpShape(d) {
+      return d.keys().hasOnly(['name', 'rating', 'wins', 'losses', 'streak', 'at'])
+        && d.keys().hasAll(['name', 'rating', 'wins', 'losses', 'streak', 'at'])
+        && d.name is string && d.name.size() >= 1 && d.name.size() <= 12
+        && d.rating is int && d.wins is int && d.losses is int && d.streak is int
+        && d.at == request.time;
+    }
+    match /players/{uid} {
+      allow read: if true;
+      allow create: if request.auth != null && request.auth.uid == uid && pvpShape(request.resource.data)
+        && ((request.resource.data.wins == 1 && request.resource.data.losses == 0
+             && request.resource.data.streak == 1 && request.resource.data.rating == 1010)
+         || (request.resource.data.wins == 0 && request.resource.data.losses == 1
+             && request.resource.data.streak == -1 && request.resource.data.rating == 990));
+      allow update: if request.auth != null && request.auth.uid == uid && pvpShape(request.resource.data)
+        && request.time > resource.data.at + duration.value(90, 's')
+        && ((request.resource.data.wins == resource.data.wins + 1
+             && request.resource.data.losses == resource.data.losses
+             && request.resource.data.streak == (resource.data.streak > 0 ? resource.data.streak + 1 : 1)
+             && request.resource.data.rating == resource.data.rating + 9 + request.resource.data.streak)
+         || (request.resource.data.losses == resource.data.losses + 1
+             && request.resource.data.wins == resource.data.wins
+             && request.resource.data.streak == (resource.data.streak < 0 ? resource.data.streak - 1 : -1)
+             && request.resource.data.rating == resource.data.rating - 9 + request.resource.data.streak));
+    }
   }
 }
