@@ -164,15 +164,17 @@
 ### AI전 기록
 
 - 11점 경기(AI 상대)가 끝나면 닉네임으로 **최고 랠리** · **AI전 승리 점수**(난이도 × 10 + 점수 차) 등록
-- Firebase 연결 전에는 **내 기기 기록**, 연결하면 모두가 보는 **전체 랭킹**(상위 20)
+- 모두가 보는 **전체 랭킹**(상위 20, Firebase) · 연결이 안 될 때는 **내 기기 기록**
 
 ### 전체 랭킹 켜기 (Firebase)
+
+공식 사이트는 이미 연결돼 있습니다(프로젝트 `spin-lab-ea7df`). 저장소를 복제해 내 서버로 쓸 때만 아래 순서를 따르세요.
 
 1. [Firebase 콘솔](https://console.firebase.google.com/)에서 프로젝트 만들기 (Google 애널리틱스는 꺼도 됨)
 2. **빌드 → Firestore Database → 데이터베이스 만들기** → 위치 `asia-northeast3 (서울)` → **프로덕션 모드**
 3. **빌드 → Authentication → 시작하기 → 로그인 방법 → 익명** 사용 설정 (PvP 레이팅을 기기별로 보호)
 4. Firestore **규칙** 탭에 저장소의 [`firestore.rules`](firestore.rules) 내용을 붙여넣고 **게시**
-5. **프로젝트 설정(⚙️) → 내 앱 → 웹(</>) 앱 추가** → 나오는 `firebaseConfig` 값을 `index.html`의 `const FIREBASE_CONFIG=null;` 자리에 넣기
+5. **프로젝트 설정(⚙️) → 내 앱 → 웹(</>) 앱 추가** → 나오는 `firebaseConfig` 값을 `index.html`의 `const FIREBASE_CONFIG=...` 자리에 넣기
 6. 저장소에 올리면 1~2분 뒤 사이트에서 전체 랭킹이 보입니다
 
 `firebaseConfig`는 공개돼도 되는 값입니다. AI전 기록은 **읽기와 추가만**, PvP 레이팅은 **자기 기기의 기록만** 규칙대로 정확한 점수 변화(±10, 연승/연패 보너스)로, 90초에 한 번만 바뀔 수 있습니다. 점수는 브라우저에서 계산되므로 조작을 완전히 막을 수는 없습니다.

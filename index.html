@@ -533,7 +533,9 @@ $('net-host').onclick=netHost;$('net-join').onclick=netJoin;$('net-code').onkeyd
 // ===== Ranking. Local top 10 always; a shared board on Firebase Firestore once FIREBASE_CONFIG is filled in.
 // Firestore rules (in the README) only allow reading and creating well-formed records, never editing or deleting.
 // ponytail: scores come from the browser, so they can be faked; rules cap the values and that is all.
-const FIREBASE_CONFIG=null;   // paste the web app's firebaseConfig object here to switch to the shared board
+const FIREBASE_CONFIG={apiKey:"AIzaSyAWdG1ybx321oEc6PeYy7elnGsBOafpEbQ",authDomain:"spin-lab-ea7df.firebaseapp.com",
+  projectId:"spin-lab-ea7df",storageBucket:"spin-lab-ea7df.firebasestorage.app",messagingSenderId:"632748801549",
+  appId:"1:632748801549:web:3556b7ea3acdaba1c31f44"};   // public web config; access is guarded by firestore.rules
 const LEVEL_NO={easy:1,casual:2,normal:3,hard:4,pro:5},LEVEL_NAME={easy:'입문',casual:'초급',normal:'보통',hard:'도전',pro:'프로'};
 let rankDb=null,rankFs=null,rankApp=null,rankUid=null,board='pvp',pendingRank=null;
 async function remote(){if(!FIREBASE_CONFIG)return null;if(rankDb)return rankDb;
