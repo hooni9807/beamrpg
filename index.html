@@ -141,7 +141,8 @@ carbon:{name:'카본 캐논',en:'CANNON',rgb:'235,64,52',glow:'#ff4d3d',desc:'�
 phantom:{name:'유령 커트',en:'PHANTOM',rgb:'180,140,255',glow:'#b48cff',desc:'둥실 떠서 네트 앞에 툭 떨어지는 초강력 하회전',coach:'유령 커트! 느리게 떠오른 공이 네트 앞에서 힘없이 죽어버립니다.'}};
 const store={get:k=>{try{return localStorage.getItem('spinlab.'+k);}catch{return null;}},set:(k,v)=>{try{localStorage.setItem('spinlab.'+k,v);}catch{}}};
 if(!ctx.roundRect)ctx.roundRect=function(x,y,w,h){this.rect(x,y,w,h);};
-function project(x,y,z=0){const depth=P.clamp(y/2.74,-.4,1.3),scale=1-depth*.45;return {x:W/2+x*W*.43*scale,y:H*.68-depth*H*.43-z*H*.33,scale};}
+const TABLE_W=.34;   // table half-width as a share of the court width (smaller = more floor around the table)
+function project(x,y,z=0){const depth=P.clamp(y/2.74,-.4,1.3),scale=1-depth*.45;return {x:W/2+x*W*TABLE_W*scale,y:H*.68-depth*H*.43-z*H*.33,scale};}
 // In-app browsers (KakaoTalk etc.) grow and shrink the viewport as their toolbars hide on drag. The court's CSS height
 // follows the viewport, so it would stretch mid-rally and shift every hit target. Measure it once and pin it in px;
 // only a width change (rotation, window resize) lets it be measured again.
@@ -179,7 +180,7 @@ function serveTiming(b){if(!b.tossed)return 'hold';if(b.z>.45)return 'toss';if(b
 const AI_BLOCK=.3;   // share of my drives the AI just blocks back (a high, slow ball I can smash)
 function serve(){lastAIHit=time;aiShot='short';const L=P.LEVELS[difficulty]||P.LEVELS.b4;const x0=(Math.random()-.5)*.6,plan=P.planServe(0,L.serve,-x0,.3,(Math.random()-.5)*.8)||P.planServe(0,2.4,-x0,.3,0);
 ball={x:x0,y:2.89,z:.3,vx:-plan.vx,vy:-plan.vy,vz:plan.vz,spin:0,side:0,bounces:0,owner:'ai',serving:true,type:'serve'};trail=[];toast('상대 서브 · 바운드 후 끝선 밖에서 타격!',1.2);}
-function point(player,reason){if(!ball)return;ball=null;wait=1.65;swingMemory=null;smashUntil=-1;lastTap=null;rally=0;player?you++:cpu++;updateScore();lastReason=reason;if(!net)store.set('save',JSON.stringify({you,cpu,mode,charge}));beep(player?740:180);const lead=you-cpu,call=mode==='match'&&Math.max(you,cpu)>=10?(lead===0?' · 듀스!':lead>0?' · 내 매치 포인트!':' · 상대 매치 포인트'):'';toast((player?'내 득점! · ':'상대 득점 · ')+reason+call+(myServe()?' · 다음은 내 서브':''),1.6);if(mode==='match'&&Math.max(you,cpu)>=11&&Math.abs(you-cpu)>=2){playing=false;lockPage(false);$('home').hidden=true;updateSpecial();$('overlay').classList.remove('hidden');document.querySelector('.start-card h2').innerHTML=you>cpu?'멋진 승리!<br>다시 도전해볼까요?':'좋은 경기였어요.<br>다시 도전해볼까요?';document.querySelector('.start-card p').textContent=`최종 스코어 ${you} : ${cpu} · 이번 경기 최고 랠리 ${matchBest}`;$('start').firstChild.textContent='다시 플레이 ';$('pause').disabled=true;clearSave();if(!net)offerRank();else applyRated(you>cpu);}}
+function point(player,reason){if(!ball)return;(player?me:foe).cheerT=time;ball=null;wait=1.65;swingMemory=null;smashUntil=-1;lastTap=null;rally=0;player?you++:cpu++;updateScore();lastReason=reason;if(!net)store.set('save',JSON.stringify({you,cpu,mode,charge}));beep(player?740:180);const lead=you-cpu,call=mode==='match'&&Math.max(you,cpu)>=10?(lead===0?' · 듀스!':lead>0?' · 내 매치 포인트!':' · 상대 매치 포인트'):'';toast((player?'내 득점! · ':'상대 득점 · ')+reason+call+(myServe()?' · 다음은 내 서브':''),1.6);if(mode==='match'&&Math.max(you,cpu)>=11&&Math.abs(you-cpu)>=2){playing=false;lockPage(false);$('home').hidden=true;updateSpecial();$('overlay').classList.remove('hidden');document.querySelector('.start-card h2').innerHTML=you>cpu?'멋진 승리!<br>다시 도전해볼까요?':'좋은 경기였어요.<br>다시 도전해볼까요?';document.querySelector('.start-card p').textContent=`최종 스코어 ${you} : ${cpu} · 이번 경기 최고 랠리 ${matchBest}`;$('start').firstChild.textContent='다시 플레이 ';$('pause').disabled=true;clearSave();if(!net)offerRank();else applyRated(you>cpu);}}
 function updateSpecial(){
 const ready=charge===100;
 $('special-value').textContent=charge+'%';$('special-fill').style.width=charge+'%';
@@ -328,7 +329,9 @@ mySwing.type=expectStroke();return P.clamp((1.37-ball.y)/1.45,0,1)*.35;}let last
 function person(st,hipY,target,angle,look,s,type,face,side,stroke,since,prep=null){
 const R=RACKETS[type],skin='#f2cda8',pants=look.pants,x=st.x,moving=P.clamp(Math.abs(st.vx)/160,0,1),dir=Math.sign(st.vx)||1;
 const pose=strokePose(stroke,since,side,s,{x:x+side*15*s,y:hipY-50*s+st.crouch*18*s},target,angle,st.crouch,look,st.amp??1,st.dirX||0,prep);
-const cr=pose.crouch,stepping=st.feet?Math.max(...[-1,1].map(k=>st.feet[k].t<1?Math.sin(Math.PI*st.feet[k].t):0)):0,split=look.split&&st.splitT!=null&&time-st.splitT<.24?Math.sin(Math.PI*(time-st.splitT)/.24):0,bob=look.split&&!stepping&&!split&&!(since>=0&&since<.8)?Math.sin(time*7)*1.2*s:0,hop=stepping*3*s+split*8*s+bob,hy=hipY+cr*18*s-hop+Math.abs(st.lean||0)*10*s,cx=x+dir*moving*6*s+pose.twist*side*8*s,ground=hipY+30*s;
+const cheer=st.cheerT!=null&&time-st.cheerT<1.2?Math.abs(Math.sin((time-st.cheerT)*8)):-1;   // won the point: jump with both arms up
+if(cheer>=0){pose.target={x:x+side*16*s,y:hipY-128*s};pose.angle=side*.15;pose.crouch=.15;pose.twist=0;}
+const cr=pose.crouch,stepping=st.feet?Math.max(...[-1,1].map(k=>st.feet[k].t<1?Math.sin(Math.PI*st.feet[k].t):0)):0,split=look.split&&st.splitT!=null&&time-st.splitT<.24?Math.sin(Math.PI*(time-st.splitT)/.24):0,bob=look.split&&!stepping&&!split&&!(since>=0&&since<.8)?Math.sin(time*7)*1.2*s:0,hop=stepping*3*s+split*8*s+bob+Math.max(0,cheer)*12*s,hy=hipY+cr*18*s-hop+Math.abs(st.lean||0)*10*s,cx=x+dir*moving*6*s+pose.twist*side*8*s,ground=hipY+30*s;
 // Lunge: when the racket has to reach past the body, sink lower, widen the stance (stepBody reads st.lean) and lean the upper body toward it.
 const lean=P.clamp((pose.target.x-cx-side*40*s)/(70*s),-1,1);st.lean=lerp(st.lean||0,lean,.25);const ux=cx+st.lean*12*s;
 const shoulder={x:ux+side*15*s,y:hy-50*s},ang=pose.angle,racketScale=s*.78,d=(R.h+R.hl*.55)*racketScale;let tgt=pose.target,hand={x:tgt.x-Math.sin(ang)*d,y:tgt.y+Math.cos(ang)*d};
@@ -342,7 +345,7 @@ for(const k of (st.feet&&st.feet[1].t<1?[-1,1]:[1,-1])){
 const f=st.feet?st.feet[k]:{x:x+k*(17+cr*12)*s,t:1},lift=f.t<1?Math.sin(Math.PI*f.t)*7*s:0;
 const foot={x:f.x+k*split*4*s,y:ground-lift-split*5*s},hip={x:cx,y:hy},knee={x:(hip.x+foot.x)/2+k*(2+cr*8)*s,y:(hip.y+foot.y)/2+cr*2*s-lift*.3};
 line(hip,knee,ink,lw);line(knee,foot,ink,lw);line(foot,{x:foot.x+k*7*s,y:foot.y},ink,lw);}
-const shout=look.shout&&st.shoutT!=null&&time-st.shoutT<.6;const free=shout?{x:cx-side*20*s,y:hy-82*s}:st.holding?{x:cx-side*22*s,y:hy-34*s}:look.fist&&!st.tossing?{x:cx-side*24*s,y:hy-(46+pose.twist*6)*s}:st.tossing?{x:cx-side*20*s,y:hy-78*s}:{x:cx-side*(26-pose.twist*6)*s,y:hy-(24+pose.twist*10)*s};st.free=free;
+const shout=look.shout&&st.shoutT!=null&&time-st.shoutT<.6;const free=cheer>=0?{x:cx-side*20*s,y:hy-98*s}:shout?{x:cx-side*20*s,y:hy-82*s}:st.holding?{x:cx-side*22*s,y:hy-34*s}:look.fist&&!st.tossing?{x:cx-side*24*s,y:hy-(46+pose.twist*6)*s}:st.tossing?{x:cx-side*20*s,y:hy-78*s}:{x:cx-side*(26-pose.twist*6)*s,y:hy-(24+pose.twist*10)*s};st.free=free;
 const fs={x:ux-side*12*s,y:hy-50*s};line(fs,{x:(fs.x+free.x)/2-side*4*s,y:(fs.y+free.y)/2+6*s},ink,lw);line({x:(fs.x+free.x)/2-side*4*s,y:(fs.y+free.y)/2+6*s},free,ink,lw);
 line({x:ux,y:hy-56*s},{x:cx,y:hy},ink,lw);   // spine (leans in a lunge)
 ctx.beginPath();ctx.moveTo(ux-12*s,hy-54*s);ctx.lineTo(ux+12*s,hy-54*s);ctx.lineTo(lerp(cx,ux,.4)+9*s,hy-22*s);ctx.lineTo(lerp(cx,ux,.4)-9*s,hy-22*s);ctx.closePath();ctx.fillStyle=look.shirt;ctx.fill();   // tee
@@ -379,7 +382,7 @@ cam.z=lerp(cam.z,focus?CAM_ZOOM:1,Math.min(1,cdt*(focus?7:4)));if(cam.z<1.002)ca
 ctx.save();if(cam.z>1){ctx.translate(cam.fx,cam.fy);ctx.scale(cam.z,cam.z);ctx.translate(-cam.fx,-cam.fy);}renderScene();ctx.restore();}
 const CAM_ZOOM=1.18;
 function renderScene(){ctx.clearRect(0,0,W,H);ctx.drawImage(arenaBg(),0,0,W,H);const nowR=performance.now(),rdt=Math.min((nowR-lastRenderT)/1000,.05);lastRenderT=nowR;
-const opponent=project(net?P.clamp(-net.opp.x,-.9,.9):ball?P.clamp(ball.x,-.7,.7):0,2.8,.18),aiScale=Math.min(P.clamp(W/800,.7,1),H/460)*.65,aiSide=net?-(net.opp.side||1):ball&&ball.x<0?-1:1;
+const opponent=project(net?P.clamp(-net.opp.x,-.9,.9):ball?P.clamp(ball.x,-1,1):0,2.8,.18),aiScale=Math.min(P.clamp(W/800,.7,1),H/460)*.65,aiSide=net?-(net.opp.side||1):ball&&ball.x<0?-1:1;
 // AI faces us: its forehand (black) is on our left.
 foe.stanceK=1+Math.abs(foe.lean||0)*.6;stepBody(foe,opponent.x-aiSide*34*aiScale,rdt,ball&&ball.owner==='you'?.55:.25,aiScale);
 foe.depth=lerp(foe.depth||0,ball&&ball.owner==='you'&&!ball.held?P.clamp((ball.y-1.9)/.9,0,1):.2,Math.min(1,rdt*5));   // backs off as a deep ball comes
