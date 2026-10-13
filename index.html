@@ -54,7 +54,7 @@ const LEVELS={b7:{base:.7,serve:2.2,speed:1.9,mix:[.62,1],aim:.75},b6:{base:.76,
 b5:{base:.82,serve:2.4,speed:2.35,mix:[.61,.95],aim:.88},b4:{base:.87,serve:2.5,speed:2.55,mix:[.6,.92],aim:.95},
 b3:{base:.91,serve:2.7,speed:2.85,mix:[.59,.88],aim:1},b2:{base:.94,serve:2.9,speed:3.15,mix:[.58,.85],aim:1.05},
 b1:{base:.96,serve:3.1,speed:3.45,mix:[.56,.82],aim:1.1},pro:{base:.975,serve:3.3,speed:3.8,mix:[.52,.76],aim:1.2}};
-function aiChance(b,difficulty,practice){const base=(LEVELS[difficulty]||LEVELS.b4).base;const attack=({carbon:.48,chiquita:.42,lightning:.45,thunder:.5,phantom:.45})[b.type]??(b.type==='smash'?.24:b.type==='chop'?.18:Math.abs(b.spin||0)*.025);return clamp(base+(practice?.1:0)-attack-Math.abs(b.x)*.1-Math.min(Math.abs(b.side||0),1.2)*.03,.1,.985);}
+function aiChance(b,difficulty,practice){const base=(LEVELS[difficulty]||LEVELS.b4).base+(b.chance?.1:0);const attack=b.kill?.6:({carbon:.48,chiquita:.42,lightning:.45,thunder:.5,phantom:.45})[b.type]??(b.type==='smash'?.24:b.type==='chop'?.18:Math.abs(b.spin||0)*.025);return clamp(base+(practice?.1:0)-attack-Math.abs(b.x)*.1-Math.min(Math.abs(b.side||0),1.2)*.03,.1,.985);}
 function shot(vx,vy,height,x,y,practice,gesture={},forcedType,boost={}){
 const type=forcedType||classify(vx,vy,gesture),speed=Math.hypot(vx,vy),power=clamp(speed/1500,0,1);
 // chop (defender): slow, high floating arc that drops deep - the 붕 뜬 defensive cut
@@ -79,6 +79,9 @@ else{if(net!==null&&net>.18&&b.y>1.55&&b.y<2.6&&Math.abs(b.x)<.7&&(!best||net<be
 // Too fast for this contact height: slow the serve down until a legal path exists.
 return best||(vy>1.9?planServe(spin,vy-.15,x0,z0,xT,side):null);
 }
+const P_FLOAT=2.5;   // forward speed of a popped-up ball (lower = higher, slower float)
+// A late hit pops the ball up: slower, higher, little spin, same landing course - a chance ball for the other side.
+function popup(s,y,z){const forward=P_FLOAT,spin=s.spin*.3,g=6+spin*.55,flight=(2.25-y)/forward;return {...s,vx:s.vx*forward/s.vy,vy:forward,vz:(.5*g*flight*flight-z)/flight,spin,side:0,chance:true};}
 // A wrong answer to the incoming ball: dump it into the net or send it long over the table.
 function miss(s,y,z,kind){const g=6+s.spin*.55;if(kind==='net'){const t=(1.37-y)/s.vy;return {...s,vz:(.04-z+.5*g*t*t)/t,miss:kind};}
 const vy=Math.max(s.vy,3.2),T=(3.5-y)/vy;return {...s,vy,vz:(.5*g*T*T-z)/T,miss:kind};}
@@ -100,7 +103,7 @@ function step(b,dt){b.vx+=b.side*dt*.3;b.vz-=(6+b.spin*.55)*dt;b.x+=b.vx*dt;b.y+
 // PvP rating: start 1000, win +10 / loss -10, each extra game in a streak adds 1 more (+11, +12 ... / -11, -12 ...).
 function nextRating(o,won){const streak=won?(o.streak>0?o.streak+1:1):(o.streak<0?o.streak-1:-1),delta=won?9+streak:-9+streak;
 return {rating:o.rating+delta,wins:o.wins+(won?1:0),losses:o.losses+(won?0:1),streak,delta};}
-root.PingPhysics={nextRating,LEVELS,clamp,classify,timing,aiChance,shot,planServe,miss,incoming,family,judge,aiReturn,step};if(typeof module!=='undefined')module.exports=root.PingPhysics;
+root.PingPhysics={popup,nextRating,LEVELS,clamp,classify,timing,aiChance,shot,planServe,miss,incoming,family,judge,aiReturn,step};if(typeof module!=='undefined')module.exports=root.PingPhysics;
 })(typeof window==='undefined'?globalThis:window);
 </script><script>
 'use strict';
@@ -191,7 +194,7 @@ const r=y>-.08?racketR+(y+.08)/1.45*95*p.scale:state==='perfect'?racketR:racketR
 ctx.save();ctx.setLineDash([3,4]);ctx.lineWidth=1.5;ctx.strokeStyle='#f3eeff70';ctx.beginPath();ctx.arc(p.x,p.y,racketR,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);   // racket-size target
 ctx.lineWidth=state==='perfect'?5:3;ctx.strokeStyle=color;ctx.shadowColor=color;ctx.shadowBlur=state==='perfect'?22:10;ctx.beginPath();ctx.arc(p.x,p.y,r,0,Math.PI*2);ctx.stroke();ctx.shadowBlur=0;
 ctx.fillStyle=color;ctx.font='bold 11px Arial';ctx.textAlign='center';if(state!=='wait')ctx.fillText({ready:'READY',perfect:'지금!',late:'LATE'}[state],p.x,p.y-Math.max(r,racketR)-9);
-const inc=P.incoming(ball);if(inc){ctx.fillStyle={cut:'#9fd3ff',drive:'#ffb36b',spin:'#d6a6ff',smash:'#ff7a6b'}[inc];ctx.fillText({cut:'커트 ↺',drive:'드라이브 ↻',spin:'회전 ⟲',smash:'스매시 ⚡'}[inc],p.x,p.y+Math.max(r,racketR)+15);}ctx.restore();
+const inc=P.incoming(ball);if(ball.kill||ball.chance){ctx.fillStyle=ball.kill?'#ff4d6d':'#ffe066';ctx.fillText(ball.kill?'강타 ⚡⚡':'찬스볼 ↑',p.x,p.y+Math.max(r,racketR)+15);}else if(inc){ctx.fillStyle={cut:'#9fd3ff',drive:'#ffb36b',spin:'#d6a6ff',smash:'#ff7a6b'}[inc];ctx.fillText({cut:'커트 ↺',drive:'드라이브 ↻',spin:'회전 ⟲',smash:'스매시 ⚡'}[inc],p.x,p.y+Math.max(r,racketR)+15);}ctx.restore();
 }
 function polygon(points,fill,stroke){ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.stroke();}}
 function line(a,b,color,width=1){ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.strokeStyle=color;ctx.lineWidth=width;ctx.stroke();}
@@ -418,7 +421,7 @@ const smash=time<=smashUntil,state=P.timing(ball);if(state==='wait'||state==='no
 const motion=swingMemory&&time<=swingMemory.until?swingMemory:null,R=RACKETS[racketType];
 const p=project(ball.x,ball.y,ball.z);let distance=Math.hypot(p.x-paddle.x,p.y-paddle.y);
 if(motion){const dx=motion.x-motion.fromX,dy=motion.y-motion.fromY,t=P.clamp(((p.x-motion.fromX)*dx+(p.y-motion.fromY)*dy)/(dx*dx+dy*dy||1),0,1);distance=Math.min(distance,Math.hypot(p.x-motion.fromX-t*dx,p.y-motion.fromY-t*dy));}
-if(distance>Math.max(touchInput?64:52,W*.075)*R.reach||(!smash&&!motion&&!tap))return;
+if(distance>Math.max(touchInput?64:52,W*.075)*R.reach*(ball.kill?.75:1)||(!smash&&!motion&&!tap))return;   // a kill smash is harder to reach
 const quality=state==='perfect'&&distance<Math.max(touchInput?42:28,W*.04)*R.reach*(R.perfect||1)?'PERFECT':state==='late'?'LATE':'GOOD';
 if(motion&&motion.side)playerSide=motion.side==='right'?1:-1;else updateSide();
 const special=charge===100;if(special&&R.special==='chiquita')playerSide=-1;
@@ -426,14 +429,16 @@ const boost=racketType==='jpen'&&playerSide>0?{loop:1.25,drive:1.25,side:1.25}:R
 const still=tap&&!smash;let shot=P.shot(smash||still?0:motion.vx*R.power,smash?-1450:still?-200:motion.vy*R.power,ball.z,ball.x,ball.y,mode==='practice',motion?{side:motion.side,rise:motion.rise,drop:motion.drop,dx:motion.dx}:{},special?R.special:smash&&racketType!=='defense'?'smash':tap||(racketType==='defense'?'chop':smash?'smash':undefined),boost);
 const inc=P.incoming(ball),resp=P.family(shot.type),verdict=special?'ok':P.judge(inc,resp,quality==='PERFECT',racketType==='defense');   // specials always get through
 if(verdict!=='ok')shot=P.miss(shot,ball.y,ball.z,verdict);
-Object.assign(ball,shot,{owner:'you',bounces:0,aiAttempt:false});lastHit=time;lastShot=shot.type;mySwing.type=shot.type;mySwing.t=time;smashUntil=-1;blockUntil=-1;lastTap=null;
+const kill=verdict==='ok'&&!special&&shot.type==='smash'&&!!ball.chance;   // smashing a chance ball
+if(verdict==='ok'&&!special&&quality==='LATE')shot=P.popup(shot,ball.y,ball.z);   // late: it floats up
+Object.assign(ball,shot,{owner:'you',bounces:0,aiAttempt:false,chance:!!shot.chance,kill});lastHit=time;lastShot=shot.type;mySwing.type=shot.type;mySwing.t=time;smashUntil=-1;blockUntil=-1;lastTap=null;
 const sp=motion?Math.hypot(motion.vx,motion.vy):0;me.amp=motion?P.clamp(.55+sp/2000,.55,1.25):tap?.45:1;me.dirX=motion?P.clamp(motion.vx/(sp||1),-1,1):0;swingMemory=null;
 if(quality==='PERFECT'&&verdict==='ok')me.shoutT=time;
 const before=charge;if(special)charge=0;else if(verdict==='ok')charge=Math.min(100,charge+(quality==='PERFECT'?30:20)+(racketType==='shake'?10:0));updateSpecial();
 rally++;best=Math.max(best,rally);updateScore();$('shot').firstChild.textContent=names[shot.type][0];$('shot-sub').textContent=names[shot.type][1]+(playerSide>0?' · 포핸드':' · 백핸드');$('timing').textContent=quality;
 $('spin').textContent=shot.spin<0?'BACK SPIN':shot.side?'SIDE SPIN':shot.spin>0?'TOP SPIN':'FLAT';
 fx.push({x:p.x,y:p.y,t:time,special:special&&SPECIALS[R.special].rgb});if(touchInput)navigator.vibrate?.(special?40:15);beep(special?950:shot.type==='smash'?760:490);if(verdict!=='ok'){toast(`${FAM[inc]} 공에 ${FAM[resp]} → ${verdict==='net'?'네트에 걸림':'테이블을 넘어감'}`,1.6);$('timing').textContent=verdict==='net'?'NET':'OVER';}
-else toast(names[shot.type][1]+' · '+quality+(before<100&&charge===100?' · ✦ 필살기 충전 완료!':''),1.25);
+else toast(kill?'찬스볼 강타! ⚡ 상대가 받기 어려워요':shot.chance?'늦었어요 · 공이 떴어요! 상대 찬스볼 ⚠':names[shot.type][1]+' · '+quality+(before<100&&charge===100?' · ✦ 필살기 충전 완료!':''),1.25);
 $('coach').textContent=verdict!=='ok'?`${FAM[inc]} 공은 ${ANSWER[inc]}(으)로 넘길 수 있어요.`:special?SPECIALS[R.special].coach+' '+GUIDE[shot.type]:charge===100?`필살기가 충전됐어요. 다음 타격에 ${SPECIALS[R.special].name}이(가) 자동으로 나갑니다.`:GUIDE[shot.type]||'';
 }
 function statusToast(){if(time>toastUntil)$('toast').textContent=ball&&ball.held?(ball.owner!=='you'?'상대 서브를 기다리세요':ball.tossed?'떨어질 때 스윙! ↓하회전(커트) ↑상회전 · 좌우로 그으면 코스':'내 서브 · 화면을 눌러 공을 토스하세요'):ball&&ball.owner==='ai'?(P.timing(ball)==='perfect'?'HIT! 지금 스윙 · 꾹 누르면 스매시':ball.bounces?(ball.y>.08?'WAIT · 내 쪽 끝선을 넘어올 때까지 기다리세요':'READY · 테이블 밖에서 스윙!'):'WAIT · 바운드를 기다리세요'):'상대 리턴을 기다리세요';}
@@ -441,8 +446,8 @@ function update(dt){time+=dt;statusToast();holdCheck();if(!ball){wait-=dt;if(wai
 if(ball.held){if(!ball.tossed)ballToHand();else{ball.vz-=6*dt;ball.z+=ball.vz*dt;if(ball.vz<0&&ball.z<ball.tossZ){ball.tossed=false;toast('놓쳤어요 · 다시 토스하세요',1.5);}}hit();return;}hit();if(!ball)return;const prevY=ball.y,prevZ=ball.z;P.step(ball,dt);if((prevY-1.37)*(ball.y-1.37)<0){const z=prevZ+(ball.z-prevZ)*(1.37-prevY)/(ball.y-prevY);if(z<.1525){point(ball.owner==='ai','네트에 걸렸어요');return;}}
 if(ball.serving&&ball.z<=0&&ball.vz<0){const own=ball.owner==='you'?ball.y>=0&&ball.y<1.37:ball.y>1.37&&ball.y<=2.74;if(Math.abs(ball.x)>.76||!own){point(ball.owner==='ai','서브 실패');return;}ball.serving=false;ball.z=0;ball.vz=-ball.vz*.8;ball.vy*=1.03;beep(270);}
 else if(ball.z<=0&&ball.vz<0&&!(ball.bounces===1&&(ball.y<0||ball.y>2.74))){if(Math.abs(ball.x)>.76||ball.y<0||ball.y>2.74){point(ball.owner==='ai','테이블 밖으로 나갔어요');return;}const valid=ball.owner==='ai'?ball.y<1.37:ball.y>1.37;if(!valid){point(ball.owner==='ai','자기 코트에 떨어졌어요');return;}ball.bounces++;if(ball.bounces>1){point(ball.owner==='you','두 번 바운드');return;}ball.z=0;ball.vz=-ball.vz*(ball.spin<0?.68:.8);ball.vy*=ball.spin<0?.78:1.03;beep(270);}
-if(!net&&ball.owner==='you'&&ball.bounces===1&&ball.y>2.8&&!ball.aiAttempt){ball.aiAttempt=true;const dif=difficulty;const chance=P.aiChance(ball,dif,mode==='practice');if(Math.abs(ball.x)<.87&&ball.z<.8&&Math.random()<chance){const L=P.LEVELS[dif]||P.LEVELS.b4,speed=L.speed,mix=mode==='practice'?P.LEVELS.b7.mix:L.mix,r=Math.random(),kind=P.incoming(ball)==='drive'&&Math.random()<AI_BLOCK?'block':r<mix[0]?'drive':r<mix[1]?'cut':'smash';
-Object.assign(ball,P.aiReturn(kind,ball.x,ball.y,ball.z,speed,(Math.random()-.5)*(mode==='practice'?.5:L.aim)),{bounces:0,owner:'ai'});lastAIHit=time;aiShot={drive:'loop',cut:'cut',side:'side',smash:'smash',block:'block'}[ball.type];rally++;best=Math.max(best,rally);updateScore();beep(390);if(kind==='block')toast('상대가 막았어요! 뜬 공 · 꾹 눌러 스매시 찬스 ⚡',1.4);}}
+if(!net&&ball.owner==='you'&&ball.bounces===1&&ball.y>2.8&&!ball.aiAttempt){ball.aiAttempt=true;const dif=difficulty;const chance=P.aiChance(ball,dif,mode==='practice');if(Math.abs(ball.x)<.87&&ball.z<(ball.chance?1.5:.8)&&Math.random()<chance){const wasChance=!!ball.chance;const L=P.LEVELS[dif]||P.LEVELS.b4,speed=L.speed,mix=mode==='practice'?P.LEVELS.b7.mix:L.mix,r=Math.random(),kind=wasChance&&Math.random()<.85?'smash':P.incoming(ball)==='drive'&&Math.random()<AI_BLOCK?'block':r<mix[0]?'drive':r<mix[1]?'cut':'smash';
+Object.assign(ball,P.aiReturn(kind,ball.x,ball.y,ball.z,speed,(Math.random()-.5)*(mode==='practice'?.5:L.aim)),{bounces:0,owner:'ai',chance:kind==='block',kill:wasChance&&kind==='smash'&&ball.z>=.25});lastAIHit=time;aiShot={drive:'loop',cut:'cut',side:'side',smash:'smash',block:'block'}[ball.type];rally++;best=Math.max(best,rally);updateScore();beep(390);if(kind==='block')toast('상대가 막았어요! 뜬 공 · 꾹 눌러 스매시 찬스 ⚡',1.4);else if(ball.kill)toast('상대가 찬스볼을 강타! ⚡ PERFECT 쇼트로만 막을 수 있어요',1.4);}}
 const remote=net&&ball.owner==='you'&&ball.bounces===1&&ball.y>2.74;if(remote)ball.passT??=time; // the far player's swing is still on the wire: give it time to arrive
 if((!remote||time-ball.passT>.45)&&(ball.y<-1||ball.y>(net?4.1:3.15)||Math.abs(ball.x)>1.2||ball.z<-.65)){point(ball.owner==='you'&&ball.bounces===1||ball.owner==='ai'&&ball.bounces===0,ball.bounces===1?'공을 놓쳤어요':'아웃');return;}trail.push({x:ball.x,y:ball.y,z:ball.z});if(trail.length>(SPECIALS[ball.type]?28:14))trail.shift();}
 function move(e){
