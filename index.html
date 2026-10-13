@@ -27,7 +27,7 @@ html,body{overscroll-behavior:none;touch-action:manipulation;-webkit-text-size-a
 <article><span class="tech-icon">→</span><div><b>쇼트 · 디펜스 쇼트</b><small>한 번 탭 = 쇼트 · 같은 자리 꾹 = 각도 숙인 디펜스 쇼트</small></div><span class="tech-number">04</span></article>
 <article><span class="tech-icon">ϟ</span><div><b>스매시</b><small>공이 오기 전 미리 두 번 탭 → 스매시 준비</small></div><span class="tech-number">05</span></article>
 <article><span class="tech-icon">⤓</span><div><b>수비 커트 · CHOP</b><small>수비수 라켓 전용 · 어떤 스윙이든 강한 후진 회전 커트로</small></div><span class="tech-number">07</span></article>
-<article><span class="tech-icon">◎</span><div><b>서브</b><small>탭으로 토스 → 스윙 방향으로 상·하·좌·우 회전 섞기</small></div><span class="tech-number">08</span></article>
+<article><span class="tech-icon">◎</span><div><b>서브</b><small>탭으로 토스 → 위아래로 회전, 좌우로 코스</small></div><span class="tech-number">08</span></article>
 <article class="special-tech"><span class="tech-icon">✦</span><div><b>필살기 · 라켓마다 다름</b><small>게이지 100% → 다음 타격에 자동 발동! 쉐이크 치키타 · 중펜 번개 속공 · 일펜 천둥 스매시 · ALC 카본 캐논 · 수비 유령 커트</small></div><span class="tech-number">09</span></article>
 </div></section>
 <section class="ranking" aria-labelledby="rank-title"><div class="tech-heading"><h3 id="rank-title">🏆 랭킹</h3><span id="rank-src">내 기기 기록</span></div>
@@ -46,9 +46,9 @@ return 'drive';
 // Hit window behind my end line (y<0). Widened ~1.5x so there is time to draw the swing.
 function timing(b){if(!b||b.owner!=='ai')return 'none';if(b.bounces!==1||b.y>.08||b.y<-.9)return 'wait';if(b.y<-.55)return 'late';return b.y<=-.05?'perfect':'ready';}
 // AI return chance. Specials and smashes stay hard to return; wide balls and spin only nibble at it.
-// Five AI levels: return chance, serve speed, return speed, mix of drive/cut/side (rest smash) and how wide it aims.
-const LEVELS={easy:{base:.72,serve:2.3,speed:2,mix:[.5,.85,1],aim:.8},casual:{base:.8,serve:2.4,speed:2.3,mix:[.5,.82,.97],aim:.85},
-normal:{base:.88,serve:2.5,speed:2.55,mix:[.45,.75,.93],aim:.95},hard:{base:.94,serve:2.9,speed:3.2,mix:[.4,.65,.85],aim:1},pro:{base:.97,serve:3.2,speed:3.6,mix:[.35,.6,.8],aim:1.15}};
+// Five AI levels: return chance, serve speed, return speed, mix of drive/cut (rest smash) and how wide it aims.
+const LEVELS={easy:{base:.72,serve:2.3,speed:2,mix:[.6,1],aim:.8},casual:{base:.8,serve:2.4,speed:2.3,mix:[.62,.97],aim:.85},
+normal:{base:.88,serve:2.5,speed:2.55,mix:[.6,.93],aim:.95},hard:{base:.94,serve:2.9,speed:3.2,mix:[.58,.85],aim:1},pro:{base:.97,serve:3.2,speed:3.6,mix:[.55,.8],aim:1.15}};
 function aiChance(b,difficulty,practice){const base=(LEVELS[difficulty]||LEVELS.normal).base;const attack=({carbon:.48,chiquita:.42,lightning:.45,thunder:.5,phantom:.45})[b.type]??(b.type==='smash'?.24:b.type==='chop'?.18:Math.abs(b.spin||0)*.025);return clamp(base+(practice?.1:0)-attack-Math.abs(b.x)*.1-Math.min(Math.abs(b.side||0),1.2)*.03,.1,.985);}
 function shot(vx,vy,height,x,y,practice,gesture={},forcedType,boost={}){
 const type=forcedType||classify(vx,vy,gesture),speed=Math.hypot(vx,vy),power=clamp(speed/1500,0,1);
@@ -342,13 +342,13 @@ function serveHit(){
 const motion=swingMemory&&time<=swingMemory.until?swingMemory:null,state=serveTiming(ball);if(!motion||!['ready','perfect'].includes(state))return;
 const p=project(ball.x,ball.y,ball.z),dist=Math.hypot(p.x-paddle.x,p.y-paddle.y);if(dist>Math.max(touchInput?70:58,W*.08)*RACKETS[racketType].reach)return;
 const speed=Math.hypot(motion.vx,motion.vy)||1,up=-motion.vy/speed,right=motion.vx/speed;
-const spin=up>.3?up:up<-.3?up*.6:0,side=Math.abs(right)>.3?right*1.2:0; // up = topspin, down = backspin (cut), sideways = side spin
+const spin=up>.3?up:up<-.3?up*.6:0,side=0; // up = topspin, down = backspin (cut); sideways only picks the course
 const plan=P.planServe(spin,P.clamp(2.3+speed/1500*.9,2.3,3.2),ball.x,ball.z,P.clamp(right*.55,-.55,.55),side)||P.planServe(0,2.4,ball.x,P.clamp(ball.z,.15,.4),0,0);
 Object.assign(ball,{held:false,tossed:false,serving:true,vx:plan.vx,vy:plan.vy,vz:plan.vz,spin,side,type:'serve',aiAttempt:false});
 lastHit=time;lastShot=spin<0?'cut':spin>0?'loop':Math.abs(side)?'side':'short';swingMemory=null;
-const parts=[spin>0?'상회전':spin<0?'하회전(커트)':'',side>0?'우회전':side<0?'좌회전':''].filter(Boolean),label='서브 · '+(parts.join(' + ')||'무회전'),quality=state==='perfect'?'PERFECT':'GOOD';
+const parts=[spin>0?'상회전':spin<0?'하회전(커트)':''].filter(Boolean),label='서브 · '+(parts.join(' + ')||'무회전'),quality=state==='perfect'?'PERFECT':'GOOD';
 $('shot').firstChild.textContent='SERVE';$('shot-sub').textContent=label;$('timing').textContent=quality;
-$('spin').textContent=[spin>0?'TOP':spin<0?'BACK':'',side>0?'RIGHT':side<0?'LEFT':''].filter(Boolean).join(' + ')||'FLAT';
+$('spin').textContent=spin>0?'TOP SPIN':spin<0?'BACK SPIN':'FLAT';
 fx.push({x:p.x,y:p.y,t:time});if(touchInput)navigator.vibrate?.(15);beep(520);toast(label+' · '+quality,1.4);
 }
 const FAM={cut:'커트',drive:'드라이브',smash:'스매시',spin:'회전',short:'쇼트',block:'디펜스 쇼트'},
@@ -379,12 +379,12 @@ fx.push({x:p.x,y:p.y,t:time,special:special&&SPECIALS[R.special].rgb});if(touchI
 else toast(names[shot.type][1]+' · '+quality+(before<100&&charge===100?' · ✦ 필살기 충전 완료!':''),1.25);
 $('coach').textContent=verdict!=='ok'?`${FAM[inc]} 공은 ${ANSWER[inc]}(으)로 넘길 수 있어요.`:special?SPECIALS[R.special].coach+' '+GUIDE[shot.type]:charge===100?`필살기가 충전됐어요. 다음 타격에 ${SPECIALS[R.special].name}이(가) 자동으로 나갑니다.`:GUIDE[shot.type]||'';
 }
-function statusToast(){if(time>toastUntil)$('toast').textContent=ball&&ball.held?(ball.owner!=='you'?'상대 서브를 기다리세요':ball.tossed?'떨어질 때 스윙! ↓커트 ↑상회전 →우회전 ←좌회전 (섞기 가능)':'내 서브 · 화면을 눌러 공을 토스하세요'):ball&&ball.owner==='ai'?(P.timing(ball)==='perfect'?'HIT! 지금 스윙 · 두 번 탭 / 클릭은 스매시':ball.bounces?(ball.y>.08?'WAIT · 내 쪽 끝선을 넘어올 때까지 기다리세요':'READY · 테이블 밖에서 스윙!'):'WAIT · 바운드를 기다리세요'):'상대 리턴을 기다리세요';}
+function statusToast(){if(time>toastUntil)$('toast').textContent=ball&&ball.held?(ball.owner!=='you'?'상대 서브를 기다리세요':ball.tossed?'떨어질 때 스윙! ↓하회전(커트) ↑상회전 · 좌우로 그으면 코스':'내 서브 · 화면을 눌러 공을 토스하세요'):ball&&ball.owner==='ai'?(P.timing(ball)==='perfect'?'HIT! 지금 스윙 · 두 번 탭 / 클릭은 스매시':ball.bounces?(ball.y>.08?'WAIT · 내 쪽 끝선을 넘어올 때까지 기다리세요':'READY · 테이블 밖에서 스윙!'):'WAIT · 바운드를 기다리세요'):'상대 리턴을 기다리세요';}
 function update(dt){time+=dt;statusToast();holdCheck();if(!ball){wait-=dt;if(wait<=0)myServe()?holdServe():net?oppServe():serve();return;}if(ball.held&&ball.owner!=='you')return;
 if(ball.held){if(!ball.tossed)ballToHand();else{ball.vz-=6*dt;ball.z+=ball.vz*dt;if(ball.vz<0&&ball.z<ball.tossZ){ball.tossed=false;toast('놓쳤어요 · 다시 토스하세요',1.5);}}hit();return;}hit();if(!ball)return;const prevY=ball.y,prevZ=ball.z;P.step(ball,dt);if((prevY-1.37)*(ball.y-1.37)<0){const z=prevZ+(ball.z-prevZ)*(1.37-prevY)/(ball.y-prevY);if(z<.1525){point(ball.owner==='ai','네트에 걸렸어요');return;}}
 if(ball.serving&&ball.z<=0&&ball.vz<0){const own=ball.owner==='you'?ball.y>=0&&ball.y<1.37:ball.y>1.37&&ball.y<=2.74;if(Math.abs(ball.x)>.76||!own){point(ball.owner==='ai','서브 실패');return;}ball.serving=false;ball.z=0;ball.vz=-ball.vz*.8;ball.vy*=1.03;beep(270);}
 else if(ball.z<=0&&ball.vz<0&&!(ball.bounces===1&&(ball.y<0||ball.y>2.74))){if(Math.abs(ball.x)>.76||ball.y<0||ball.y>2.74){point(ball.owner==='ai','테이블 밖으로 나갔어요');return;}const valid=ball.owner==='ai'?ball.y<1.37:ball.y>1.37;if(!valid){point(ball.owner==='ai','자기 코트에 떨어졌어요');return;}ball.bounces++;if(ball.bounces>1){point(ball.owner==='you','두 번 바운드');return;}ball.z=0;ball.vz=-ball.vz*(ball.spin<0?.68:.8);ball.vy*=ball.spin<0?.78:1.03;beep(270);}
-if(!net&&ball.owner==='you'&&ball.bounces===1&&ball.y>2.44&&!ball.aiAttempt){ball.aiAttempt=true;const dif=difficulty;const chance=P.aiChance(ball,dif,mode==='practice');if(Math.abs(ball.x)<.87&&ball.z<.8&&Math.random()<chance){const L=P.LEVELS[dif]||P.LEVELS.normal,speed=L.speed,mix=mode==='practice'?P.LEVELS.easy.mix:L.mix,r=Math.random(),kind=r<mix[0]?'drive':r<mix[1]?'cut':r<mix[2]?'side':'smash';
+if(!net&&ball.owner==='you'&&ball.bounces===1&&ball.y>2.44&&!ball.aiAttempt){ball.aiAttempt=true;const dif=difficulty;const chance=P.aiChance(ball,dif,mode==='practice');if(Math.abs(ball.x)<.87&&ball.z<.8&&Math.random()<chance){const L=P.LEVELS[dif]||P.LEVELS.normal,speed=L.speed,mix=mode==='practice'?P.LEVELS.easy.mix:L.mix,r=Math.random(),kind=r<mix[0]?'drive':r<mix[1]?'cut':'smash';
 Object.assign(ball,P.aiReturn(kind,ball.x,ball.y,ball.z,speed,(Math.random()-.5)*(mode==='practice'?.5:L.aim)),{bounces:0,owner:'ai'});lastAIHit=time;aiShot={drive:'loop',cut:'cut',side:'side',smash:'smash'}[ball.type];rally++;best=Math.max(best,rally);updateScore();beep(390);}}
 const remote=net&&ball.owner==='you'&&ball.bounces===1&&ball.y>2.74;if(remote)ball.passT??=time; // the far player's swing is still on the wire: give it time to arrive
 if((!remote||time-ball.passT>.45)&&(ball.y<-1||ball.y>(net?4.1:3.15)||Math.abs(ball.x)>1.2||ball.z<-.65)){point(ball.owner==='you'&&ball.bounces===1||ball.owner==='ai'&&ball.bounces===0,ball.bounces===1?'공을 놓쳤어요':'아웃');return;}trail.push({x:ball.x,y:ball.y,z:ball.z});if(trail.length>(SPECIALS[ball.type]?28:14))trail.shift();}
