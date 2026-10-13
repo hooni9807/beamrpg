@@ -16,14 +16,14 @@ button,select{min-height:44px}button:disabled{cursor:default}body{padding-bottom
 </style></head>
 <body><header><a class="brand" href="./"><span class="brandmark">◒</span> SPIN LAB<span class="edition">INTERACTIVE TABLE TENNIS</span></a><div class="header-right"><span class="input-label"><span class="status-dot"></span> 마우스 · 터치 플레이</span> <button id="sound" aria-pressed="false">사운드 OFF</button></div></header>
 <main><div class="intro"><div><div class="eyebrow">DRAG. SWING. SPIN.</div><h1>탁구의 감각을,<br class="mobile"> 손끝으로.</h1><p>속도와 방향, 그리고 타이밍. 같은 공도 다르게 넘겨보세요.</p></div><div class="intro-note"><span>01 / THE PLAYGROUND</span><b>당신의 드래그가<br>하나의 스윙이 됩니다.</b></div></div>
-<div class="layout"><section class="arena"><div class="arena-top"><span><i class="live-dot"></i> <b id="mode-label">연습 랠리</b></span><div class="score"><span>YOU</span><b id="you">00</b><i>:</i><b id="cpu">00</b><span>AI</span></div><button id="pause" disabled>일시정지 Ⅱ</button></div><div class="court-wrap"><canvas id="court" aria-label="손가락이나 마우스로 드래그하여 스윙하고, 두 번 탭하거나 클릭하여 스매시하는 탁구 게임"></canvas><div class="court-label left">SPIN LAB / COURT 01</div><div class="court-label right">MOVE WITH THE BALL</div><div id="overlay" class="overlay"><div class="start-card"><span class="pill">YOUR NEXT RALLY STARTS HERE</span><h2>잡고, 휘두르고,<br>넘겨보세요.</h2><p>공이 내 쪽 끝선 밖으로 나오면 HIT에 맞춰 스윙하세요.<br>공 오른쪽에서 스윙: 포핸드 (검정 러버)<br>공 왼쪽에서 스윙: 백핸드 (빨강 러버)<br>빠르게 두 번 클릭 / 탭: 스매시<br>내 서브: 탭으로 토스 → 떨어질 때 스윙</p><button id="resume" hidden>이어하기 <span>▶</span></button><button id="start">플레이 시작 <span>↗</span></button><div id="net-box"><button id="net-host" type="button">온라인 방 만들기 <span>⇄</span></button><div class="net-join"><input id="net-code" maxlength="4" placeholder="방 코드" autocomplete="off" autocapitalize="characters" aria-label="방 코드"><button id="net-join" type="button">참가</button></div><small id="net-status" aria-live="polite">친구와 1:1 · 방을 만들고 코드를 보내세요</small></div><small>손가락 또는 마우스로 플레이 · 일시정지 버튼 / Space</small></div></div><div id="toast" class="toast">공이 내 쪽 끝선 밖으로 나오면 HIT에 맞춰 스윙하세요</div></div><div class="timing-legend" aria-label="공 테두리원 타이밍 안내"><span><i class="ring wait"></i> WAIT · 끝선 통과 대기</span><span><i class="ring ready"></i> READY · 타격 가능</span><span><i class="ring ideal"></i> HIT · 지금 스윙!</span><span><i class="ring fh"></i> 포핸드</span><span><i class="ring bh"></i> 백핸드</span></div><div class="touch-toolbar"><p>손가락 위에 라켓이 표시됩니다 · 드래그 스윙 · 두 번 탭 스매시</p><span id="touch-special" aria-live="polite">✦ 필살기 0%</span></div><div class="arena-bottom"><div><span class="keycap">DRAG</span> 스윙</div><div><span class="keycap">×2</span> 스매시</div><div><span class="keycap">SPACE</span> 일시정지</div><button id="restart">↻ 다시 시작</button></div></section>
+<div class="layout"><section class="arena"><div class="arena-top"><span><i class="live-dot"></i> <b id="mode-label">연습 랠리</b></span><div class="score"><span>YOU</span><b id="you">00</b><i>:</i><b id="cpu">00</b><span>AI</span></div><button id="pause" disabled>일시정지 Ⅱ</button></div><div class="court-wrap"><canvas id="court" aria-label="손가락이나 마우스로 드래그하여 스윙하고, 두 번 탭하거나 클릭하여 스매시하는 탁구 게임"></canvas><div class="court-label left">SPIN LAB / COURT 01</div><div class="court-label right">MOVE WITH THE BALL</div><div id="overlay" class="overlay"><div class="start-card"><span class="pill">YOUR NEXT RALLY STARTS HERE</span><h2>잡고, 휘두르고,<br>넘겨보세요.</h2><p>공이 내 쪽 끝선 밖으로 나오면 HIT에 맞춰 스윙하세요.<br>공 오른쪽에서 스윙: 포핸드 (검정 러버)<br>공 왼쪽에서 스윙: 백핸드 (빨강 러버)<br>탭: 쇼트 · 꾹: 디펜스 쇼트 · 미리 두 번 탭: 스매시<br>내 서브: 탭으로 토스 → 떨어질 때 스윙</p><button id="resume" hidden>이어하기 <span>▶</span></button><button id="start">플레이 시작 <span>↗</span></button><div id="net-box"><button id="net-host" type="button">온라인 방 만들기 <span>⇄</span></button><div class="net-join"><input id="net-code" maxlength="4" placeholder="방 코드" autocomplete="off" autocapitalize="characters" aria-label="방 코드"><button id="net-join" type="button">참가</button></div><small id="net-status" aria-live="polite">친구와 1:1 · 방을 만들고 코드를 보내세요</small></div><small>손가락 또는 마우스로 플레이 · 일시정지 버튼 / Space</small></div></div><div id="toast" class="toast">공이 내 쪽 끝선 밖으로 나오면 HIT에 맞춰 스윙하세요</div></div><div class="timing-legend" aria-label="공 테두리원 타이밍 안내"><span><i class="ring wait"></i> WAIT · 끝선 통과 대기</span><span><i class="ring ready"></i> READY · 타격 가능</span><span><i class="ring ideal"></i> HIT · 지금 스윙!</span><span><i class="ring fh"></i> 포핸드</span><span><i class="ring bh"></i> 백핸드</span></div><div class="touch-toolbar"><p>손가락 위에 라켓이 표시됩니다 · 드래그 스윙 · 두 번 탭 스매시</p><span id="touch-special" aria-live="polite">✦ 필살기 0%</span></div><div class="arena-bottom"><div><span class="keycap">DRAG</span> 스윙</div><div><span class="keycap">×2</span> 스매시</div><div><span class="keycap">SPACE</span> 일시정지</div><button id="restart">↻ 다시 시작</button></div></section>
 <aside><section class="control-card"><div class="eyebrow">SESSION SETTINGS</div><h3>나만의 리듬 찾기</h3><div class="segmented" aria-label="게임 모드"><button data-mode="practice" class="active">연습 랠리</button><button data-mode="match">11점 경기</button></div><label class="field">상대 난이도 <select id="difficulty"><option value="easy">입문 · 여유로운 템포</option><option value="normal" selected>보통 · 리듬 있는 랠리</option><option value="hard">도전 · 빠른 랠리</option></select></label><label class="field">내 라켓 <select id="racket"><option value="shake" selected>쉐이크핸드 · 균형형</option><option value="cpen">중국식 펜홀더 · 빠른 손목</option><option value="jpen">일본식 펜홀더 · 강한 한 방</option><option value="defense">수비수 라켓 · 모든 공을 커트로</option></select></label><div class="help-note" id="racket-note"></div><div class="help-note">연습 모드는 리턴이 쉬워지고,<br>경기 모드는 11점 · 2점 차로 승리합니다.</div></section><section class="swing-card"><div class="eyebrow">LIVE SWING DATA <i class="live-dot"></i></div><div class="shot-name" id="shot">READY<span id="shot-sub">첫 스윙을 기다리는 중</span></div><div class="meter-label"><span>스윙 속도</span><b id="speed">0 <small>px/s</small></b></div><div class="meter"><i id="meter"></i></div><div class="metrics"><div><span>타이밍</span><b id="timing">—</b></div><div><span>회전</span><b id="spin">—</b></div></div><div class="special"><div class="meter-label"><span id="special-name">✦ 치키타</span><b id="special-value">0%</b></div><div class="meter special-meter" aria-hidden="true"><i id="special-fill"></i></div><p id="special-status" aria-live="polite">성공 +20% · PERFECT +30%</p><small>게이지가 100%가 되면<br>다음 타격에 자동으로 발동합니다</small></div><div class="rally"><span>현재 랠리 <b id="rally">0</b></span><span>최고 <b id="best">0</b></span></div></section><div class="tip"><span>↗ COACH'S NOTE</span><p id="coach">공이 내 코트에 한 번 튄 뒤, 내 쪽 끝선을 넘어올 때까지 기다리세요. 공 오른쪽은 포핸드(검정), 왼쪽은 백핸드(빨강)입니다.</p></div></aside></div>
 <section class="techniques"><div class="tech-heading"><h3>방향과 박자로 완성하는, 아홉 가지 플레이.</h3><span>드래그 속도가 스윙의 강도를 결정합니다</span></div><div class="tech-grid">
 <article><span class="tech-icon">↖</span><div><b>루프 드라이브</b><small>공 오른쪽 아래에서 위로 쓸기</small></div><span class="tech-number">01</span></article>
 <article><span class="tech-icon">↗</span><div><b>백드라이브</b><small>공 왼쪽 아래에서 위로 쓸기</small></div><span class="tech-number">02</span></article>
 <article><span class="tech-icon">↘</span><div><b>커트</b><small>아래로 끊어 치기</small></div><span class="tech-number">03</span></article>
-<article><span class="tech-icon">→</span><div><b>쇼트</b><small>짧고 가볍게 밀기</small></div><span class="tech-number">04</span></article>
-<article><span class="tech-icon">ϟ</span><div><b>스매시</b><small>공 가까이에서 짧게 더블 클릭 / 탭</small></div><span class="tech-number">05</span></article>
+<article><span class="tech-icon">→</span><div><b>쇼트 · 디펜스 쇼트</b><small>한 번 탭 = 쇼트 · 같은 자리 꾹 = 각도 숙인 디펜스 쇼트</small></div><span class="tech-number">04</span></article>
+<article><span class="tech-icon">ϟ</span><div><b>스매시</b><small>공이 오기 전 미리 두 번 탭 → 스매시 준비</small></div><span class="tech-number">05</span></article>
 <article><span class="tech-icon">↔</span><div><b>사이드스핀</b><small>옆으로 쓸어 궤적 휘기</small></div><span class="tech-number">06</span></article>
 <article><span class="tech-icon">⤓</span><div><b>수비 커트 · CHOP</b><small>수비수 라켓 전용 · 어떤 스윙이든 강한 후진 회전 커트로</small></div><span class="tech-number">07</span></article>
 <article><span class="tech-icon">◎</span><div><b>서브</b><small>탭으로 토스 → 스윙 방향으로 상·하·좌·우 회전 섞기</small></div><span class="tech-number">08</span></article>
@@ -44,11 +44,11 @@ function timing(b){if(!b||b.owner!=='ai')return 'none';if(b.bounces!==1||b.y>0||
 function aiChance(b,difficulty,practice){const base=difficulty==='easy'?.76:difficulty==='hard'?.95:.88;const attack=({chiquita:.42,lightning:.45,thunder:.5,phantom:.45})[b.type]??(b.type==='smash'?.24:b.type==='chop'?.18:Math.abs(b.spin||0)*.025);return clamp(base+(practice?.1:0)-attack-Math.abs(b.x)*.1-Math.min(Math.abs(b.side||0),1.2)*.03,.1,.97);}
 function shot(vx,vy,height,x,y,practice,gesture={},forcedType,boost={}){
 const type=forcedType||classify(vx,vy,gesture),speed=Math.hypot(vx,vy),power=clamp(speed/1500,0,1);
-let forward=type==='lightning'?5.6:type==='thunder'?6.2:type==='phantom'?1.8:type==='chop'?3.2:type==='short'?2:type==='smash'?4.7:type==='chiquita'?5:type==='loop'?2.35+power*.65:type==='back'?3+power*.9:2.5+power*1.2;
+let forward=type==='block'?2.4:type==='lightning'?5.6:type==='thunder'?6.2:type==='phantom'?1.8:type==='chop'?3.2:type==='short'?2:type==='smash'?4.7:type==='chiquita'?5:type==='loop'?2.35+power*.65:type==='back'?3+power*.9:2.5+power*1.2;
 forward*=boost[type]||1;
-const spin=type==='phantom'?-2.6:type==='lightning'?.3:type==='thunder'?0:type==='chop'?-1.8:type==='cut'?-1:type==='loop'?2.2:type==='back'?1.3:type==='drive'?1:type==='chiquita'?2.4:type==='side'?.35:0;
+const spin=type==='block'?.2:type==='phantom'?-2.6:type==='lightning'?.3:type==='thunder'?0:type==='chop'?-1.8:type==='cut'?-1:type==='loop'?2.2:type==='back'?1.3:type==='drive'?1:type==='chiquita'?2.4:type==='side'?.35:0;
 const dirX=speed?vx/speed:0,corner=Math.abs(dirX)>.3?Math.sign(dirX)*.5:null;
-const side=type==='side'?Math.sign(vx)*1.2:type==='chiquita'?Math.sign(corner??(x>=0?-1:1))*5:0,target=type==='short'?1.85:type==='phantom'?1.75:type==='thunder'?2.5:2.3,gravity=6+spin*.55,netDistance=1.37-y;
+const side=type==='side'?Math.sign(vx)*1.2:type==='chiquita'?Math.sign(corner??(x>=0?-1:1))*5:0,target=type==='short'?1.85:type==='block'?2:type==='phantom'?1.75:type==='thunder'?2.5:2.3,gravity=6+spin*.55,netDistance=1.37-y;
 // shortcut: arcade landing calibration, replace with measured contact physics for a simulator.
 if(netDistance>0&&target>1.37){const fraction=netDistance/(target-y),needed=.22-height*(1-fraction);if(needed>0)forward=Math.min(forward,Math.sqrt(.5*gravity*netDistance*(target-1.37)/needed));}
 const flight=(target-y)/forward,targetX=type==='chiquita'||type==='thunder'?corner??(x>=0?-.5:.5):type==='lightning'?corner??(x>=0?.5:-.5):clamp(x*.3+dirX*(practice?.55:.7),-.62,.62); // horizontal part of the swing sets the course
@@ -65,14 +65,31 @@ else{if(net!==null&&net>.18&&b.y>1.55&&b.y<2.6&&Math.abs(b.x)<.7&&(!best||net<be
 // Too fast for this contact height: slow the serve down until a legal path exists.
 return best||(vy>1.9?planServe(spin,vy-.15,x0,z0,xT,side):null);
 }
+// A wrong answer to the incoming ball: dump it into the net or send it long over the table.
+function miss(s,y,z,kind){const g=6+s.spin*.55;if(kind==='net'){const t=(1.37-y)/s.vy;return {...s,vz:(.04-z+.5*g*t*t)/t,miss:kind};}
+const vy=Math.max(s.vy,3.2),T=(3.5-y)/vy;return {...s,vy,vz:(.5*g*T*T-z)/T,miss:kind};}
+// Incoming / outgoing shot families and the matchup table.
+function incoming(b){const t=b.type;if(['cut','chop','phantom'].includes(t))return 'cut';if(['smash','thunder'].includes(t))return 'smash';if(t==='side')return 'spin';
+if(['loop','drive','back','chiquita','lightning'].includes(t))return 'drive';if(t==='serve')return Math.abs(b.side||0)>.3?'spin':b.spin<-.2?'cut':b.spin>.2?'drive':null;return null;}
+function family(t){return ['cut','chop','phantom'].includes(t)?'cut':['smash','thunder'].includes(t)?'smash':t==='short'||t==='block'?t:'drive';}
+function judge(inc,resp,perfect,defender){if(!inc)return 'ok';
+if(inc==='cut')return resp==='cut'||resp==='drive'?'ok':'net';
+if(inc==='drive')return resp==='block'||resp==='drive'||defender&&resp==='cut'?'ok':'over';
+if(inc==='smash')return defender||perfect&&(resp==='short'||resp==='block')?'ok':'over';
+return resp==='smash'||resp==='short'||resp==='block'?'ok':'over';}       // spin ball
+// AI return of a given kind from (x,y,z) towards my half; spin/side change gravity and drift, so aim with them.
+function aiReturn(kind,x,y,z,speed,aimX){if(kind==='smash'&&z<.25)kind='drive'; // a low ball can't be smashed
+const spin=kind==='drive'?.7:kind==='cut'?-.8:0,side=kind==='side'?(Math.random()<.5?-1:1)*1.4:0,vy=speed*(kind==='smash'?1.7:1),g=6+spin*.55,f=(y-.5)/vy;
+const tn=(y-1.37)/vy,clear=(.22-z+.5*g*tn*tn)/tn;   // never lower than what clears the net
+return {vx:(aimX-x)/f-.15*side*f,vy:-vy,vz:Math.max(clear,clamp((.5*g*f*f-z)/f,kind==='smash'?-1:.35,3.7)),spin,side,type:kind};}
 function step(b,dt){b.vx+=b.side*dt*.3;b.vz-=(6+b.spin*.55)*dt;b.x+=b.vx*dt;b.y+=b.vy*dt;b.z+=b.vz*dt;}
-root.PingPhysics={clamp,classify,timing,aiChance,shot,planServe,step};if(typeof module!=='undefined')module.exports=root.PingPhysics;
+root.PingPhysics={clamp,classify,timing,aiChance,shot,planServe,miss,incoming,family,judge,aiReturn,step};if(typeof module!=='undefined')module.exports=root.PingPhysics;
 })(typeof window==='undefined'?globalThis:window);
 </script><script>
 'use strict';
 const $=id=>document.getElementById(id),canvas=$('court'),ctx=canvas.getContext('2d'),P=PingPhysics;
 let net=null,lastReason='',W=900,H=465,mode='practice',playing=false,paused=false,ball=null,wait=0,you=0,cpu=0,rally=0,best=0,last=0,time=0,down=false,trail=[],fx=[],sound=false,audio=null,paddle={x:450,y:380,vx:0,vy:0},samples=[],lastHit=-10,lastAIHit=-10,toastUntil=0,gesture=null,activePointer=null,lastTap=null,smashUntil=-1,charge=0,touchInput=false,swingMemory=null,racketType='shake',playerSide=1;
-const names={loop:['LOOP DRIVE','루프 드라이브 · 높은 전진 회전'],back:['BACK DRIVE','백드라이브 · 빠른 전진 회전'],chiquita:['CHIQUITA','필살기 · 치키타 (강한 백드라이브)'],lightning:['LIGHTNING','필살기 · 번개 속공'],thunder:['THUNDER','필살기 · 천둥 스매시'],phantom:['PHANTOM','필살기 · 유령 커트'],drive:['DRIVE','드라이브 · 전진 회전'],cut:['CUT','커트 · 후진 회전'],chop:['CHOP','수비 커트 · 강한 후진 회전'],short:['SHORT','쇼트 · 짧은 밀어치기'],smash:['SMASH','스매시 · 강한 공격'],side:['SIDE SPIN','사이드스핀 · 휘어지는 궤적'],serve:['SERVE','서브']};
+const names={loop:['LOOP DRIVE','루프 드라이브 · 높은 전진 회전'],back:['BACK DRIVE','백드라이브 · 빠른 전진 회전'],chiquita:['CHIQUITA','필살기 · 치키타 (강한 백드라이브)'],lightning:['LIGHTNING','필살기 · 번개 속공'],thunder:['THUNDER','필살기 · 천둥 스매시'],phantom:['PHANTOM','필살기 · 유령 커트'],drive:['DRIVE','드라이브 · 전진 회전'],cut:['CUT','커트 · 후진 회전'],chop:['CHOP','수비 커트 · 강한 후진 회전'],short:['SHORT','쇼트 · 짧은 밀어치기'],block:['BLOCK','디펜스 쇼트 · 각도를 숙여 막기'],smash:['SMASH','스매시 · 강한 공격'],side:['SIDE SPIN','사이드스핀 · 휘어지는 궤적'],serve:['SERVE','서브']};
 // w/h: blade half-size, hw/hl: handle width/length, reach: hit radius, power: swing speed multiplier
 const RACKETS={
 shake:{name:'쉐이크핸드',special:'chiquita',skill:'올라운드: 필살기 충전 +10% 추가',w:23,h:28,hw:10,hl:30,grip:'#b19360',reach:1,power:1},
@@ -125,7 +142,8 @@ const color={wait:'#f5f5e5',ready:'#f3c65c',perfect:'#baff78',late:'#f69b75'}[st
 const outer=state==='wait'?43:state==='perfect'?22:state==='late'?30:22+P.clamp((ball.y+.08)/.08,0,1)*24;
 ctx.save();ctx.lineWidth=2;ctx.strokeStyle=color;ctx.globalAlpha=.5;ctx.beginPath();ctx.arc(p.x,p.y,22*p.scale,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;
 ctx.lineWidth=state==='perfect'?4:2;ctx.setLineDash(state==='wait'?[4,5]:[]);ctx.beginPath();ctx.arc(p.x,p.y,outer*p.scale,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
-ctx.fillStyle=color;ctx.font='bold 10px Arial';ctx.textAlign='center';ctx.fillText({wait:'WAIT',ready:'READY',perfect:'HIT!',late:'LATE'}[state],p.x,p.y-outer*p.scale-8);ctx.restore();
+ctx.fillStyle=color;ctx.font='bold 10px Arial';ctx.textAlign='center';ctx.fillText({wait:'WAIT',ready:'READY',perfect:'HIT!',late:'LATE'}[state],p.x,p.y-outer*p.scale-8);
+const inc=P.incoming(ball);if(inc){ctx.fillStyle={cut:'#9fd3ff',drive:'#ffb36b',spin:'#d6a6ff',smash:'#ff7a6b'}[inc];ctx.fillText({cut:'커트 ↺',drive:'드라이브 ↻',spin:'회전 ⟲',smash:'스매시 ⚡'}[inc],p.x,p.y+outer*p.scale+14);}ctx.restore();
 }
 function polygon(points,fill,stroke){ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.stroke();}}
 function line(a,b,color,width=1){ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.strokeStyle=color;ctx.lineWidth=width;ctx.stroke();}
@@ -149,6 +167,7 @@ loop:[[42,58,1.3,.9,1],[44,10,.75,.7,.3],[-4,-60,-.45,.25,-1]],
 drive:[[48,16,1.1,.6,.8],[44,-2,.55,.5,.2],[4,-44,-.25,.35,-.8]],
 back:[[-6,18,-.8,.6,-.3],[22,-2,.05,.5,0],[46,-46,.7,.3,.5]],
 short:[[16,4,.2,.4,0],[28,-6,.2,.4,0],[36,-12,.15,.4,.1]],
+block:[[14,0,-.15,.5,0],[24,-4,-.3,.5,0],[28,-6,-.35,.5,0]],   // racket in front, face closed (tilted forward), no swing
 cut:[[12,-8,.95,.45,.2],[30,10,.85,.55,0],[48,14,.7,.6,-.3]],
 chop:[[36,-56,1.1,.25,.5],[38,6,.85,.65,0],[6,52,.5,1,-.6]],
 smash:[[58,-30,1.4,.35,1],[40,-38,.5,.35,0],[-30,30,-.7,.6,-1]],
@@ -170,6 +189,7 @@ const GUIDE={
 loop:'루프 드라이브 · ① 무릎 굽히고 라켓을 공보다 낮게, 체중은 오른발 ② 골반을 돌리며 공 뒤를 위로 쓸기 ③ 라켓은 이마 앞까지, 체중은 왼발로',
 drive:'드라이브 · ① 허리 높이로 라켓을 뒤로, 체중은 오른발 ② 몸통을 돌리며 앞으로 밀어치기 ③ 눈높이에서 마무리, 체중은 왼발로',
 back:'백드라이브 · ① 라켓을 배 앞으로 당기고 팔꿈치는 앞으로 ② 팔꿈치를 축으로 앞·위로 튕기기 ③ 라켓은 눈높이 앞에서 멈추기',
+block:'디펜스 쇼트 · ① 공 앞에 라켓을 세우고 각도를 앞으로 숙이기 ② 튀어 오르는 순간 갖다 대기 ③ 힘을 빼고 밀지 않기',
 short:'쇼트 · ① 라켓을 몸 앞에 두고 백스윙은 짧게 ② 공이 튀어 오를 때 앞으로 밀기 ③ 팔을 길게 뻗지 말고 바로 준비 자세로',
 cut:'커트 · ① 라켓을 가슴 쪽으로 당기고 면을 열기 ② 앞·아래로 공 밑을 깎기 ③ 팔을 거의 편 채 치는 방향으로 마무리',
 chop:'수비 커트 · ① 어깨 높이까지 라켓을 들기 ② 공이 떨어질 때 위에서 아래로 길게 깎기 ③ 무릎 높이까지 내리고 자세는 낮게',
@@ -252,32 +272,39 @@ $('shot').firstChild.textContent='SERVE';$('shot-sub').textContent=label;$('timi
 $('spin').textContent=[spin>0?'TOP':spin<0?'BACK':'',side>0?'RIGHT':side<0?'LEFT':''].filter(Boolean).join(' + ')||'FLAT';
 fx.push({x:p.x,y:p.y,t:time});if(touchInput)navigator.vibrate?.(15);beep(520);toast(label+' · '+quality,1.4);
 }
-function hit(){
+const FAM={cut:'커트',drive:'드라이브',smash:'스매시',spin:'회전',short:'쇼트',block:'디펜스 쇼트'},
+ANSWER={cut:'커트 · 드라이브',drive:'디펜스 쇼트(꾹) · 드라이브',smash:'정확한 타이밍의 쇼트(탭)',spin:'스매시 · 쇼트(탭)'};
+// tap = short, hold in place = defense short (block); a double tap arms a smash for the next hittable ball
+function hit(tap){
 if(ball&&ball.held){if(playing&&!paused&&ball.owner==='you')serveHit();return;}
 if(!playing||paused||!ball||ball.owner!=='ai'||ball.bounces!==1||time-lastHit<.3)return;
 const smash=time<=smashUntil,state=P.timing(ball);if(state==='wait'||state==='none')return;
 const motion=swingMemory&&time<=swingMemory.until?swingMemory:null,R=RACKETS[racketType];
 const p=project(ball.x,ball.y,ball.z);let distance=Math.hypot(p.x-paddle.x,p.y-paddle.y);
 if(motion){const dx=motion.x-motion.fromX,dy=motion.y-motion.fromY,t=P.clamp(((p.x-motion.fromX)*dx+(p.y-motion.fromY)*dy)/(dx*dx+dy*dy||1),0,1);distance=Math.min(distance,Math.hypot(p.x-motion.fromX-t*dx,p.y-motion.fromY-t*dy));}
-if(distance>Math.max(touchInput?64:52,W*.075)*R.reach||(!smash&&!motion))return;
+if(distance>Math.max(touchInput?64:52,W*.075)*R.reach||(!smash&&!motion&&!tap))return;
 const quality=state==='perfect'&&distance<Math.max(touchInput?42:28,W*.04)*R.reach?'PERFECT':state==='late'?'LATE':'GOOD';
 if(motion&&motion.side)playerSide=motion.side==='right'?1:-1;else updateSide();
 const special=charge===100;if(special&&R.special==='chiquita')playerSide=-1;
 const boost=racketType==='jpen'&&playerSide>0?{loop:1.25,drive:1.25,side:1.25}:R.boost;
-const shot=P.shot(smash?0:motion.vx*R.power,smash?-1450:motion.vy*R.power,ball.z,ball.x,ball.y,mode==='practice',motion?{side:motion.side,rise:motion.rise}:{},special?R.special:racketType==='defense'?'chop':smash?'smash':undefined,boost);
+const still=tap&&!smash;let shot=P.shot(smash||still?0:motion.vx*R.power,smash?-1450:still?-200:motion.vy*R.power,ball.z,ball.x,ball.y,mode==='practice',motion?{side:motion.side,rise:motion.rise}:{},special?R.special:smash&&racketType!=='defense'?'smash':tap||(racketType==='defense'?'chop':smash?'smash':undefined),boost);
+const inc=P.incoming(ball),resp=P.family(shot.type),verdict=special?'ok':P.judge(inc,resp,quality==='PERFECT',racketType==='defense');   // specials always get through
+if(verdict!=='ok')shot=P.miss(shot,ball.y,ball.z,verdict);
 Object.assign(ball,shot,{owner:'you',bounces:0,aiAttempt:false});lastHit=time;lastShot=shot.type;smashUntil=-1;lastTap=null;swingMemory=null;
-const before=charge;if(special)charge=0;else charge=Math.min(100,charge+(quality==='PERFECT'?30:20)+(racketType==='shake'?10:0));updateSpecial();
+const before=charge;if(special)charge=0;else if(verdict==='ok')charge=Math.min(100,charge+(quality==='PERFECT'?30:20)+(racketType==='shake'?10:0));updateSpecial();
 rally++;best=Math.max(best,rally);updateScore();$('shot').firstChild.textContent=names[shot.type][0];$('shot-sub').textContent=names[shot.type][1]+(playerSide>0?' · 포핸드':' · 백핸드');$('timing').textContent=quality;
 $('spin').textContent=shot.spin<0?'BACK SPIN':shot.side?'SIDE SPIN':shot.spin>0?'TOP SPIN':'FLAT';
-fx.push({x:p.x,y:p.y,t:time,special:special&&SPECIALS[R.special].rgb});if(touchInput)navigator.vibrate?.(special?40:15);beep(special?950:shot.type==='smash'?760:490);toast(names[shot.type][1]+' · '+quality+(before<100&&charge===100?' · ✦ 필살기 충전 완료!':''),1.25);
-$('coach').textContent=special?SPECIALS[R.special].coach+' '+GUIDE[shot.type]:charge===100?`필살기가 충전됐어요. 다음 타격에 ${SPECIALS[R.special].name}이(가) 자동으로 나갑니다.`:GUIDE[shot.type]||'';
+fx.push({x:p.x,y:p.y,t:time,special:special&&SPECIALS[R.special].rgb});if(touchInput)navigator.vibrate?.(special?40:15);beep(special?950:shot.type==='smash'?760:490);if(verdict!=='ok'){toast(`${FAM[inc]} 공에 ${FAM[resp]} → ${verdict==='net'?'네트에 걸림':'테이블을 넘어감'}`,1.6);$('timing').textContent=verdict==='net'?'NET':'OVER';}
+else toast(names[shot.type][1]+' · '+quality+(before<100&&charge===100?' · ✦ 필살기 충전 완료!':''),1.25);
+$('coach').textContent=verdict!=='ok'?`${FAM[inc]} 공은 ${ANSWER[inc]}(으)로 넘길 수 있어요.`:special?SPECIALS[R.special].coach+' '+GUIDE[shot.type]:charge===100?`필살기가 충전됐어요. 다음 타격에 ${SPECIALS[R.special].name}이(가) 자동으로 나갑니다.`:GUIDE[shot.type]||'';
 }
 function statusToast(){if(time>toastUntil)$('toast').textContent=ball&&ball.held?(ball.owner!=='you'?'상대 서브를 기다리세요':ball.tossed?'떨어질 때 스윙! ↓커트 ↑상회전 →우회전 ←좌회전 (섞기 가능)':'내 서브 · 화면을 눌러 공을 토스하세요'):ball&&ball.owner==='ai'?(P.timing(ball)==='perfect'?'HIT! 지금 스윙 · 두 번 탭 / 클릭은 스매시':ball.bounces?(ball.y>0?'WAIT · 내 쪽 끝선을 넘어올 때까지 기다리세요':'READY · 테이블 밖에서 스윙!'):'WAIT · 바운드를 기다리세요'):'상대 리턴을 기다리세요';}
-function update(dt){time+=dt;statusToast();if(!ball){wait-=dt;if(wait<=0)myServe()?holdServe():net?oppServe():serve();return;}if(ball.held&&ball.owner!=='you')return;
+function update(dt){time+=dt;statusToast();holdCheck();if(!ball){wait-=dt;if(wait<=0)myServe()?holdServe():net?oppServe():serve();return;}if(ball.held&&ball.owner!=='you')return;
 if(ball.held){if(!ball.tossed)ballToHand();else{ball.vz-=6*dt;ball.z+=ball.vz*dt;if(ball.vz<0&&ball.z<ball.tossZ){ball.tossed=false;toast('놓쳤어요 · 다시 토스하세요',1.5);}}hit();return;}hit();if(!ball)return;const prevY=ball.y,prevZ=ball.z;P.step(ball,dt);if((prevY-1.37)*(ball.y-1.37)<0){const z=prevZ+(ball.z-prevZ)*(1.37-prevY)/(ball.y-prevY);if(z<.1525){point(ball.owner==='ai','네트에 걸렸어요');return;}}
 if(ball.serving&&ball.z<=0&&ball.vz<0){const own=ball.owner==='you'?ball.y>=0&&ball.y<1.37:ball.y>1.37&&ball.y<=2.74;if(Math.abs(ball.x)>.76||!own){point(ball.owner==='ai','서브 실패');return;}ball.serving=false;ball.z=0;ball.vz=-ball.vz*.8;ball.vy*=1.03;beep(270);}
 else if(ball.z<=0&&ball.vz<0&&!(ball.bounces===1&&(ball.y<0||ball.y>2.74))){if(Math.abs(ball.x)>.76||ball.y<0||ball.y>2.74){point(ball.owner==='ai','테이블 밖으로 나갔어요');return;}const valid=ball.owner==='ai'?ball.y<1.37:ball.y>1.37;if(!valid){point(ball.owner==='ai','자기 코트에 떨어졌어요');return;}ball.bounces++;if(ball.bounces>1){point(ball.owner==='you','두 번 바운드');return;}ball.z=0;ball.vz=-ball.vz*(ball.spin<0?.68:.8);ball.vy*=ball.spin<0?.78:1.03;beep(270);}
-if(!net&&ball.owner==='you'&&ball.bounces===1&&ball.y>2.44&&!ball.aiAttempt){ball.aiAttempt=true;const dif=$('difficulty').value;const chance=P.aiChance(ball,dif,mode==='practice');if(Math.abs(ball.x)<.87&&ball.z<.8&&Math.random()<chance){const speed=dif==='hard'?3.2:dif==='easy'?2:2.55,target=.5;const flight=(ball.y-target)/speed;ball.vx=(-ball.x+(Math.random()-.5)*(mode==='practice'?.5:.95))/flight;ball.vy=-speed;ball.vz=P.clamp((3*flight*flight-ball.z)/flight,.35,3.7);ball.spin=dif==='hard'?.6:0;ball.side=0;ball.bounces=0;ball.owner='ai';ball.type='drive';lastAIHit=time;aiShot=Math.random()<.5?'loop':'drive';rally++;best=Math.max(best,rally);updateScore();beep(390);}}
+if(!net&&ball.owner==='you'&&ball.bounces===1&&ball.y>2.44&&!ball.aiAttempt){ball.aiAttempt=true;const dif=$('difficulty').value;const chance=P.aiChance(ball,dif,mode==='practice');if(Math.abs(ball.x)<.87&&ball.z<.8&&Math.random()<chance){const speed=dif==='hard'?3.2:dif==='easy'?2:2.55,mix=mode==='practice'||dif==='easy'?[.5,.85,1]:dif==='hard'?[.4,.65,.85]:[.45,.75,.93],r=Math.random(),kind=r<mix[0]?'drive':r<mix[1]?'cut':r<mix[2]?'side':'smash';
+Object.assign(ball,P.aiReturn(kind,ball.x,ball.y,ball.z,speed,(Math.random()-.5)*(mode==='practice'?.5:.95)),{bounces:0,owner:'ai'});lastAIHit=time;aiShot={drive:'loop',cut:'cut',side:'side',smash:'smash'}[ball.type];rally++;best=Math.max(best,rally);updateScore();beep(390);}}
 const remote=net&&ball.owner==='you'&&ball.bounces===1&&ball.y>2.74;if(remote)ball.passT??=time; // the far player's swing is still on the wire: give it time to arrive
 if((!remote||time-ball.passT>.45)&&(ball.y<-.7||ball.y>(net?4.1:3.15)||Math.abs(ball.x)>1.2||ball.z<-.65)){point(ball.owner==='you'&&ball.bounces===1||ball.owner==='ai'&&ball.bounces===0,ball.bounces===1?'공을 놓쳤어요':'아웃');return;}trail.push({x:ball.x,y:ball.y,z:ball.z});if(trail.length>(SPECIALS[ball.type]?28:14))trail.shift();}
 function move(e){
@@ -301,11 +328,13 @@ gesture={x:paddle.x,y:paddle.y,t:performance.now(),distance:0,side:paddle.y+(tou
 canvas.addEventListener('pointermove',move);
 canvas.addEventListener('pointerup',e=>{
 if(e.pointerId!==activePointer)return;move(e);const now=performance.now();
-if(gesture&&gesture.distance<(touchInput?18:12)&&now-gesture.t<(touchInput?260:200)){
-if(lastTap&&lastTap.touch===touchInput&&now-lastTap.t<(touchInput?360:320)&&Math.hypot(paddle.x-lastTap.x,paddle.y-lastTap.y)<(touchInput?48:40)){smashUntil=time+.3;lastTap=null;hit();}else lastTap={x:paddle.x,y:paddle.y,t:now,touch:touchInput};
+if(gesture&&!gesture.held&&gesture.distance<(touchInput?18:12)&&now-gesture.t<(touchInput?260:200)){
+if(lastTap&&lastTap.touch===touchInput&&now-lastTap.t<(touchInput?360:320)&&Math.hypot(paddle.x-lastTap.x,paddle.y-lastTap.y)<(touchInput?48:40)){smashUntil=time+.7;lastTap=null;toast('스매시 준비! ⚡',.8);hit();}else{lastTap={x:paddle.x,y:paddle.y,t:now,touch:touchInput};hit('short');}
 }else lastTap=null;
 release();
 });
+// Holding still on one spot turns into a defense short for as long as the finger stays down.
+function holdCheck(){if(down&&gesture&&gesture.distance<(touchInput?18:12)&&performance.now()-gesture.t>280){if(!gesture.held){gesture.held=true;smashUntil=-1;}hit('block');}}
 function release(){down=false;gesture=null;activePointer=null;samples=[];paddle.vx=paddle.vy=0;}
 function cancelPointer(e){if(e.pointerId!==activePointer)return;swingMemory=null;release();lastTap=null;smashUntil=-1;}
 canvas.addEventListener('pointercancel',cancelPointer);canvas.addEventListener('lostpointercapture',cancelPointer);
@@ -346,7 +375,7 @@ if(S.seq<net.expect&&time<net.ignoreUntil)return;                 // my hit is s
 if(ball&&ball.held&&ball.owner==='you'&&S.b&&S.b.held)return;     // my own toss runs locally
 ball=mir(S.b);}
 function sendHit(){net.conn.send({t:'H',b:wire(mir(ball)),...me4net()});net.expect=net.seq+1;net.ignoreUntil=time+1;}
-function guestUpdate(dt){time+=dt;statusToast();
+function guestUpdate(dt){time+=dt;statusToast();holdCheck();
 if(lastHit!==net.sentHit){net.sentHit=lastHit;if(ball&&!ball.held)sendHit();}   // swings land in pointer handlers too: ship them here
 if(!ball)return;
 if(ball.held){if(ball.owner!=='you')return;if(!ball.tossed)ballToHand();else{ball.vz-=6*dt;ball.z+=ball.vz*dt;if(ball.vz<0&&ball.z<ball.tossZ){ball.tossed=false;toast('놓쳤어요 · 다시 토스하세요',1.5);}}hit();return;}
