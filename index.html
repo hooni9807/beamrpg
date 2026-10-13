@@ -344,13 +344,13 @@ function serveHit(){
 const motion=swingMemory&&time<=swingMemory.until?swingMemory:null,state=serveTiming(ball);if(!motion||!['ready','perfect'].includes(state))return;
 const p=project(ball.x,ball.y,ball.z),dist=Math.hypot(p.x-paddle.x,p.y-paddle.y);if(dist>Math.max(touchInput?70:58,W*.08)*RACKETS[racketType].reach)return;
 const speed=Math.hypot(motion.vx,motion.vy)||1,up=-motion.vy/speed,right=motion.vx/speed;
-const spin=up>.3?up:up<-.3?up*.6:0,side=0; // up = topspin, down = backspin (cut); sideways only picks the course
+const spin=up>=0?Math.max(up,.3):Math.min(up*.6,-.25),side=0; // always spun: up = topspin, down = backspin (cut); sideways only picks the course
 const plan=P.planServe(spin,P.clamp(2.3+speed/1500*.9,2.3,3.2),ball.x,ball.z,P.clamp(right*.55,-.55,.55),side)||P.planServe(0,2.4,ball.x,P.clamp(ball.z,.15,.4),0,0);
 Object.assign(ball,{held:false,tossed:false,serving:true,vx:plan.vx,vy:plan.vy,vz:plan.vz,spin,side,type:'serve',aiAttempt:false});
-lastHit=time;lastShot=spin<0?'cut':spin>0?'loop':Math.abs(side)?'side':'short';swingMemory=null;
-const parts=[spin>0?'상회전':spin<0?'하회전(커트)':''].filter(Boolean),label='서브 · '+(parts.join(' + ')||'무회전'),quality=state==='perfect'?'PERFECT':'GOOD';
+lastHit=time;lastShot=spin<0?'cut':'loop';swingMemory=null;
+const label='서브 · '+(spin>0?'상회전':'하회전(커트)'),quality=state==='perfect'?'PERFECT':'GOOD';
 $('shot').firstChild.textContent='SERVE';$('shot-sub').textContent=label;$('timing').textContent=quality;
-$('spin').textContent=spin>0?'TOP SPIN':spin<0?'BACK SPIN':'FLAT';
+$('spin').textContent=spin>0?'TOP SPIN':'BACK SPIN';
 fx.push({x:p.x,y:p.y,t:time});if(touchInput)navigator.vibrate?.(15);beep(520);toast(label+' · '+quality,1.4);
 }
 const FAM={cut:'커트',drive:'드라이브',smash:'스매시',spin:'회전',short:'쇼트',block:'디펜스 쇼트'},
