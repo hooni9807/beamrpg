@@ -909,7 +909,7 @@ if(!rows.length){const li=document.createElement('li');li.className='empty';li.t
 rows.forEach((r,i)=>{const li=document.createElement('li'),no=document.createElement('span'),nm=document.createElement('span'),sub=document.createElement('span'),val=document.createElement('span');
 no.className='no';no.textContent=i+1;nm.className='nm';nm.textContent=r.name;sub.className='sub';sub.textContent=`${r.wins}승 ${r.losses}패${streakText(r.streak)}`;val.className='val';val.textContent=r.rating+'점';li.append(no,nm,sub,val);ol.append(li);});return;}
 let rows=localBoard(k),src='내 기기 기록';
-try{const db=await remote();if(db){const q=rankFs.query(rankFs.collection(db,k),rankFs.orderBy('value','desc'),rankFs.limit(250));rows=(await rankFs.getDocs(q)).docs.map(d=>d.data()).filter(d=>!TEST_NAMES.has(d.name)).slice(0,20);src='전체 랭킹 · 상위 20';}}catch{src='전체 랭킹을 불러오지 못해 내 기기 기록을 보여줘요';}
+try{const db=await remote();if(db){const q=rankFs.query(rankFs.collection(db,k),rankFs.orderBy('value','desc'),rankFs.limit(25));rows=(await rankFs.getDocs(q)).docs.map(d=>d.data()).filter(d=>!TEST_NAMES.has(d.name)).slice(0,20);src='전체 랭킹 · 상위 20';}}catch{src='전체 랭킹을 불러오지 못해 내 기기 기록을 보여줘요';}
 $('rank-src').textContent=src;const ol=$('rank-list');ol.textContent='';
 if(!rows.length){const li=document.createElement('li');li.className='empty';li.textContent='아직 기록이 없어요. 11점 경기를 끝내고 등록해 보세요!';ol.append(li);return;}
 rows.forEach((r,i)=>{const li=document.createElement('li'),no=document.createElement('span'),nm=document.createElement('span'),sub=document.createElement('span'),val=document.createElement('span');
