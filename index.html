@@ -881,7 +881,9 @@ const FIREBASE_CONFIG={apiKey:"AIzaSyAWdG1ybx321oEc6PeYy7elnGsBOafpEbQ",authDoma
   appId:"1:632748801549:web:3556b7ea3acdaba1c31f44"};   // public web config; access is guarded by firestore.rules
 const LEVEL_NO={b7:1,b6:2,b5:3,b4:4,b3:5,b2:6,b1:7,pro:8},LEVEL_NAME={b7:'7부',b6:'6부',b5:'5부',b4:'4부',b3:'3부',b2:'2부',b1:'1부',pro:'선수부'};
 let rankDb=null,rankFs=null,rankApp=null,rankUid=null,board='pvp',pendingRank=null;
-async function remote(){if(!FIREBASE_CONFIG)return null;if(rankDb)return rankDb;
+// A copy served from this computer (localhost) is a test build: it never touches the shared ranking database.
+const TEST_HOST=/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+async function remote(){if(!FIREBASE_CONFIG||TEST_HOST)return null;if(rankDb)return rankDb;
 const app=await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');rankFs=await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-lite.js');
 rankApp=app.initializeApp(FIREBASE_CONFIG);rankDb=rankFs.getFirestore(rankApp);return rankDb;}
 function localBoard(k){try{return JSON.parse(store.get('rank-'+k))||[];}catch{return [];}}
@@ -933,7 +935,7 @@ rankUid=au.currentUser.uid;if(!cleanName($('net-nick').value)){const n=cleanName
 catch(e){loginStatus(e.code==='auth/popup-closed-by-user'||e.code==='auth/cancelled-popup-request'?'로그인을 취소했어요':e.code==='auth/popup-blocked'?'팝업이 막혔어요 · 팝업을 허용한 뒤 다시 눌러주세요':'로그인 실패 ('+(e.code||e.message)+')');}}
 async function googleLogout(){const au=await authReady();if(au)await authLib.signOut(au);rankUid=null;showLogin();}
 // Playing requires a Google account (when Firebase is configured), so every record belongs to a signed-in player.
-function loginGate(){if(!FIREBASE_CONFIG||googleUser)return true;loginStatus('🔒 구글 로그인 후 플레이할 수 있어요');toast('구글 로그인 후 플레이할 수 있어요',2);$('google-login').focus();return false;}
+function loginGate(){if(!FIREBASE_CONFIG||TEST_HOST||googleUser)return true;loginStatus('🔒 구글 로그인 후 플레이할 수 있어요');toast('구글 로그인 후 플레이할 수 있어요',2);$('google-login').focus();return false;}
 function loginStatus(t){$('login-status').textContent=t;}
 // Game setup follows the Google account: settings/{uid} (only the owner can read or write it, see firestore.rules).
 // Loaded on sign-in, saved whenever a game is started from the setup window. The device copy stays as a fallback.
