@@ -263,7 +263,7 @@ function line(a,b,color,width=1){ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(
 function bladePath(R,inset=0){const w=R.w-inset,h=R.h-inset,nw=R.w*.36,p=new Path2D();
 if(R.square){p.roundRect(-w,-h,w*2,h*2,[w*.9,w*.9,w*.55,w*.55]);return p;}
 p.moveTo(-nw,R.h);p.bezierCurveTo(-w*1.08,h*.72,-w*1.06,-h*.42,-w*.62,-h*.92);p.bezierCurveTo(-w*.3,-h*1.08,w*.3,-h*1.08,w*.62,-h*.92);p.bezierCurveTo(w*1.06,-h*.42,w*1.08,h*.72,nw,R.h);p.closePath();return p;}
-function racket(x,y,angle,type,face,scale=1){
+function racket(x,y,angle,type,face,scale=1,skin=null){
 const R=RACKETS[type],H=R.h,hw=R.hw,y0=H*.72,y1=y0+R.hl,red=face===RED;
 ctx.save();ctx.translate(x,y);ctx.rotate(angle);ctx.scale(scale,scale);
 // blade wood + rubber (cut above the throat)
@@ -292,8 +292,31 @@ ctx.strokeStyle='#00000030';ctx.lineWidth=.7;ctx.stroke(hp);
 if(R.lens){ctx.beginPath();ctx.ellipse(0,y0+9,hw*.36,4.6,0,0,Math.PI*2);ctx.fillStyle=R.lens;ctx.fill();ctx.strokeStyle='#c9a227';ctx.lineWidth=.8;ctx.stroke();}
 if(type==='jpen'){ctx.beginPath();ctx.ellipse(0,y0+R.hl*.42,hw*.72,hw*.62,0,0,Math.PI*2);ctx.fillStyle='#c9a46b';ctx.fill();ctx.fillStyle='#a8834e70';for(const [px,py] of [[-2,-1],[1.5,1],[0,-2.5],[2.5,-2],[-1.5,2]]){ctx.fillRect(px,y0+R.hl*.42+py,.8,.8);}}
 if(type==='cpen'){ctx.beginPath();ctx.ellipse(0,y0+R.hl*.55,hw*.55,hw*.45,0,0,Math.PI*2);ctx.fillStyle='#8f6a3f';ctx.fill();}
+if(skin)grip(R,type,face===BLACK,skin,y0);
 ctx.restore();
 }
+// The hand on the racket, in racket space (head toward -y, handle toward +y), per grip:
+// shakehand - fist around the handle, thumb resting on the forehand rubber at the throat, index finger straight along
+//   the bottom edge of the backhand side; the chopper (수비수) holds it the same way with thumb and index set higher
+//   up the blade for feel on the chop.
+// Japanese penhold - thumb and index form a ring at the throat on the forehand side (index hooked over the cork),
+//   the other three fingers splayed flat across the back.
+// Chinese penhold - same ring in front, the three back fingers curled and stacked near the middle of the back.
+// fh = the forehand side faces the camera.
+function grip(R,type,fh,skin,y0){const hw=R.hw,pen=type==='jpen'||type==='cpen',f=(a,b,w)=>{ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.lineWidth=w;ctx.stroke();};
+ctx.save();ctx.strokeStyle=skin;ctx.fillStyle=skin;ctx.lineCap='round';
+const knuckle=()=>{ctx.strokeStyle='#c99f7c';ctx.lineWidth=.6;for(const k of [0,1,2]){ctx.beginPath();ctx.arc(hw*.15,y0+(pen?3:5)+k*3.3,1.6,-1.2,1.2);ctx.stroke();}ctx.strokeStyle=skin;};
+if(pen){ctx.beginPath();ctx.ellipse(0,y0+R.hl*.45,hw*.82,R.hl*.48,0,0,Math.PI*2);ctx.fill();
+if(fh){f([-hw*.75,y0+4],[-hw*.15,y0-4],3.4);f([hw*.8,y0+3],[hw*.2,y0-5],3.4);}   // thumb + index ring over the throat
+else if(type==='jpen')for(const k of [-1,0,1])f([k*2,y0],[k*R.w*.42,y0-R.h*.62],3);   // three fingers splayed flat on the back
+else{for(const k of [0,1,2]){ctx.beginPath();ctx.arc(R.w*.05,y0-R.h*.3-k*3.4,3.2,Math.PI*.55,Math.PI*1.75);ctx.lineWidth=3;ctx.stroke();}}   // curled, stacked
+knuckle();}
+else{const hi=type==='defense'?1.45:1;ctx.beginPath();ctx.ellipse(0,y0+R.hl*.38,hw*.78,R.hl*.36,0,0,Math.PI*2);ctx.fill();
+if(fh)f([-hw*.7,y0+R.hl*.3],[hw*.05,y0-5*hi],3.6);   // thumb on the forehand rubber
+else f([hw*.75,y0+R.hl*.25],[R.w*(1.07-hi*.45),y0-R.h*.3*hi],3.4);   // index finger along the blade edge
+for(const k of [0,1,2]){ctx.beginPath();ctx.arc(fh?hw*.62:-hw*.62,y0+R.hl*(.22+k*.16),2,0,Math.PI*2);ctx.fill();}   // fingertips wrapping round the handle
+knuckle();}
+ctx.restore();}
 // Strokes as [backswing, contact, finish], each [x, y, racket angle, crouch, weight].
 // x/y: body units from the racket-side shoulder (x outward, y down), mirrored by side.
 // weight: +1 on the racket-side foot, -1 on the other foot. Based on common coaching cues:
@@ -441,8 +464,7 @@ else{ctx.beginPath();ctx.arc(hx,hd-2*s,13*s,Math.PI,0);ctx.fillStyle=look.hair;c
 if(hipY<H*.5){ctx.fillStyle='#1a1530';for(const k of [-1,1]){ctx.beginPath();ctx.arc(hx+k*4.5*s,hd+1*s,1.8*s,0,Math.PI*2);ctx.fill();}ctx.beginPath();ctx.arc(hx,hd+5*s,4*s,.2,Math.PI-.2);ctx.lineWidth=1.4*s;ctx.strokeStyle='#1a1530';ctx.stroke();}}   // the far player faces us
 if(sad){ctx.fillStyle='#8fd3ff';for(const k of [-1,1])for(let i=0;i<3;i++){const ph=(sadT*1.4+i/3)%1;ctx.globalAlpha=1-ph;ctx.beginPath();ctx.arc(hx+k*8*s,hd+4*s+ph*26*s,2.3*s,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;}   // tears
 if(!armBehind){line(shoulder,elbow,look.sleeve,8*s);line(elbow,hand,skin,7*s);}
-racket(tgt.x,tgt.y,ang,type,face,racketScale);
-ctx.beginPath();ctx.arc(hand.x,hand.y,5*s,0,Math.PI*2);ctx.fillStyle=skin;ctx.fill();
+racket(tgt.x,tgt.y,ang,type,face,racketScale,skin);
 if(shout){ctx.font=`bold ${14*s}px Arial`;ctx.textAlign='center';ctx.fillStyle='#ffe066';ctx.fillText(look.shout,hx+side*22*s,hd-23*s);}
 if(st.taunt&&time-st.tauntT<1.6){const fz=Math.max(12,15*s),bx=hx,by=hd-40*s-fz;ctx.font=`900 ${fz}px Arial`;const bw=ctx.measureText(st.taunt).width+fz*1.2,bh=fz*1.8;   // speech bubble
 ctx.fillStyle='#ffffff';ctx.beginPath();ctx.roundRect(bx-bw/2,by-bh/2,bw,bh,bh/2);ctx.moveTo(bx-5,by+bh/2-1);ctx.lineTo(bx,by+bh/2+8);ctx.lineTo(bx+5,by+bh/2-1);ctx.fill();
