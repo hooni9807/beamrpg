@@ -458,7 +458,11 @@ ctx.font=`900 ${10.5*s}px Arial`;ctx.lineWidth=3.4*s;ctx.strokeStyle='#14121c';c
 else{line({x:ux-7*s,y:top+1*s},{x:ux,y:top+10*s*T},look.collar||'#ffffff',2.4*s);line({x:ux+7*s,y:top+1*s},{x:ux,y:top+10*s*T},look.collar||'#ffffff',2.4*s);   // V collar
 const ex=ux-side*8*s,ey=top+16*s*T;ctx.beginPath();ctx.arc(ex,ey,4.2*s,0,Math.PI*2);ctx.fillStyle='#ffffff';ctx.fill();ctx.lineWidth=1.2*s;ctx.strokeStyle=kit.color||'#ffe066';ctx.stroke();   // chest emblem
 }}
-const hx=ux+st.lean*3*s+pose.twist*side*2*s,hd=hy-75*s*T+(sad?9*s:0);ctx.beginPath();ctx.arc(hx,hd,13*s,0,Math.PI*2);ctx.fillStyle=skin;ctx.fill();
+// The head follows the body with a little springy lag: moving sideways it trails, tilts and turns toward the way the
+// player is going, and wobbles back when they stop.
+{const n=sad?0:P.clamp((st.vx||0)/160,-1,1);st.hov=(st.hov||0)*.8+(-n-(st.ho||0))*.22;st.ho=P.clamp((st.ho||0)+st.hov,-1.4,1.4);st.hn=lerp(st.hn||0,n,.15);}
+const hx=ux+st.lean*3*s+pose.twist*side*2*s+st.ho*4*s,hd=hy-75*s*T+(sad?9*s:0)+Math.abs(st.ho)*1.2*s;
+ctx.save();ctx.translate(hx,hd);ctx.rotate(st.ho*.2);ctx.scale(1-.12*Math.abs(st.hn),1);ctx.translate(-hx+st.hn*3*s,-hd);ctx.beginPath();ctx.arc(hx,hd,13*s,0,Math.PI*2);ctx.fillStyle=skin;ctx.fill();
 const fimg=faceImg(look);if(fimg){const hh=58*s,hw=hh*fimg.naturalWidth/fimg.naturalHeight;ctx.drawImage(fimg,hx-hw/2,hd-9*s-hh/2,hw,hh);}   // photo head, slightly big for a playful look
 else if(look.tousled){ // seen from behind: hair covers the back of the head, glasses show only as temples and lens rims at the sides
 for(const k of [-1,1]){ctx.beginPath();ctx.arc(hx+k*13*s,hd+1*s,3*s,0,Math.PI*2);ctx.fillStyle=skin;ctx.fill();}
@@ -467,6 +471,7 @@ for(const [dx,dy,r] of [[-7,-13,3.2],[0,-15,3.4],[7,-13,3]]){ctx.beginPath();ctx
 if(look.glasses)for(const k of [-1,1]){line({x:hx+k*14.5*s,y:hd-2*s},{x:hx+k*10*s,y:hd+1*s},'#111',1.6*s);ctx.fillStyle='#111';ctx.fillRect(hx+k*14.2*s-(k<0?1.6*s:0),hd-5*s,1.6*s,5*s);}}
 else{ctx.beginPath();ctx.arc(hx,hd-2*s,13*s,Math.PI,0);ctx.fillStyle=look.hair;ctx.fill();
 if(hipY<H*.5){ctx.fillStyle='#1a1530';for(const k of [-1,1]){ctx.beginPath();ctx.arc(hx+k*4.5*s,hd+1*s,1.8*s,0,Math.PI*2);ctx.fill();}ctx.beginPath();ctx.arc(hx,hd+5*s,4*s,.2,Math.PI-.2);ctx.lineWidth=1.4*s;ctx.strokeStyle='#1a1530';ctx.stroke();}}   // the far player faces us
+ctx.restore();
 if(sad){ctx.fillStyle='#8fd3ff';for(const k of [-1,1])for(let i=0;i<3;i++){const ph=(sadT*1.4+i/3)%1;ctx.globalAlpha=1-ph;ctx.beginPath();ctx.arc(hx+k*8*s,hd+4*s+ph*26*s,2.3*s,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;}   // tears
 if(!armBehind){line(shoulder,elbow,look.sleeve,8*s);line(elbow,hand,skin,7*s);}
 racket(tgt.x,tgt.y,ang,type,face,racketScale,skin);
