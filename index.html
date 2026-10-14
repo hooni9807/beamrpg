@@ -392,9 +392,9 @@ const cam={z:1,fx:0,fy:0,t:performance.now()};
 function render(){const nowC=performance.now(),cdt=Math.min((nowC-cam.t)/1000,.05);cam.t=nowC;
 const focus=!!(ball&&!ball.held&&ball.owner==='ai'&&ball.bounces===1&&ball.y<.4&&ball.y>-.95);   // from the bounce near my end line through the hit window
 if(focus){const p=project(ball.x,ball.y,ball.z);cam.fx=lerp(cam.fx||p.x,p.x,Math.min(1,cdt*10));cam.fy=lerp(cam.fy||H,lerp(p.y,H,.6),Math.min(1,cdt*10));}
-cam.z=lerp(cam.z,focus?CAM_ZOOM:1,Math.min(1,cdt*(focus?7:4)));if(cam.z<1.002)cam.z=1;
+cam.z=lerp(cam.z,focus?CAM_ZOOM:1,Math.min(1,cdt*(focus?10:4)));if(cam.z<1.002)cam.z=1;
 ctx.save();if(cam.z>1){ctx.translate(cam.fx,cam.fy);ctx.scale(cam.z,cam.z);ctx.translate(-cam.fx,-cam.fy);}renderScene();ctx.restore();}
-const CAM_ZOOM=1.18;
+const CAM_ZOOM=1.35;
 function renderScene(){ctx.clearRect(0,0,W,H);ctx.drawImage(arenaBg(),0,0,W,H);const nowR=performance.now(),rdt=Math.min((nowR-lastRenderT)/1000,.05);lastRenderT=nowR;
 const opponent=project(net?P.clamp(-net.opp.x,-.9,.9):ball?P.clamp(ball.x,-1,1):0,2.8,.18),aiScale=Math.min(P.clamp(W/800,.7,1),H/460)*.65,aiSide=net?-(net.opp.side||1):ball&&ball.x<0?-1:1;
 // AI faces us: its forehand (black) is on our left.
