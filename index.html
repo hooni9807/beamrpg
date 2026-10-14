@@ -734,7 +734,7 @@ if(store.get('setupDone')){const opt=(sel,v)=>[...$(sel).options].find(o=>o.valu
 $('su-last').textContent='';for(const [k,v] of rows){const li=document.createElement('li'),a=document.createElement('span');a.textContent=k;li.append(a,v);$('su-last').append(li);}suStep(0);}else suStep(1);$('setup').showModal();}
 $('su-blade').onchange=()=>{su.blade=$('su-blade').value;suRefresh();};$('su-rubber').onchange=()=>{su.rubber=$('su-rubber').value;suRefresh();};
 $('su-next').onclick=()=>suStep(2);$('su-reset').onclick=()=>suStep(1);$('su-quick').onclick=()=>$('su-play').click();$('su-back').onclick=()=>suStep(1);$('su-cancel').onclick=()=>$('setup').close();
-$('su-play').onclick=()=>{$('racket').value=su.racket;$('blade').value=su.blade;$('rubber').value=su.rubber;$('difficulty').value=su.diff;applySettings();store.set('setupDone','1');$('setup').close();begin();};
+$('su-play').onclick=()=>{$('racket').value=su.racket;$('blade').value=su.blade;$('rubber').value=su.rubber;$('difficulty').value=su.diff;applySettings();store.set('setupDone','1');saveCloudSetup();$('setup').close();begin();};
 function applySettings(){if(!pendingSettings())return;setCharacter($('character').value);bladeType=$('blade').value;rubberType=$('rubber').value;store.set('blade',bladeType);store.set('rubber',rubberType);setRacket($('racket').value);difficulty=$('difficulty').value;store.set('difficulty',difficulty);markPending();
 toast(`설정 적용 · ${LOOKS[charType].nick||LOOKS[charType].name} · ${RACKETS[racketType].name} · 난이도 ${$('difficulty').selectedOptions[0].text.split(' · ')[0]}`,2);}
 function previewSettings(){const rk=$('racket').value,ch=LOOKS[$('character').value]||LOOKS.jersey;$('gear').hidden=rk!=='shake';$('racket-note').textContent=racketNote(rk,$('blade').value,$('rubber').value);drawFace($('char-face'),ch);$('char-name').textContent=ch.nick||ch.name;}
@@ -924,7 +924,13 @@ async function googleLogout(){const au=await authReady();if(au)await authLib.sig
 // Playing requires a Google account (when Firebase is configured), so every record belongs to a signed-in player.
 function loginGate(){if(!FIREBASE_CONFIG||googleUser)return true;loginStatus('🔒 구글 로그인 후 플레이할 수 있어요');toast('구글 로그인 후 플레이할 수 있어요',2);$('google-login').focus();return false;}
 function loginStatus(t){$('login-status').textContent=t;}
-async function showLogin(){let u=null;try{const au=await authReady();u=au&&au.currentUser;}catch{}const g=u&&!u.isAnonymous;googleUser=g?u:null;if(g&&!store.get('nick'))store.set('nick',cleanName(u.displayName||'')||'선수');$('start').classList.toggle('locked',!g);
+// Game setup follows the Google account: settings/{uid} (only the owner can read or write it, see firestore.rules).
+// Loaded on sign-in, saved whenever a game is started from the setup window. The device copy stays as a fallback.
+const SETUP_KEYS=['racket','blade','rubber','difficulty','character'];
+async function loadCloudSetup(uid){try{const db=await remote();if(!db)return;const snap=await rankFs.getDoc(rankFs.doc(db,'settings',uid));if(!snap.exists())return;const d=snap.data();
+for(const k of SETUP_KEYS)if(typeof d[k]==='string'&&[...$(k).options].some(o=>o.value===d[k]))$(k).value=d[k];applySettings();store.set('setupDone','1');}catch{}}
+async function saveCloudSetup(){if(!googleUser)return;try{const db=await remote();if(!db)return;const d={at:rankFs.serverTimestamp()};for(const k of SETUP_KEYS)d[k]=$(k).value;await rankFs.setDoc(rankFs.doc(db,'settings',googleUser.uid),d);}catch{}}
+async function showLogin(){let u=null;try{const au=await authReady();u=au&&au.currentUser;}catch{}const g=u&&!u.isAnonymous;googleUser=g?u:null;if(g&&!store.get('nick'))store.set('nick',cleanName(u.displayName||'')||'선수');$('start').classList.toggle('locked',!g);if(g)await loadCloudSetup(u.uid);
 $('google-login').hidden=!!g;$('google-logout').hidden=!g;loginStatus(g?`${cleanName(u.displayName||'구글 계정')} 님으로 로그인됨 · 랭킹전 기록이 어느 기기에서든 이어져요`:'🔒 구글 로그인 후 플레이할 수 있어요 · 경기 기록이 자동으로 랭킹에 남아요');}
 async function applyRated(won){const name=cleanName(store.get('nick')||'')||'익명';let before=pvpLocal(),next=P.nextRating(before,won),where='내 기기';
 try{const db=await pvpRemote();if(db){const ref=rankFs.doc(db,'players',rankUid),snap=await rankFs.getDoc(ref);if(snap.exists())before={...before,...snap.data()};next=P.nextRating(before,won);

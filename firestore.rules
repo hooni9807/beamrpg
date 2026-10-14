@@ -33,6 +33,20 @@ service cloud.firestore {
         && d.rating is int && d.wins is int && d.losses is int && d.streak is int
         && d.at == request.time;
     }
+    // Game setup per Google account (racket, blade, rubber, difficulty, character): only the owner reads or writes it.
+    match /settings/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if request.auth != null && request.auth.uid == uid
+        && request.auth.token.firebase.sign_in_provider == 'google.com'
+        && request.resource.data.keys().hasOnly(['racket', 'blade', 'rubber', 'difficulty', 'character', 'at'])
+        && request.resource.data.keys().hasAll(['racket', 'blade', 'rubber', 'difficulty', 'character', 'at'])
+        && request.resource.data.racket is string && request.resource.data.racket.size() <= 12
+        && request.resource.data.blade is string && request.resource.data.blade.size() <= 12
+        && request.resource.data.rubber is string && request.resource.data.rubber.size() <= 12
+        && request.resource.data.difficulty is string && request.resource.data.difficulty.size() <= 12
+        && request.resource.data.character is string && request.resource.data.character.size() <= 12
+        && request.resource.data.at == request.time;
+    }
     match /players/{uid} {
       allow read: if true;
       allow create: if request.auth != null && request.auth.uid == uid && pvpShape(request.resource.data)
