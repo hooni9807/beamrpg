@@ -905,12 +905,12 @@ function pvpLocal(){try{return {rating:1000,wins:0,losses:0,streak:0,...JSON.par
 function streakText(k){return k>1?` · ${k}연승`:k<-1?` · ${-k}연패`:'';}
 function updatePvpMe(){const r=pvpLocal();$('pvp-me').textContent=r.wins+r.losses?`내 레이팅 ${r.rating} · ${r.wins}승 ${r.losses}패${streakText(r.streak)}`:'랭킹전: 온라인 1:1 승패로 레이팅이 바뀌어요 (시작 1000)';}
 function needNick(){if(!loginGate())return false;const n=cleanName(store.get('nick')||googleUser&&googleUser.displayName||'')||'선수';$('net-nick').value=n;store.set('nick',n);return true;}
-// Sign-in. Everyone gets an anonymous account on first rated game; 'Google로 로그인' upgrades it in place (link), so the
-// rating follows the Google account to any device. The session is remembered by the browser. Only the uid and the
+// Sign-in: Google only (no guest accounts). A device still holding an old guest session links it to Google on sign-in,
+// so that rating follows the Google account to any device. The session is remembered by the browser. Only the uid and the
 // nickname are stored in the ranking - never the e-mail.
 let authLib=null,authObj=null;
 async function authReady(){const db=await remote();if(!db)return null;authLib??=await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js');authObj??=authLib.getAuth(rankApp);await authObj.authStateReady();return authObj;}
-async function pvpRemote(){const db=await remote();if(!db)return null;const au=await authReady();if(!au.currentUser)await authLib.signInAnonymously(au);rankUid=au.currentUser.uid;return db;}
+async function pvpRemote(){const db=await remote();if(!db)return null;const au=await authReady();if(!au.currentUser||au.currentUser.isAnonymous)return null;rankUid=au.currentUser.uid;return db;}   // Google accounts only - no guest accounts are created
 const IN_APP=/KAKAOTALK|Instagram|FBAN|FBAV|NAVER|Line\/|DaumApps|everytimeApp/i.test(navigator.userAgent);   // Google blocks sign-in inside app web views
 async function googleLogin(){
 if(IN_APP){if(/KAKAOTALK/i.test(navigator.userAgent)){location.href='kakaotalk://web/openExternal?url='+encodeURIComponent(location.href);return;}loginStatus('구글 로그인은 앱 안 브라우저에서 막혀 있어요. 오른쪽 위 ⋮ → 다른 브라우저로 열기 (크롬 · 사파리)');return;}

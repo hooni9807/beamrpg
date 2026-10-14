@@ -24,7 +24,7 @@ service cloud.firestore {
       allow create: if valid(100);
     }
 
-    // PvP rating. Each device signs in anonymously and may only write its own doc, one result at a time,
+    // PvP rating. Google-signed-in players only; each may only write its own doc, one result at a time,
     // with the exact rating step: win +9+streak (10, 11, 12 ...), loss -9+streak (-10, -11, -12 ...).
     function pvpShape(d) {
       return d.keys().hasOnly(['name', 'rating', 'wins', 'losses', 'streak', 'at'])
@@ -49,12 +49,12 @@ service cloud.firestore {
     }
     match /players/{uid} {
       allow read: if true;
-      allow create: if request.auth != null && request.auth.uid == uid && pvpShape(request.resource.data)
+      allow create: if request.auth != null && request.auth.uid == uid && request.auth.token.firebase.sign_in_provider == 'google.com' && pvpShape(request.resource.data)
         && ((request.resource.data.wins == 1 && request.resource.data.losses == 0
              && request.resource.data.streak == 1 && request.resource.data.rating == 1010)
          || (request.resource.data.wins == 0 && request.resource.data.losses == 1
              && request.resource.data.streak == -1 && request.resource.data.rating == 990));
-      allow update: if request.auth != null && request.auth.uid == uid && pvpShape(request.resource.data)
+      allow update: if request.auth != null && request.auth.uid == uid && request.auth.token.firebase.sign_in_provider == 'google.com' && pvpShape(request.resource.data)
         && request.time > resource.data.at + duration.value(90, 's')
         && ((request.resource.data.wins == resource.data.wins + 1
              && request.resource.data.losses == resource.data.losses
