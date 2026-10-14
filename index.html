@@ -156,7 +156,7 @@ jersey:{name:'휴고범',nick:'휴고범',kit:{name:'BEOM',color:'#c9ec4a'},trai
 leesin:{name:'리신범',nick:'리신범',kit:{name:'BEOM',color:'#ffd166'},trait:{strong:1,weak:-1},face:'leesin',split:true,shout:'용의 분노!',strokes:'lee',fist:true,stanceK:1.1,crouchK:.08,shirt:'#6f6449',camo:['#4b5536','#8c7b58','#2f2a21','#b3a37f'],sleeve:'#6f6449',pants:'#151515',shorts:true,hair:'#24180f',watch:true,bigWatch:true},
 // 퍼시벌, from the user's photo: thick black curly hair, open-mouthed grin, grey zip hoodie over a black tee, black
 // shorts. Left-handed. Scores with a deep squat, both fists up by the head, and his ceremony line.
-percival:{name:'퍼시벌',nick:'퍼시벌',kit:{name:'PERCIVAL',color:'#d9d9d9'},face:'percival',lefty:true,serveEdge:.25,ceremony:'아엠 퍼시벌~',squatCheer:true,split:true,stanceK:1.1,crouchK:.1,shirt:'#9d9fa4',sleeve:'#9d9fa4',hoodie:true,collar:'#16161a',pants:'#151515',shorts:true,hair:'#141414'},
+percival:{name:'퍼시벌',nick:'퍼시벌',kit:{name:'PERCIVAL',color:'#d9d9d9'},face:'percival',faceFit:{h:49,b:27},skin:'#c99474',skinShade:'#a26d52',lefty:true,serveEdge:.25,ceremony:'아엠 퍼시벌~',squatCheer:true,split:true,stanceK:1.1,crouchK:.1,shirt:'#9d9fa4',sleeve:'#9d9fa4',hoodie:true,collar:'#16161a',pants:'#151515',shorts:true,hair:'#141414'},
 plain:{name:'파란 선수',shirt:'#2f6fd6',sleeve:'#2f6fd6',pants:'#33404f',hair:'#3a2b22'},
 ai:{name:'빨간 선수',shirt:'#d6453d',sleeve:'#d6453d',pants:'#33404f',hair:'#3a2b22'}};
 // Shakehand blade and rubber. speed / spin multiply the shot, err is the extra chance a good stroke still misses (control).
@@ -422,7 +422,7 @@ if(down&&gesture&&!gesture.held&&gesture.distance>=(touchInput?18:12)&&liveStrok
 if(down&&gesture&&!gesture.held&&!gesture.dir&&gesture.stance!=='mid'){mySwing.type=gesture.stance==='low'?'lower':'chop';return .35;}   // finger down: show the chosen stance
 mySwing.type=expectStroke();return P.clamp((1.37-ball.y)/1.45,0,1)*.35;}let lastShot='drive',aiShot='short',lastRenderT=performance.now();
 function person(st,hipY,target,angle,look,s,type,face,side,stroke,since,prep=null){
-const arm=look.lefty?(hipY>H*.5?-1:1):side,T=st.tall||1,R=RACKETS[type],skin='#f2cda8',pants=look.pants,x=st.x,moving=P.clamp(Math.abs(st.vx)/160,0,1),dir=Math.sign(st.vx)||1;
+const arm=look.lefty?(hipY>H*.5?-1:1):side,T=st.tall||1,R=RACKETS[type],skin=look.skin||'#f2cda8',pants=look.pants,x=st.x,moving=P.clamp(Math.abs(st.vx)/160,0,1),dir=Math.sign(st.vx)||1;
 const pose=strokePose(stroke,since,side,s,{x:x+arm*15*s,y:hipY-50*s*T+st.crouch*18*s},target,angle,st.crouch,look,st.amp??1,st.dirX||0,prep,T);
 const cheer=st.cheerT!=null&&time-st.cheerT<1.2?Math.abs(Math.sin((time-st.cheerT)*8)):-1;   // won the point: jump with both arms up
 if(cheer>=0){pose.target={x:x+side*16*s,y:hipY-128*s*T};pose.angle=side*.15;pose.crouch=.15;pose.twist=0;}
@@ -470,8 +470,9 @@ const ex=ux-side*8*s,ey=top+16*s*T;ctx.beginPath();ctx.arc(ex,ey,4.2*s,0,Math.PI
 // player is going, and wobbles back when they stop.
 {const n=sad?0:P.clamp((st.vx||0)/160,-1,1);st.hov=(st.hov||0)*.8+(-n-(st.ho||0))*.22;st.ho=P.clamp((st.ho||0)+st.hov,-1.4,1.4);st.hn=lerp(st.hn||0,n,.15);}
 const hx=ux+st.lean*3*s+pose.twist*side*2*s+st.ho*4*s,hd=hy-75*s*T+(sad?9*s:0)+Math.abs(st.ho)*1.2*s;
+{const nk={x:ux,y:top+4*s},nh={x:hx,y:hd+9*s};line(nk,nh,look.skinShade||'#d9ad88',10.5*s);line({x:nk.x+1*s,y:nk.y},{x:nh.x+1*s,y:nh.y},skin,8*s);}   // neck, shaded at the sides
 ctx.save();ctx.translate(hx,hd);ctx.rotate(st.ho*.2);ctx.scale(1-.12*Math.abs(st.hn),1);ctx.translate(-hx+st.hn*3*s,-hd);ctx.beginPath();ctx.arc(hx,hd,13*s,0,Math.PI*2);ctx.fillStyle=skin;ctx.fill();
-const fimg=faceImg(look);if(fimg){const hh=58*s,hw=hh*fimg.naturalWidth/fimg.naturalHeight;ctx.drawImage(fimg,hx-hw/2,hd-9*s-hh/2,hw,hh);}   // photo head, slightly big for a playful look
+const fimg=faceImg(look);if(fimg){const fit=look.faceFit,hh=(fit?fit.h:58)*s,hw=hh*fimg.naturalWidth/fimg.naturalHeight;ctx.drawImage(fimg,hx-hw/2,fit?hd+fit.b*s-hh:hd-9*s-hh/2,hw,hh);}   // fit: photo cut with its own neck, bottom tucked into the collar   // photo head, slightly big for a playful look
 else if(look.tousled){ // seen from behind: hair covers the back of the head, glasses show only as temples and lens rims at the sides
 for(const k of [-1,1]){ctx.beginPath();ctx.arc(hx+k*13*s,hd+1*s,3*s,0,Math.PI*2);ctx.fillStyle=skin;ctx.fill();}
 ctx.beginPath();ctx.ellipse(hx,hd-3*s,13.6*s,11.5*s,0,0,Math.PI*2);ctx.fillStyle=look.hair;ctx.fill();
