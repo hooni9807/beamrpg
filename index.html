@@ -521,13 +521,15 @@ fx.push({x:p.x,y:p.y,t:time});if(touchInput)navigator.vibrate?.(15);beep(520);to
 }
 const FAM={cut:'커트',drive:'드라이브',smash:'스매시',spin:'회전',short:'쇼트',block:'디펜스 쇼트'},
 ANSWER={cut:'커트 · 드라이브',drive:'디펜스 쇼트(두 번 탭) · 드라이브',smash:'정확한 타이밍의 쇼트(탭)',spin:'스매시 · 쇼트(탭)'};
-// tap = short, hold in place = defense short (block); a double tap arms a smash for the next hittable ball
+// tap = short (a timed tap on a drive becomes a block), hold in place = defense short (block); a double tap arms a smash for the next hittable ball
 function hit(tap){
 if(!tap&&time<=blockUntil)tap='block';   // double tap: defense short on the next ball
 if(ball&&ball.held){if(playing&&!paused&&ball.owner==='you')serveHit();return;}
 if(!playing||paused||!ball||ball.owner!=='ai'||ball.bounces!==1||time-lastHit<.3)return;
-const smash=time<=smashUntil,state=P.timing(ball);if(state==='wait'||state==='none')return;
+if(tap==='short'&&P.incoming(ball)==='drive')tap='block';
+let smash=time<=smashUntil;const state=P.timing(ball);if(state==='wait'||state==='none')return;
 const motion=swingMemory&&time<=swingMemory.until?swingMemory:null,R=RACKETS[racketType];
+if(!smash&&!tap&&motion&&ball.chance)smash=true;
 const p=project(ball.x,ball.y,ball.z);let distance=Math.hypot(p.x-paddle.x,p.y-paddle.y);
 if(motion){const dx=motion.x-motion.fromX,dy=motion.y-motion.fromY,t=P.clamp(((p.x-motion.fromX)*dx+(p.y-motion.fromY)*dy)/(dx*dx+dy*dy||1),0,1);distance=Math.min(distance,Math.hypot(p.x-motion.fromX-t*dx,p.y-motion.fromY-t*dy));}
 if(distance>Math.max(touchInput?64:52,W*.075)*R.reach*(ball.kill?.75:1)||(!smash&&!motion&&!tap))return;   // a kill smash is harder to reach
@@ -535,7 +537,7 @@ const quality=state==='perfect'&&distance<Math.max(touchInput?42:28,W*.04)*R.rea
 if(motion&&motion.side)playerSide=motion.side==='right'?1:-1;else updateSide();
 const special=charge===100;if(special&&R.special==='chiquita')playerSide=-1;
 const boost=racketType==='jpen'&&playerSide>0?{loop:1.25,drive:1.25,side:1.25}:racketType==='shake'&&playerSide<0?{loop:1.25,drive:1.25,back:1.25}:R.boost;
-const still=tap&&!smash;let shot=P.shot(smash||still?0:motion.vx*R.power,smash?-1450:still?-200:motion.vy*R.power,ball.z,ball.x,ball.y,mode==='practice',motion?{above:motion.above,course:motion.course,dir:motion.dir,below:motion.below,side:motion.side,rise:motion.rise,drop:motion.drop,dx:motion.dx}:{},special?R.special:smash&&(racketType!=='defense'||ball.chance)?'smash':tap||(racketType==='defense'?'chop':smash?'smash':undefined),boost);
+const still=tap&&!smash;let shot=P.shot(still||!motion?0:motion.vx*R.power,smash?-1450:still?-200:motion.vy*R.power,ball.z,ball.x,ball.y,mode==='practice',motion?{above:motion.above,course:motion.course!=null?motion.course:smash?motion.dx/Math.max(Math.abs(motion.rise||0),40):null,dir:motion.dir,below:motion.below,side:motion.side,rise:motion.rise,drop:motion.drop,dx:motion.dx}:{},special?R.special:smash&&(racketType!=='defense'||ball.chance)?'smash':tap||(racketType==='defense'?'chop':smash?'smash':undefined),boost);
 const inc=P.incoming(ball),resp=P.family(shot.type),verdict=special?'ok':P.judge(inc,resp,quality==='PERFECT',racketType==='defense');   // specials always get through
 if(verdict!=='ok')shot=P.miss(shot,ball.y,ball.z,verdict);
 let flair='';
