@@ -357,7 +357,7 @@ if(st.last===dir)step(-dir,st.mode==='cross'&&Math.abs(remain)>stance*2?home(dir
 else step(dir,home(dir)+dir*stance*(st.mode==='cross'?.6:.35)+lead);                                                         // near foot steps out
 }
 const BODY_TALL=1.2,me={x:null,vx:0,crouch:.3,tall:BODY_TALL},foe={x:null,vx:0,crouch:.3,tall:BODY_TALL},   // BODY_TALL: figure height vs width
-ARM_REACH=78,mySwing={type:'drive',t:-10};
+ARM_LEN=46,mySwing={type:'drive',t:-10};
 // While the finger is drawing at a live ball the figure already plays that stroke (drag up = drive, down = cut ...).
 function liveStroke(){const g=gesture,t=P.classify(paddle.vx,paddle.vy,{rise:g.y-paddle.y,drop:paddle.y-g.y,dx:paddle.x-g.x,side:g.side});if(t!=='short')g.stroke=racketType==='defense'?'chop':t;return g.stroke;}   // the defender cuts every swing
 // The figure loads its racket in time with the incoming ball: from the net to the PERFECT point it eases into the backswing
@@ -375,33 +375,44 @@ if(cheer>=0){pose.target={x:x+side*16*s,y:hipY-128*s*T};pose.angle=side*.15;pose
 const cr=pose.crouch,stepping=st.feet?Math.max(...[-1,1].map(k=>st.feet[k].t<1?Math.sin(Math.PI*st.feet[k].t):0)):0,split=look.split&&st.splitT!=null&&time-st.splitT<.24?Math.sin(Math.PI*(time-st.splitT)/.24):0,bob=look.split&&!stepping&&!split&&!(since>=0&&since<.8)?Math.sin(time*7)*1.2*s:0,hop=stepping*3*s+split*8*s+bob+Math.max(0,cheer)*12*s,hy=hipY+cr*18*s-hop+Math.abs(st.lean||0)*10*s,cx=x+dir*moving*6*s+pose.twist*side*8*s,ground=hipY+30*s*T;
 // Lunge: when the racket has to reach past the body, sink lower, widen the stance (stepBody reads st.lean) and lean the upper body toward it.
 const lean=P.clamp((pose.target.x-cx-side*40*s)/(70*s),-1,1);st.lean=lerp(st.lean||0,lean,.25);const ux=cx+st.lean*12*s;
-const shoulder={x:ux+side*15*s,y:hy-50*s*T},ang=pose.angle,racketScale=s*.78,d=(R.h+R.hl*.55)*racketScale;let tgt=pose.target,hand={x:tgt.x-Math.sin(ang)*d,y:tgt.y+Math.cos(ang)*d};
-{const dx=hand.x-shoulder.x,dy=hand.y-shoulder.y,len=Math.hypot(dx,dy),k=Math.max(0,len-ARM_REACH*s*T)/(len||1);tgt={x:tgt.x-dx*k,y:tgt.y-dy*k};hand={x:hand.x-dx*k,y:hand.y-dy*k};}   // the arm never stretches past its reach
-const elbow={x:(shoulder.x+hand.x)/2,y:(shoulder.y+hand.y)/2+12*s};
+// Arm of fixed length (upper arm + forearm): the hand goes toward the racket target but never further than the arm reaches,
+// and the elbow bends when the target is close - the arm never stretches.
+const shoulder={x:ux+side*15*s,y:hy-50*s*T},ang=pose.angle,racketScale=s*.78,d=(R.h+R.hl*.55)*racketScale,L=ARM_LEN*s*T;
+const want={x:pose.target.x-Math.sin(ang)*d,y:pose.target.y+Math.cos(ang)*d},adx=want.x-shoulder.x,ady=want.y-shoulder.y,alen=Math.hypot(adx,ady)||1,reach=Math.min(alen,L);
+const hand={x:shoulder.x+adx/alen*reach,y:shoulder.y+ady/alen*reach},tgt={x:hand.x+Math.sin(ang)*d,y:hand.y-Math.cos(ang)*d};
+const bend=Math.sqrt(Math.max(0,(L/2)**2-(reach/2)**2)),px=-ady/alen,py=adx/alen,flip=py<0?-1:1;   // elbow bends downward
+const elbow={x:(shoulder.x+hand.x)/2+px*bend*flip,y:(shoulder.y+hand.y)/2+py*bend*flip};
 ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
 if(st.aura){const pulse=.55+.45*Math.sin(time*7),g=ctx.createRadialGradient(cx,hy-38*s*T,6*s,cx,hy-38*s*T,78*s);g.addColorStop(0,`rgba(${st.aura},${.55*pulse})`);g.addColorStop(1,`rgba(${st.aura},0)`);ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(cx,hy-38*s*T,62*s,80*s,0,0,Math.PI*2);ctx.fill();}   // special-ready aura
-// 졸라맨 (stick figure): thin glowing limbs, a small team-colour tee, round head (photo face for 휴고범 / 리신범).
-ctx.beginPath();ctx.ellipse(x,ground+2*s,(26+cr*8)*s,5*s,0,0,Math.PI*2);ctx.fillStyle='#00000070';ctx.fill();
-const ink='#f3eeff',lw=3.4*s;ctx.shadowColor=look.shirt;ctx.shadowBlur=10*s;
+ctx.beginPath();ctx.ellipse(x,ground+2*s,(32+cr*8)*s,6*s,0,0,Math.PI*2);ctx.fillStyle='#00000060';ctx.fill();
 for(const k of (st.feet&&st.feet[1].t<1?[-1,1]:[1,-1])){
 const f=st.feet?st.feet[k]:{x:x+k*(17+cr*12)*s,t:1},lift=f.t<1?Math.sin(Math.PI*f.t)*7*s:0;
-const foot={x:f.x+k*split*4*s,y:ground-lift-split*5*s},hip={x:cx,y:hy},knee={x:(hip.x+foot.x)/2+k*(2+cr*8)*s,y:(hip.y+foot.y)/2+cr*2*s-lift*.3};
-line(hip,knee,ink,lw);line(knee,foot,ink,lw);line(foot,{x:foot.x+k*7*s,y:foot.y},ink,lw);}
-const shout=look.shout&&st.shoutT!=null&&time-st.shoutT<.6;const free=cheer>=0?{x:cx-side*20*s,y:hy-98*s*T}:shout?{x:cx-side*20*s,y:hy-82*s*T}:st.holding?{x:cx-side*22*s,y:hy-34*s*T}:look.fist&&!st.tossing?{x:cx-side*24*s,y:hy-(46+pose.twist*6)*s}:st.tossing?{x:cx-side*20*s,y:hy-78*s*T}:{x:cx-side*(26-pose.twist*6)*s,y:hy-(24+pose.twist*10)*s};st.free=free;
-const fs={x:ux-side*12*s,y:hy-50*s*T};line(fs,{x:(fs.x+free.x)/2-side*4*s,y:(fs.y+free.y)/2+6*s},ink,lw);line({x:(fs.x+free.x)/2-side*4*s,y:(fs.y+free.y)/2+6*s},free,ink,lw);
-line({x:ux,y:hy-56*s*T},{x:cx,y:hy},ink,lw);   // spine (leans in a lunge)
-ctx.beginPath();ctx.moveTo(ux-12*s,hy-54*s*T);ctx.lineTo(ux+12*s,hy-54*s*T);ctx.lineTo(lerp(cx,ux,.4)+9*s,hy-22*s*T);ctx.lineTo(lerp(cx,ux,.4)-9*s,hy-22*s*T);ctx.closePath();ctx.fillStyle=look.shirt;ctx.fill();   // tee
-line({x:ux-12*s,y:hy-54*s*T},{x:ux-18*s,y:hy-46*s*T},look.shirt,6*s);line({x:ux+12*s,y:hy-54*s*T},{x:ux+18*s,y:hy-46*s*T},look.shirt,6*s);   // sleeves
-const hx=ux+st.lean*3*s+pose.twist*side*2*s,fimg=faceImg(look);ctx.shadowBlur=0;
-if(fimg){const hh=52*s,hw=hh*fimg.naturalWidth/fimg.naturalHeight;ctx.drawImage(fimg,hx-hw/2,hy-80*s*T-hh/2,hw,hh);}   // photo head
-else{ctx.beginPath();ctx.arc(hx,hy-72*s*T,13*s,0,Math.PI*2);ctx.fillStyle='#fbf9ff';ctx.fill();ctx.lineWidth=2*s;ctx.strokeStyle=look.shirt;ctx.stroke();
-if(hipY<H*.5){ctx.fillStyle='#1a1530';for(const k of [-1,1]){ctx.beginPath();ctx.arc(hx+k*4.5*s,hy-74*s*T,1.8*s,0,Math.PI*2);ctx.fill();}ctx.beginPath();ctx.arc(hx,hy-69*s*T,4*s,.2,Math.PI-.2);ctx.lineWidth=1.4*s;ctx.strokeStyle='#1a1530';ctx.stroke();}}   // the far player faces us
-ctx.shadowColor=look.shirt;ctx.shadowBlur=10*s;line(shoulder,elbow,ink,lw);line(elbow,hand,ink,lw);ctx.shadowBlur=0;
+const foot={x:f.x+k*split*4*s,y:ground-lift-split*5*s},hip={x:cx+k*8*s,y:hy},knee={x:(hip.x+foot.x)/2+k*(2+cr*8)*s,y:(hip.y+foot.y)/2+cr*2*s-lift*.3};
+if(look.shorts){line(hip,knee,skin,7*s);line(knee,foot,skin,6.5*s);line(hip,{x:lerp(hip.x,knee.x,.6),y:lerp(hip.y,knee.y,.6)},pants,11*s);}
+else{line(hip,knee,pants,8*s);line(knee,foot,pants,7*s);}ctx.beginPath();ctx.ellipse(foot.x+k*3*s,foot.y+1*s,9*s,4*s,0,0,Math.PI*2);ctx.fillStyle='#f4f1e6';ctx.fill();}
+const shout=look.shout&&st.shoutT!=null&&time-st.shoutT<.6;const free=cheer>=0?{x:ux-side*20*s,y:hy-98*s*T}:shout?{x:ux-side*20*s,y:hy-82*s*T}:st.holding?{x:ux-side*22*s,y:hy-34*s*T}:look.fist&&!st.tossing?{x:ux-side*24*s,y:hy-(46+pose.twist*6)*s*T}:st.tossing?{x:ux-side*20*s,y:hy-78*s*T}:{x:ux-side*(26-pose.twist*6)*s,y:hy-(24+pose.twist*10)*s*T};st.free=free;const fs={x:ux-side*15*s,y:hy-50*s*T};line(fs,free,skin,7*s);line(fs,{x:lerp(fs.x,free.x,.3),y:lerp(fs.y,free.y,.3)},look.sleeve,8.5*s);
+if(look.watch){const w={x:lerp(fs.x,free.x,.86),y:lerp(fs.y,free.y,.86)};ctx.beginPath();ctx.arc(w.x,w.y,(look.bigWatch?4.4:3.4)*s,0,Math.PI*2);ctx.fillStyle='#111';ctx.fill();}
+if(look.fist){ctx.beginPath();ctx.arc(free.x,free.y,4.6*s,0,Math.PI*2);ctx.fillStyle=skin;ctx.fill();}
+const top=hy-60*s*T,th=64*s*T;ctx.beginPath();ctx.roundRect(ux-18*s,top,36*s,th,12*s);ctx.fillStyle=look.shirt;ctx.fill();
+if(look.camo){ctx.save();ctx.clip();const q=4*s;for(let i=-5;i<5;i++)for(let j=0;j*q<th;j++){const h=(i*73856093^j*19349663)>>>0,c=look.camo[h%5];if(c){ctx.fillStyle=c;ctx.fillRect(ux+i*q,top+j*q,q*(1+(h>>3)%2),q);}}ctx.restore();}
+if(look.stripes){ctx.save();ctx.clip();const gr=ctx.createLinearGradient(0,top,0,top+th);gr.addColorStop(0,look.stripes[0]);gr.addColorStop(1,look.stripes[1]);ctx.fillStyle=gr;
+for(const i of [-2,-1,0,1,2])ctx.fillRect(ux+(i*8-2)*s,top,(i%2?3:4.5)*s,th);ctx.fillStyle=look.collar;ctx.fillRect(ux-7*s,top,14*s,2.6*s);ctx.restore();}
+const hx=ux+st.lean*3*s+pose.twist*side*2*s,hd=hy-75*s*T;ctx.beginPath();ctx.arc(hx,hd,13*s,0,Math.PI*2);ctx.fillStyle=skin;ctx.fill();
+const fimg=faceImg(look);if(fimg){const hh=58*s,hw=hh*fimg.naturalWidth/fimg.naturalHeight;ctx.drawImage(fimg,hx-hw/2,hd-9*s-hh/2,hw,hh);}   // photo head, slightly big for a playful look
+else if(look.tousled){ // seen from behind: hair covers the back of the head, glasses show only as temples and lens rims at the sides
+for(const k of [-1,1]){ctx.beginPath();ctx.arc(hx+k*13*s,hd+1*s,3*s,0,Math.PI*2);ctx.fillStyle=skin;ctx.fill();}
+ctx.beginPath();ctx.ellipse(hx,hd-3*s,13.6*s,11.5*s,0,0,Math.PI*2);ctx.fillStyle=look.hair;ctx.fill();
+for(const [dx,dy,r] of [[-7,-13,3.2],[0,-15,3.4],[7,-13,3]]){ctx.beginPath();ctx.arc(hx+dx*s,hd+dy*s,r*s,0,Math.PI*2);ctx.fill();}
+if(look.glasses)for(const k of [-1,1]){line({x:hx+k*14.5*s,y:hd-2*s},{x:hx+k*10*s,y:hd+1*s},'#111',1.6*s);ctx.fillStyle='#111';ctx.fillRect(hx+k*14.2*s-(k<0?1.6*s:0),hd-5*s,1.6*s,5*s);}}
+else{ctx.beginPath();ctx.arc(hx,hd-2*s,13*s,Math.PI,0);ctx.fillStyle=look.hair;ctx.fill();
+if(hipY<H*.5){ctx.fillStyle='#1a1530';for(const k of [-1,1]){ctx.beginPath();ctx.arc(hx+k*4.5*s,hd+1*s,1.8*s,0,Math.PI*2);ctx.fill();}ctx.beginPath();ctx.arc(hx,hd+5*s,4*s,.2,Math.PI-.2);ctx.lineWidth=1.4*s;ctx.strokeStyle='#1a1530';ctx.stroke();}}   // the far player faces us
+line(shoulder,elbow,look.sleeve,8*s);line(elbow,hand,skin,7*s);
 racket(tgt.x,tgt.y,ang,type,face,racketScale);
-ctx.beginPath();ctx.arc(hand.x,hand.y,3.6*s,0,Math.PI*2);ctx.fillStyle=ink;ctx.fill();
-if(shout){ctx.font=`bold ${14*s}px Arial`;ctx.textAlign='center';ctx.fillStyle='#ffe066';ctx.fillText(look.shout,hx+side*22*s,hy-98*s*T);}
+ctx.beginPath();ctx.arc(hand.x,hand.y,5*s,0,Math.PI*2);ctx.fillStyle=skin;ctx.fill();
+if(shout){ctx.font=`bold ${14*s}px Arial`;ctx.textAlign='center';ctx.fillStyle='#ffe066';ctx.fillText(look.shout,hx+side*22*s,hd-23*s);}
 ctx.restore();
 }
+
 // Arena backdrop, drawn once per canvas size: crowd in the stands, a row of LED boards behind the far player, a floor grid.
 let arenaCache=null;
 function arenaBg(){const d=Math.min(devicePixelRatio||1,2);if(arenaCache&&arenaCache.w===W&&arenaCache.h===H&&arenaCache.v===view)return arenaCache.c;
@@ -426,7 +437,7 @@ function courtHud(){const eb=$('exit-btn');if(eb.hidden===playing)eb.hidden=!pla
 const info=`${net?'온라인 1:1':LEVEL_NAME[difficulty]||''}  |  랠리 ${rally}  |  최고 ${best}`,w=ctx.measureText(info).width+20;ctx.fillStyle='#0b0820c8';ctx.beginPath();ctx.roundRect(8,8,w,24,12);ctx.fill();ctx.fillStyle='#ece6ff';ctx.fillText(info,18,20.5);
 const legend='드래그 ↑ 드라이브 · ↓ 커트 · 탭 쇼트 · 두 번 탭 디펜스 · 꾹 스매시';ctx.font='bold 10px Arial';const lw=ctx.measureText(legend).width+20;if(lw<W-150){ctx.fillStyle='#0b0820b0';ctx.beginPath();ctx.roundRect(W/2-lw/2,H-26,lw,20,10);ctx.fill();ctx.fillStyle='#d9ccffd0';ctx.textAlign='center';ctx.fillText(legend,W/2,H-15.5);}
 ctx.restore();}
-const CAM_ZOOM=1.6,REST_Y=.86;
+const CAM_ZOOM=1.8,REST_Y=.86;
 function renderScene(){ctx.clearRect(0,0,W,H);ctx.drawImage(arenaBg(),0,0,W,H);const nowR=performance.now(),rdt=Math.min((nowR-lastRenderT)/1000,.05);lastRenderT=nowR;
 if(!down&&touchInput&&playing&&!paused&&time-releasedAt>.3)paddle.y+=(H*REST_Y-paddle.y)*Math.min(1,rdt*5);   // finger lifted: racket returns to the low ready spot
 const opponent=project(net?P.clamp(-net.opp.x,-.9,.9):ball?P.clamp(ball.x,-1,1):0,2.8,.18),far=project(0,2.74),aiScale=Math.min(P.clamp(W/800,.7,1),H/460)*.65*far.scale/.55,aiSide=net?-(net.opp.side||1):ball&&ball.x<0?-1:1;
