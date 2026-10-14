@@ -154,9 +154,10 @@ jersey:{name:'휴고범',nick:'휴고범',kit:{name:'BEOM',color:'#c9ec4a'},trai
 // 리신범, from the user's photo: wavy dark hair, black headband over the eyes with glasses on top, stubble,
 // brown/khaki digital camo tee, big square smartwatch on the left wrist. Martial-arts guard, compact punchy strokes.
 leesin:{name:'리신범',nick:'리신범',kit:{name:'BEOM',color:'#ffd166'},trait:{strong:1,weak:-1},face:'leesin',split:true,shout:'용의 분노!',strokes:'lee',fist:true,stanceK:1.1,crouchK:.08,shirt:'#6f6449',camo:['#4b5536','#8c7b58','#2f2a21','#b3a37f'],sleeve:'#6f6449',pants:'#151515',shorts:true,hair:'#24180f',watch:true,bigWatch:true},
-// 퍼시벌, from the user's photo: thick black curly hair, open-mouthed grin, grey zip hoodie over a black tee, black
-// shorts. Left-handed. Scores with a deep squat, both fists up by the head, and his ceremony line.
-percival:{name:'퍼시벌',nick:'퍼시벌',kit:{name:'PERCIVAL',color:'#d9d9d9'},face:'percival',faceFit:{h:49,b:27},skin:'#c99474',skinShade:'#a26d52',lefty:true,serveEdge:.25,ceremony:'아엠 퍼시벌~',squatCheer:true,split:true,stanceK:1.1,crouchK:.1,shirt:'#9d9fa4',sleeve:'#9d9fa4',hoodie:true,collar:'#16161a',pants:'#151515',shorts:true,hair:'#141414'},
+// 퍼시벌, from the user's reference art: thick black curly hair, open-mouthed grin, grey crew-neck tee with PERCIVAL on
+// front and back, knee-length black shorts, white wristband on the racket wrist, white socks and sneakers. Left-handed.
+// Scores with a deep squat, racket and other fist thrown up high, and his ceremony line.
+percival:{name:'퍼시벌',nick:'퍼시벌',kit:{name:'PERCIVAL',color:'#d9d9d9'},face:'percival',faceFit:{h:49,b:27},skin:'#c99474',skinShade:'#a26d52',lefty:true,serveEdge:.25,ceremony:'아엠 퍼시벌~',squatCheer:true,split:true,stanceK:1.1,crouchK:.1,shirt:'#a4a6aa',sleeve:'#a4a6aa',tee:true,frontName:true,collar:'#8a8c91',pants:'#17171a',shorts:true,shortsLen:.8,wristband:true,socks:true,hair:'#141414'},
 plain:{name:'파란 선수',shirt:'#2f6fd6',sleeve:'#2f6fd6',pants:'#33404f',hair:'#3a2b22'},
 ai:{name:'빨간 선수',shirt:'#d6453d',sleeve:'#d6453d',pants:'#33404f',hair:'#3a2b22'}};
 // Shakehand blade and rubber. speed / spin multiply the shot, err is the extra chance a good stroke still misses (control).
@@ -426,7 +427,7 @@ const arm=look.lefty?(hipY>H*.5?-1:1):side,T=st.tall||1,R=RACKETS[type],skin=loo
 const pose=strokePose(stroke,since,side,s,{x:x+arm*15*s,y:hipY-50*s*T+st.crouch*18*s},target,angle,st.crouch,look,st.amp??1,st.dirX||0,prep,T);
 const cheer=st.cheerT!=null&&time-st.cheerT<1.2?Math.abs(Math.sin((time-st.cheerT)*8)):-1;   // won the point: jump with both arms up
 if(cheer>=0){pose.target={x:x+side*16*s,y:hipY-128*s*T};pose.angle=side*.15;pose.crouch=.15;pose.twist=0;}
-const squat=cheer>=0&&look.squatCheer;if(squat){pose.target={x:x+arm*34*s,y:hipY-40*s*T};pose.angle=arm*.5;pose.crouch=1;}
+const squat=cheer>=0&&look.squatCheer;if(squat){pose.target={x:x+arm*32*s,y:hipY+(st.legLen||30*s*T)*.5-122*s*T};pose.angle=arm*.15;pose.crouch=1;}
 // lost the match: sink to the floor, racket down, a hand over the face, sobbing (wall clock, so it plays after the game stops)
 const sadT=st.sadT!=null?performance.now()/1000-st.sadT:-1,sad=sadT>=0;
 if(sad){pose.target={x:x+side*34*s,y:hipY+(st.legLen||30*s*T)*.8};pose.angle=side*1.35;pose.crouch=1;pose.twist=0;}
@@ -440,29 +441,32 @@ const want={x:pose.target.x-Math.sin(ang)*d,y:pose.target.y+Math.cos(ang)*d},adx
 const hand={x:shoulder.x+adx/alen*reach,y:shoulder.y+ady/alen*reach},tgt={x:hand.x+Math.sin(ang)*d,y:hand.y-Math.cos(ang)*d};
 const bend=Math.sqrt(Math.max(0,(L/2)**2-(reach/2)**2)),px=-ady/alen,py=adx/alen,flip=py<0?-1:1;   // elbow bends downward
 const elbow={x:(shoulder.x+hand.x)/2+px*bend*flip,y:(shoulder.y+hand.y)/2+py*bend*flip};
+const band=()=>{if(look.wristband)line({x:lerp(elbow.x,hand.x,.7),y:lerp(elbow.y,hand.y,.7)},{x:lerp(elbow.x,hand.x,.88),y:lerp(elbow.y,hand.y,.88)},'#ffffff',8.4*s);};
 ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
 if(st.aura){const pulse=.55+.45*Math.sin(time*7),g=ctx.createRadialGradient(cx,hy-38*s*T,6*s,cx,hy-38*s*T,78*s);g.addColorStop(0,`rgba(${st.aura},${.55*pulse})`);g.addColorStop(1,`rgba(${st.aura},0)`);ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(cx,hy-38*s*T,62*s,80*s,0,0,Math.PI*2);ctx.fill();}   // special-ready aura
 ctx.beginPath();ctx.ellipse(x,ground+2*s,(32+cr*8)*s,6*s,0,0,Math.PI*2);ctx.fillStyle='#00000060';ctx.fill();
 for(const k of (st.feet&&st.feet[1].t<1?[-1,1]:[1,-1])){
 const f=st.feet?st.feet[k]:{x:x+k*(17+cr*12)*s,t:1},lift=f.t<1?Math.sin(Math.PI*f.t)*7*s:0;
 const foot={x:f.x+k*split*4*s,y:ground-lift-split*5*s},hip={x:cx+k*8*s,y:hy},knee={x:(hip.x+foot.x)/2+k*(2+cr*8)*s,y:(hip.y+foot.y)/2+cr*2*s-lift*.3};
-if(look.shorts){line(hip,knee,skin,7*s);line(knee,foot,skin,6.5*s);line(hip,{x:lerp(hip.x,knee.x,.6),y:lerp(hip.y,knee.y,.6)},pants,11*s);}
-else{line(hip,knee,pants,8*s);line(knee,foot,pants,7*s);}ctx.beginPath();ctx.ellipse(foot.x+k*3*s,foot.y+1*s,9*s,4*s,0,0,Math.PI*2);ctx.fillStyle='#f4f1e6';ctx.fill();}
-const shout=!sad&&look.shout&&st.shoutT!=null&&time-st.shoutT<.6;const free=sad?{x:ux-arm*4*s,y:hy-72*s*T}:cheer>=0?(look.squatCheer?{x:ux-arm*30*s,y:hy-70*s*T}:{x:ux-arm*20*s,y:hy-98*s*T}):shout?{x:ux-arm*20*s,y:hy-82*s*T}:st.holding?{x:ux-arm*22*s,y:hy-34*s*T}:look.fist&&!st.tossing?{x:ux-arm*24*s,y:hy-(46+pose.twist*6)*s*T}:st.tossing?{x:ux-arm*20*s,y:hy-78*s*T}:{x:ux-arm*(26-pose.twist*6)*s,y:hy-(24+pose.twist*10)*s*T};st.free=free;const fs={x:ux-arm*15*s,y:hy-50*s*T};line(fs,free,skin,7*s);line(fs,{x:lerp(fs.x,free.x,.3),y:lerp(fs.y,free.y,.3)},look.sleeve,8.5*s);
+if(look.shorts){line(hip,knee,skin,7*s);line(knee,foot,skin,6.5*s);const sl=look.shortsLen||.6;line(hip,{x:lerp(hip.x,knee.x,sl),y:lerp(hip.y,knee.y,sl)},pants,(11+(sl-.6)*8)*s);}
+else{line(hip,knee,pants,8*s);line(knee,foot,pants,7*s);}if(look.socks)line({x:lerp(knee.x,foot.x,.78),y:lerp(knee.y,foot.y,.78)},foot,'#f7f7f4',7*s);ctx.beginPath();ctx.ellipse(foot.x+k*3*s,foot.y+1*s,9*s,4*s,0,0,Math.PI*2);ctx.fillStyle='#f4f1e6';ctx.fill();if(look.socks){ctx.strokeStyle='#c9c9c4';ctx.lineWidth=.9*s;ctx.stroke();}}
+const shout=!sad&&look.shout&&st.shoutT!=null&&time-st.shoutT<.6;const free=sad?{x:ux-arm*4*s,y:hy-72*s*T}:cheer>=0?(look.squatCheer?{x:ux-arm*34*s,y:hy-112*s*T}:{x:ux-arm*20*s,y:hy-98*s*T}):shout?{x:ux-arm*20*s,y:hy-82*s*T}:st.holding?{x:ux-arm*22*s,y:hy-34*s*T}:look.fist&&!st.tossing?{x:ux-arm*24*s,y:hy-(46+pose.twist*6)*s*T}:st.tossing?{x:ux-arm*20*s,y:hy-78*s*T}:{x:ux-arm*(26-pose.twist*6)*s,y:hy-(24+pose.twist*10)*s*T};st.free=free;const fs={x:ux-arm*15*s,y:hy-50*s*T};line(fs,free,skin,7*s);line(fs,{x:lerp(fs.x,free.x,.3),y:lerp(fs.y,free.y,.3)},look.sleeve,8.5*s);
 if(look.watch){const w={x:lerp(fs.x,free.x,.86),y:lerp(fs.y,free.y,.86)};ctx.beginPath();ctx.arc(w.x,w.y,(look.bigWatch?4.4:3.4)*s,0,Math.PI*2);ctx.fillStyle='#111';ctx.fill();}
-if(look.fist){ctx.beginPath();ctx.arc(free.x,free.y,4.6*s,0,Math.PI*2);ctx.fillStyle=skin;ctx.fill();}
+if(look.fist||squat){ctx.beginPath();ctx.arc(free.x,free.y,(squat?5.4:4.6)*s,0,Math.PI*2);ctx.fillStyle=skin;ctx.fill();}
 const isBack=hipY>H*.5,armBehind=isBack&&side*(look.lefty?-1:1)<0&&!sad;   // my player is seen from behind
-if(armBehind){line(shoulder,elbow,look.sleeve,8*s);line(elbow,hand,skin,7*s);}
+if(armBehind){line(shoulder,elbow,look.sleeve,8*s);line(elbow,hand,skin,7*s);band();}
 const top=hy-60*s*T,th=64*s*T;ctx.beginPath();ctx.roundRect(ux-18*s,top,36*s,th,12*s);ctx.fillStyle=look.shirt;ctx.fill();
 if(look.camo){ctx.save();ctx.clip();const q=4*s;for(let i=-5;i<5;i++)for(let j=0;j*q<th;j++){const h=(i*73856093^j*19349663)>>>0,c=look.camo[h%5];if(c){ctx.fillStyle=c;ctx.fillRect(ux+i*q,top+j*q,q*(1+(h>>3)%2),q);}}ctx.restore();}
 if(look.stripes){ctx.save();ctx.clip();const gr=ctx.createLinearGradient(0,top,0,top+th);gr.addColorStop(0,look.stripes[0]);gr.addColorStop(1,look.stripes[1]);ctx.fillStyle=gr;
 for(const i of [-2,-1,0,1,2])ctx.fillRect(ux+(i*8-2)*s,top,(i%2?3:4.5)*s,th);ctx.fillStyle=look.collar;ctx.fillRect(ux-7*s,top,14*s,2.6*s);ctx.restore();}
+if(look.tee){ctx.save();ctx.clip();ctx.strokeStyle=look.collar;ctx.lineWidth=2.4*s;ctx.beginPath();ctx.ellipse(ux,top,9*s,isBack?3*s:6*s,0,0,Math.PI);ctx.stroke();ctx.fillStyle='#00000014';ctx.fillRect(ux-18*s,top+th*.82,36*s,th*.18);ctx.restore();}   // crew neck, a shade at the hem
 if(look.hoodie){ctx.save();ctx.clip();if(isBack){ctx.fillStyle='#86888d';ctx.beginPath();ctx.ellipse(ux,top+4*s,14*s,10*s,0,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#6f7176';ctx.lineWidth=1.2*s;ctx.stroke();}
 else{ctx.fillStyle=look.collar;ctx.beginPath();ctx.moveTo(ux-8*s,top);ctx.lineTo(ux+8*s,top);ctx.lineTo(ux,top+16*s*T);ctx.fill();ctx.strokeStyle='#c8c9cc';ctx.lineWidth=1.1*s;ctx.beginPath();ctx.moveTo(ux,top+16*s*T);ctx.lineTo(ux,top+th);ctx.stroke();ctx.strokeStyle='#808287';ctx.beginPath();ctx.moveTo(ux-14*s,top+th*.62);ctx.lineTo(ux+14*s,top+th*.62);ctx.stroke();}ctx.restore();}   // grey zip hoodie
 {const kit=look.kit||{name:'SPIN'};
 if(isBack){const sq=1-Math.min(.45,Math.abs(pose.twist)*.4),cxp=ux+pose.twist*side*9*s+st.lean*5*s;   // print turns with the torso
 ctx.save();ctx.translate(cxp,top+th*.5);ctx.scale(sq,1);ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineJoin='round';
 ctx.font=`900 ${10.5*s}px Arial`;{const fit=Math.min(1,32*s/ctx.measureText(kit.name).width);if(fit<1)ctx.font=`900 ${10.5*s*fit}px Arial`;}ctx.lineWidth=3.4*s;ctx.strokeStyle='#14121c';ctx.strokeText(kit.name,0,-th*.04);ctx.fillStyle="#ffffff";ctx.fillText(kit.name,0,-th*.04);ctx.restore();}
+else if(look.frontName){ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineJoin='round';ctx.font=`900 ${10*s}px Arial`;const fit=Math.min(1,32*s/ctx.measureText(kit.name).width);ctx.font=`900 ${10*s*fit}px Arial`;ctx.lineWidth=3*s;ctx.strokeStyle='#14121c';ctx.strokeText(kit.name,ux,top+th*.32);ctx.fillStyle='#ffffff';ctx.fillText(kit.name,ux,top+th*.32);ctx.restore();}   // name across the chest
 else{line({x:ux-7*s,y:top+1*s},{x:ux,y:top+10*s*T},look.collar||'#ffffff',2.4*s);line({x:ux+7*s,y:top+1*s},{x:ux,y:top+10*s*T},look.collar||'#ffffff',2.4*s);   // V collar
 const ex=ux-side*8*s,ey=top+16*s*T;ctx.beginPath();ctx.arc(ex,ey,4.2*s,0,Math.PI*2);ctx.fillStyle='#ffffff';ctx.fill();ctx.lineWidth=1.2*s;ctx.strokeStyle=kit.color||'#ffe066';ctx.stroke();   // chest emblem
 }}
@@ -482,7 +486,7 @@ else{ctx.beginPath();ctx.arc(hx,hd-2*s,13*s,Math.PI,0);ctx.fillStyle=look.hair;c
 if(hipY<H*.5){ctx.fillStyle='#1a1530';for(const k of [-1,1]){ctx.beginPath();ctx.arc(hx+k*4.5*s,hd+1*s,1.8*s,0,Math.PI*2);ctx.fill();}ctx.beginPath();ctx.arc(hx,hd+5*s,4*s,.2,Math.PI-.2);ctx.lineWidth=1.4*s;ctx.strokeStyle='#1a1530';ctx.stroke();}}   // the far player faces us
 ctx.restore();
 if(sad){ctx.fillStyle='#8fd3ff';for(const k of [-1,1])for(let i=0;i<3;i++){const ph=(sadT*1.4+i/3)%1;ctx.globalAlpha=1-ph;ctx.beginPath();ctx.arc(hx+k*8*s,hd+4*s+ph*26*s,2.3*s,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;}   // tears
-if(!armBehind){line(shoulder,elbow,look.sleeve,8*s);line(elbow,hand,skin,7*s);}
+if(!armBehind){line(shoulder,elbow,look.sleeve,8*s);line(elbow,hand,skin,7*s);band();}
 racket(tgt.x,tgt.y,ang,type,face,racketScale,skin);
 if(shout){ctx.font=`bold ${14*s}px Arial`;ctx.textAlign='center';ctx.fillStyle='#ffe066';ctx.fillText(look.shout,hx+side*22*s,hd-23*s);}
 if(st.taunt&&time-st.tauntT<1.6){const fz=Math.max(12,15*s),bx=hx,by=hd-40*s-fz;ctx.font=`900 ${fz}px Arial`;const bw=ctx.measureText(st.taunt).width+fz*1.2,bh=fz*1.8;   // speech bubble
