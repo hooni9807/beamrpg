@@ -40,13 +40,18 @@ html,body{overscroll-behavior:none;touch-action:manipulation;-webkit-text-size-a
 /* Shared swing classification and ball physics. */
 (function(root){
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+// gesture.dir is the stroke's settled direction (see move()): once a swing is going up, a little dip before it (backswing)
+// or a drop after it (follow-through) no longer turns it into a cut.
 function classify(vx,vy,gesture={}){
+if(gesture.dir==='up')return gesture.side?(gesture.side==='right'?'loop':'back'):'drive';
+if(gesture.dir==='down')return 'cut';
 if(gesture.rise>12&&vy<-55&&gesture.side)return gesture.side==='right'?'loop':'back';
-if(gesture.drop>16&&gesture.drop>Math.abs(gesture.dx||0)*.6&&vy>-60)return 'cut';   // dragged down overall: a cut, even if slow
+if(gesture.drop>(gesture.below?CUT_FROM_BELOW:16)&&gesture.drop>Math.abs(gesture.dx||0)*.6&&vy>-60)return 'cut';   // dragged down overall: a cut, even if slow
 if(Math.hypot(vx,vy)<160)return 'short';
-if(vy>Math.abs(vx)*.6)return 'cut';
+if(vy>Math.abs(vx)*.6&&!gesture.below)return 'cut';   // from below the ball a quick dip is a backswing, not a cut
 return 'drive';
 }
+const CUT_FROM_BELOW=45;   // a finger that starts below the ball is setting up a drive: only a long drag down counts as a cut
 // Hit window only once the ball has come out past my end line (y<0), like a real drive/push taken beside the body.
 function timing(b){if(!b||b.owner!=='ai')return 'none';if(b.bounces!==1||b.y>0||b.y<-.95)return 'wait';if(b.y<-.6)return 'late';return b.y<=-.08?'perfect':'ready';}
 // AI return chance. Specials and smashes stay hard to return; wide balls and spin only nibble at it.
@@ -114,7 +119,7 @@ function step(b,dt){b.vx+=b.side*dt*.3;b.vz-=(6+b.spin*.55)*dt;b.x+=b.vx*dt;b.y+
 // PvP rating: start 1000, win +10 / loss -10, each extra game in a streak adds 1 more (+11, +12 ... / -11, -12 ...).
 function nextRating(o,won){const streak=won?(o.streak>0?o.streak+1:1):(o.streak<0?o.streak-1:-1),delta=won?9+streak:-9+streak;
 return {rating:o.rating+delta,wins:o.wins+(won?1:0),losses:o.losses+(won?0:1),streak,delta};}
-root.PingPhysics={retime,power,popup,nextRating,LEVELS,clamp,classify,timing,aiChance,shot,planServe,miss,incoming,family,judge,aiReturn,step};if(typeof module!=='undefined')module.exports=root.PingPhysics;
+root.PingPhysics={CUT_FROM_BELOW,retime,power,popup,nextRating,LEVELS,clamp,classify,timing,aiChance,shot,planServe,miss,incoming,family,judge,aiReturn,step};if(typeof module!=='undefined')module.exports=root.PingPhysics;
 })(typeof window==='undefined'?globalThis:window);
 </script><script>
 'use strict';
@@ -468,7 +473,7 @@ const quality=state==='perfect'&&distance<Math.max(touchInput?42:28,W*.04)*R.rea
 if(motion&&motion.side)playerSide=motion.side==='right'?1:-1;else updateSide();
 const special=charge===100;if(special&&R.special==='chiquita')playerSide=-1;
 const boost=racketType==='jpen'&&playerSide>0?{loop:1.25,drive:1.25,side:1.25}:racketType==='shake'&&playerSide<0?{loop:1.25,drive:1.25,back:1.25}:R.boost;
-const still=tap&&!smash;let shot=P.shot(smash||still?0:motion.vx*R.power,smash?-1450:still?-200:motion.vy*R.power,ball.z,ball.x,ball.y,mode==='practice',motion?{side:motion.side,rise:motion.rise,drop:motion.drop,dx:motion.dx}:{},special?R.special:smash&&(racketType!=='defense'||ball.chance)?'smash':tap||(racketType==='defense'?'chop':smash?'smash':undefined),boost);
+const still=tap&&!smash;let shot=P.shot(smash||still?0:motion.vx*R.power,smash?-1450:still?-200:motion.vy*R.power,ball.z,ball.x,ball.y,mode==='practice',motion?{dir:motion.dir,below:motion.below,side:motion.side,rise:motion.rise,drop:motion.drop,dx:motion.dx}:{},special?R.special:smash&&(racketType!=='defense'||ball.chance)?'smash':tap||(racketType==='defense'?'chop':smash?'smash':undefined),boost);
 const inc=P.incoming(ball),resp=P.family(shot.type),verdict=special?'ok':P.judge(inc,resp,quality==='PERFECT',racketType==='defense');   // specials always get through
 if(verdict!=='ok')shot=P.miss(shot,ball.y,ball.z,verdict);
 const kill=verdict==='ok'&&!special&&shot.type==='smash'&&!!ball.chance;   // smashing a chance ball
@@ -508,17 +513,22 @@ const r=canvas.getBoundingClientRect(),now=performance.now(),offset=e.pointerTyp
 const sx=e.clientX-r.left,sy=e.clientY-r.top-offset;paddle.x=P.clamp(cam.z>1?cam.fx+(sx-cam.fx)/cam.z:sx,10,W-10);paddle.y=P.clamp(cam.z>1?cam.fy+(sy-cam.fy)/cam.z:sy,10,H-10);   // undo the camera zoom
 samples.push({x:paddle.x,y:paddle.y,t:now});samples=samples.filter(p=>now-p.t<110);
 if(samples.length>1){const first=samples[0],delta=Math.max(8,now-first.t)/1000;const sensitivity=(touchInput?P.clamp(700/W,1,2):1)*cam.z;paddle.vx=(paddle.x-first.x)/delta*sensitivity;paddle.vy=(paddle.y-first.y)/delta*sensitivity;}else paddle.vx=paddle.vy=0;
-if(down&&gesture)gesture.distance=Math.max(gesture.distance,Math.hypot(paddle.x-gesture.x,paddle.y-gesture.y));
+if(down&&gesture){gesture.distance=Math.max(gesture.distance,Math.hypot(paddle.x-gesture.x,paddle.y-gesture.y));
+gesture.lo=Math.max(gesture.lo??gesture.y,paddle.y);gesture.hi=Math.min(gesture.hi??gesture.y,paddle.y);   // lowest / highest point of this drag
+const up=gesture.lo-paddle.y,dn=paddle.y-gesture.hi,cutMin=gesture.below?P.CUT_FROM_BELOW:16;
+if(up>12&&paddle.vy<-40&&(gesture.dir!=='down'||up>45))gesture.dir='up';
+else if(dn>cutMin&&paddle.vy>40&&(gesture.dir!=='up'||dn>45))gesture.dir='down';}
 if(down&&gesture&&Math.hypot(paddle.vx,paddle.vy)>=55&&gesture.distance>=(touchInput?18:12)){
 const rise=gesture.y-paddle.y;
-if(!gesture.side||paddle.vy>=-55||rise>12){const previous=samples.length>1?samples[samples.length-2]:paddle;swingMemory={vx:paddle.vx,vy:paddle.vy,side:gesture.side,rise,drop:paddle.y-gesture.y,dx:paddle.x-gesture.x,fromX:previous.x,fromY:previous.y,x:paddle.x,y:paddle.y,until:time+.4};}
+const sideways=Math.abs(paddle.vx)>Math.abs(paddle.vy)*1.5&&Math.hypot(paddle.vx,paddle.vy)>=160,against=gesture.dir==='up'&&paddle.vy>0||gesture.dir==='down'&&paddle.vy<0||!gesture.dir&&gesture.below&&!sideways;   // backswing / follow-through: keep the real stroke; from below the ball wait until the stroke picks a direction (a flat sideways swipe still swings)
+if(!against&&(!gesture.side||paddle.vy>=-55||rise>12||sideways)){const previous=samples.length>1?samples[samples.length-2]:paddle;swingMemory={dir:gesture.dir,below:gesture.below,vx:paddle.vx,vy:paddle.vy,side:gesture.side,rise,drop:paddle.y-gesture.y,dx:paddle.x-gesture.x,fromX:previous.x,fromY:previous.y,x:paddle.x,y:paddle.y,until:time+.4};}
 }
 if(down&&playing&&!paused)hit();
 }
 canvas.addEventListener('pointerdown',e=>{
 if(!playing||paused||activePointer!==null||e.button>0)return;e.preventDefault();touchInput=e.pointerType==='touch';if(ball&&ball.held&&!ball.tossed)toss();swingMemory=null;samples=[];move(e);activePointer=e.pointerId;
-const target=ball?project(ball.x,ball.y,ball.z):{x:W/2,y:H*.65};
-gesture={x:paddle.x,y:paddle.y,t:performance.now(),distance:0,live:!!ball&&ball.owner==='ai'&&!['wait','none'].includes(P.timing(ball)),side:paddle.y+(touchInput?32:0)>target.y+8?(paddle.x>=target.x?'right':'left'):null};down=true;canvas.setPointerCapture(e.pointerId);
+const target=ball?(ball.owner==='ai'&&!ball.held&&ball.y>0?project(ball.x,-.2,.25):project(ball.x,ball.y,ball.z)):{x:W/2,y:H*.65};   // an incoming ball is judged against where it will be hit, not where it is now
+gesture={x:paddle.x,y:paddle.y,t:performance.now(),distance:0,below:paddle.y>target.y+8,live:!!ball&&ball.owner==='ai'&&!['wait','none'].includes(P.timing(ball)),side:paddle.y+(touchInput?32:0)>target.y+8?(paddle.x>=target.x?'right':'left'):null};down=true;canvas.setPointerCapture(e.pointerId);
 });
 canvas.addEventListener('pointermove',move);
 canvas.addEventListener('pointerup',e=>{
