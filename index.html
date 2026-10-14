@@ -51,7 +51,7 @@ if(Math.hypot(vx,vy)<160)return 'short';
 if(vy>Math.abs(vx)*.6&&!gesture.below)return 'cut';   // from below the ball a quick dip is a backswing, not a cut
 return 'drive';
 }
-const CUT_FROM_BELOW=45;   // a finger that starts below the ball is setting up a drive: only a long drag down counts as a cut
+const CUT_FROM_BELOW=45,COURSE_GAIN=1.4;   // course = sideways / vertical travel of the stroke; x1.4 -> about 45 degrees reaches the corner   // a finger that starts below the ball is setting up a drive: only a long drag down counts as a cut
 // Hit window only once the ball has come out past my end line (y<0), like a real drive/push taken beside the body.
 function timing(b){if(!b||b.owner!=='ai')return 'none';if(b.bounces!==1||b.y>0||b.y<-.95)return 'wait';if(b.y<-.6)return 'late';return b.y<=-.08?'perfect':'ready';}
 // AI return chance. Specials and smashes stay hard to return; wide balls and spin only nibble at it.
@@ -69,12 +69,12 @@ const type=forcedType||classify(vx,vy,gesture),speed=Math.hypot(vx,vy),power=cla
 let forward=type==='crescent'?3.6:type==='block'?2.4:type==='lightning'?5.6:type==='thunder'?6.2:type==='phantom'?1.8:type==='chop'?2.2:type==='short'?2:type==='smash'?4.7:type==='chiquita'?5:type==='loop'?2.35+power*.65:type==='back'?3+power*.9:2.5+power*1.2;
 forward*=boost[type]||1;
 const spin=type==='crescent'?1.6:type==='block'?.2:type==='phantom'?-2.6:type==='lightning'?.3:type==='thunder'?0:type==='chop'?-1.8:type==='cut'?-1:type==='loop'?2.2:type==='back'?1.3:type==='drive'?1:type==='chiquita'?2.4:type==='side'?.35:0;
-const dirX=speed?vx/speed:0,corner=Math.abs(dirX)>.3?Math.sign(dirX)*.5:null;
+const dirX=gesture.course!=null?clamp(gesture.course*COURSE_GAIN,-1,1):speed?vx/speed:0,corner=Math.abs(dirX)>.3?Math.sign(dirX)*.5:null;
 const side=type==='side'?Math.sign(vx)*1.2:type==='chiquita'?Math.sign(corner??(x>=0?-1:1))*5:type==='crescent'?Math.sign(corner??(x>=0?-1:1))*CRESCENT_SIDE:0,   // crescent: big curve into the corner
 target=type==='short'?1.85:type==='chop'?2.5:type==='block'?2:type==='crescent'?2.5:type==='phantom'?1.75:type==='thunder'?2.5:2.3,gravity=6+spin*.55,netDistance=1.37-y;
 // shortcut: arcade landing calibration, replace with measured contact physics for a simulator.
 if(netDistance>0&&target>1.37){const fraction=netDistance/(target-y),needed=.22-height*(1-fraction);if(needed>0)forward=Math.min(forward,Math.sqrt(.5*gravity*netDistance*(target-1.37)/needed));}
-const flight=(target-y)/forward,targetX=type==='crescent'?(corner?Math.sign(corner)*.58:x>=0?-.58:.58):type==='chiquita'||type==='thunder'?corner??(x>=0?-.5:.5):type==='lightning'?corner??(x>=0?.5:-.5):clamp(x*.3+dirX*(practice?.55:.7),-.62,.62); // horizontal part of the swing sets the course
+const flight=(target-y)/forward,targetX=type==='crescent'?(corner?Math.sign(corner)*.58:x>=0?-.58:.58):type==='chiquita'||type==='thunder'?corner??(x>=0?-.5:.5):type==='lightning'?corner??(x>=0?.5:-.5):clamp(x*(gesture.course!=null?.12:.3)+dirX*(practice?.55:.7),-.62,.62); // horizontal part of the swing sets the course
 return {type,speed,vx:(targetX-x)/flight-.15*side*flight,vy:forward,vz:(.5*gravity*flight*flight-height)/flight,spin,side};
 }
 // ponytail: brute-force search over launch angles, fine for one call per serve.
@@ -473,7 +473,7 @@ const quality=state==='perfect'&&distance<Math.max(touchInput?42:28,W*.04)*R.rea
 if(motion&&motion.side)playerSide=motion.side==='right'?1:-1;else updateSide();
 const special=charge===100;if(special&&R.special==='chiquita')playerSide=-1;
 const boost=racketType==='jpen'&&playerSide>0?{loop:1.25,drive:1.25,side:1.25}:racketType==='shake'&&playerSide<0?{loop:1.25,drive:1.25,back:1.25}:R.boost;
-const still=tap&&!smash;let shot=P.shot(smash||still?0:motion.vx*R.power,smash?-1450:still?-200:motion.vy*R.power,ball.z,ball.x,ball.y,mode==='practice',motion?{dir:motion.dir,below:motion.below,side:motion.side,rise:motion.rise,drop:motion.drop,dx:motion.dx}:{},special?R.special:smash&&(racketType!=='defense'||ball.chance)?'smash':tap||(racketType==='defense'?'chop':smash?'smash':undefined),boost);
+const still=tap&&!smash;let shot=P.shot(smash||still?0:motion.vx*R.power,smash?-1450:still?-200:motion.vy*R.power,ball.z,ball.x,ball.y,mode==='practice',motion?{course:motion.course,dir:motion.dir,below:motion.below,side:motion.side,rise:motion.rise,drop:motion.drop,dx:motion.dx}:{},special?R.special:smash&&(racketType!=='defense'||ball.chance)?'smash':tap||(racketType==='defense'?'chop':smash?'smash':undefined),boost);
 const inc=P.incoming(ball),resp=P.family(shot.type),verdict=special?'ok':P.judge(inc,resp,quality==='PERFECT',racketType==='defense');   // specials always get through
 if(verdict!=='ok')shot=P.miss(shot,ball.y,ball.z,verdict);
 const kill=verdict==='ok'&&!special&&shot.type==='smash'&&!!ball.chance;   // smashing a chance ball
@@ -514,14 +514,14 @@ const sx=e.clientX-r.left,sy=e.clientY-r.top-offset;paddle.x=P.clamp(cam.z>1?cam
 samples.push({x:paddle.x,y:paddle.y,t:now});samples=samples.filter(p=>now-p.t<110);
 if(samples.length>1){const first=samples[0],delta=Math.max(8,now-first.t)/1000;const sensitivity=(touchInput?P.clamp(700/W,1,2):1)*cam.z;paddle.vx=(paddle.x-first.x)/delta*sensitivity;paddle.vy=(paddle.y-first.y)/delta*sensitivity;}else paddle.vx=paddle.vy=0;
 if(down&&gesture){gesture.distance=Math.max(gesture.distance,Math.hypot(paddle.x-gesture.x,paddle.y-gesture.y));
-gesture.lo=Math.max(gesture.lo??gesture.y,paddle.y);gesture.hi=Math.min(gesture.hi??gesture.y,paddle.y);   // lowest / highest point of this drag
+if(paddle.y>=(gesture.lo??gesture.y)){gesture.lo=paddle.y;gesture.loX=paddle.x;}if(paddle.y<=(gesture.hi??gesture.y)){gesture.hi=paddle.y;gesture.hiX=paddle.x;}gesture.lo??=gesture.y;gesture.hi??=gesture.y;gesture.loX??=gesture.x;gesture.hiX??=gesture.x;   // lowest / highest point of this drag
 const up=gesture.lo-paddle.y,dn=paddle.y-gesture.hi,cutMin=gesture.below?P.CUT_FROM_BELOW:16;
 if(up>12&&paddle.vy<-40&&(gesture.dir!=='down'||up>45))gesture.dir='up';
 else if(dn>cutMin&&paddle.vy>40&&(gesture.dir!=='up'||dn>45))gesture.dir='down';}
 if(down&&gesture&&Math.hypot(paddle.vx,paddle.vy)>=55&&gesture.distance>=(touchInput?18:12)){
 const rise=gesture.y-paddle.y;
 const sideways=Math.abs(paddle.vx)>Math.abs(paddle.vy)*1.5&&Math.hypot(paddle.vx,paddle.vy)>=160,against=gesture.dir==='up'&&paddle.vy>0||gesture.dir==='down'&&paddle.vy<0||!gesture.dir&&gesture.below&&!sideways;   // backswing / follow-through: keep the real stroke; from below the ball wait until the stroke picks a direction (a flat sideways swipe still swings)
-if(!against&&(!gesture.side||paddle.vy>=-55||rise>12||sideways)){const previous=samples.length>1?samples[samples.length-2]:paddle;swingMemory={dir:gesture.dir,below:gesture.below,vx:paddle.vx,vy:paddle.vy,side:gesture.side,rise,drop:paddle.y-gesture.y,dx:paddle.x-gesture.x,fromX:previous.x,fromY:previous.y,x:paddle.x,y:paddle.y,until:time+.4};}
+if(!against&&(!gesture.side||paddle.vy>=-55||rise>12||sideways)){const previous=samples.length>1?samples[samples.length-2]:paddle;swingMemory={course:gesture.dir==='up'?(paddle.x-gesture.loX)/Math.max(gesture.lo-paddle.y,24):gesture.dir==='down'?(paddle.x-gesture.hiX)/Math.max(paddle.y-gesture.hi,24):null,dir:gesture.dir,below:gesture.below,vx:paddle.vx,vy:paddle.vy,side:gesture.side,rise,drop:paddle.y-gesture.y,dx:paddle.x-gesture.x,fromX:previous.x,fromY:previous.y,x:paddle.x,y:paddle.y,until:time+.4};}
 }
 if(down&&playing&&!paused)hit();
 }
