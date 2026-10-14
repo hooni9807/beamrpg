@@ -261,14 +261,16 @@ $('special-status').textContent=ready?'✦ 충전 완료 · 다음 타격에 자
 }
 // Shrinking ring: appears as the ball crosses the net and closes in on a racket-sized circle; when they match (PERFECT window,
 // just past my end line) swing. It keeps shrinking and turns red while the ball is late.
-function timingRing(p){
-const state=P.timing(ball);if(state==='none'||ball.y>1.37)return;
-const racketR=19*p.scale,y=ball.y+P.back(ball),color={wait:'#f3eeff',ready:'#ffd166',perfect:'#7dffb2',late:'#ff4d6d'}[state];
-const r=y>-.08?racketR+(y+.08)/1.45*95*p.scale:state==='perfect'?racketR:racketR*P.clamp(1-(-.6-y)/.4,.35,1);
-ctx.save();ctx.setLineDash([3,4]);ctx.lineWidth=1.5;ctx.strokeStyle='#f3eeff70';ctx.beginPath();ctx.arc(p.x,p.y,racketR,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);   // racket-size target
-ctx.lineWidth=state==='perfect'?5:3;ctx.strokeStyle=color;ctx.shadowColor=color;ctx.shadowBlur=state==='perfect'?22:10;ctx.beginPath();ctx.arc(p.x,p.y,r,0,Math.PI*2);ctx.stroke();ctx.shadowBlur=0;
-ctx.fillStyle=color;ctx.font='bold 11px Arial';ctx.textAlign='center';if(state!=='wait')ctx.fillText({ready:'READY',perfect:'지금!',late:'LATE'}[state],p.x,p.y-Math.max(r,racketR)-9);
-ctx.restore();const k=KIND[shotKind(ball)];pill(k.label,p.x,p.y+Math.max(r,racketR)+19,k.rgb,12);
+// Matdrive-style target: a fixed circle where the ball will be hit - red while the ball is on its way, white once it can
+// be hit (bright, "지금!" in the PERFECT window). Swing when the ball flies into it.
+function timingRing(){
+const state=P.timing(ball);if(state==='none')return;const t=predictHit(ball).spot;if(!t)return;const p=project(t.x,t.y,t.z),R=19*p.scale;
+const live=state==='ready'||state==='perfect',color=state==='late'?'#ff4d6d80':live?'#ffffff':'#ff4d6d';
+ctx.save();ctx.beginPath();ctx.ellipse(p.x,project(t.x,t.y,-.76).y,R*.9,R*.3,0,0,Math.PI*2);ctx.fillStyle='#00000040';ctx.fill();   // its spot on the floor
+ctx.lineWidth=state==='perfect'?4.5:3;ctx.strokeStyle=color;ctx.shadowColor=live?'#ffffff':'#ff4d6d';ctx.shadowBlur=state==='perfect'?24:10;ctx.beginPath();ctx.arc(p.x,p.y,R,0,Math.PI*2);ctx.stroke();ctx.shadowBlur=0;
+if(state==='perfect'){ctx.fillStyle='#ffffff30';ctx.fill();}
+ctx.fillStyle=color;ctx.font='bold 11px Arial';ctx.textAlign='center';if(state!=='wait')ctx.fillText({ready:'READY',perfect:'지금!',late:'LATE'}[state],p.x,p.y-R-9);
+ctx.restore();const k=KIND[shotKind(ball)];pill(k.label,p.x,p.y+R+19,k.rgb,12);
 }
 // Shot kinds on screen: one colour + label per kind, used for the ball trail, the spin line, the ring badge and the callout over the opponent.
 const KIND={cut:{rgb:'90,184,255',label:'커트 ↺'},drive:{rgb:'255,162,60',label:'드라이브 ↻'},smash:{rgb:'255,59,92',label:'스매시 ⚡'},spin:{rgb:'200,140,255',label:'회전 ⟲'},
@@ -665,11 +667,19 @@ else toast(flair==='spin'?`강한 회전에 밀렸어요… (회전 ${Math.abs(b
 $('coach').textContent=verdict!=='ok'?`${FAM[inc]} 공은 ${ANSWER[inc]}(으)로 넘길 수 있어요.`:special?SPECIALS[R.special].coach+' '+GUIDE[shot.type]:charge===100?`필살기가 충전됐어요. 다음 타격에 ${SPECIALS[R.special].name}이(가) 자동으로 나갑니다.`:GUIDE[shot.type]||'';
 }
 function statusToast(){if(time>toastUntil)$('toast').textContent=ball&&ball.held?(ball.owner!=='you'?'상대 서브를 기다리세요':ball.tossed?'떨어질 때 스윙! ↓하회전(커트) ↑상회전 · 좌우로 그으면 코스':'내 서브 · 화면을 눌러 공을 토스하세요'):ball&&ball.owner==='ai'?(P.timing(ball)==='perfect'?'HIT! 지금 스윙':ball.bounces?(ball.y>.08?'WAIT · 내 쪽 끝선을 넘어올 때까지 기다리세요':'READY · 테이블 밖에서 스윙!'):'WAIT · 바운드를 기다리세요'):'상대 리턴을 기다리세요';}
+// A rally ball bouncing on the table (shared with the hit-spot prediction below).
+function tableBounce(b){b.z=0;b.vz=-b.vz*(b.spin<0?.68:.8);b.vy*=b.spin<0?.78:1.03;b.side=(b.side||0)*.1;const g=6+(b.spin||0)*.55,clear=g*((b.owner==='ai'?b.y+.3:3.04-b.y)/Math.max(Math.abs(b.vy),.5))/2;b.vz=Math.min(b.vz,Math.max(Math.sqrt(2*g*(b.chance?BOUNCE_CHANCE:BOUNCE_MAX)),clear));
+if(b.owner==='ai'&&b.y<1.37||deep&&b.owner==='you'&&b.y>1.37)b.vz=Math.max(b.vz,g*((b.owner==='ai'?b.y+P.back(b):3.04-b.y+P.DEEP_M*deep)/Math.max(Math.abs(b.vy),.5))/2);}
+// Where the incoming ball will be at the heart of the PERFECT window: flies a copy forward (serve bounce, table bounce)
+// until it gets there. Cached per opponent shot and bounce.
+let hitSpot=null;
+function predictHit(b){const key=lastAIHit+':'+b.bounces+':'+(b.serving?1:0);if(hitSpot&&hitSpot.key===key)return hitSpot;const c={...b},goal=-.08-P.back(b)-P.perfectSpan(b)*.3;let spot=null;
+for(let i=0;i<900;i++){P.step(c,1/120);if(c.z<=0&&c.vz<0){if(c.serving){c.serving=false;c.z=0;c.vz=-c.vz*.8;c.vy*=1.03;}else if(!c.bounces&&c.y>=0&&c.y<1.37){c.bounces=1;tableBounce(c);}}if(c.bounces===1&&c.y<=goal){spot={x:c.x,y:c.y,z:c.z};break;}}
+return hitSpot={key,spot};}
 function update(dt){time+=dt;statusToast();holdCheck();if(!ball){wait-=dt;if(wait<=0)myServe()?holdServe():net?oppServe():serve();return;}if(ball.held&&ball.owner!=='you')return;
 if(ball.held){if(!ball.tossed)ballToHand();else{ball.vz-=6*dt;ball.z+=ball.vz*dt;if(ball.vz<0&&ball.z<ball.tossZ){ball.tossed=false;toast('놓쳤어요 · 다시 토스하세요',1.5);}}hit();return;}hit();if(!ball)return;const prevY=ball.y,prevZ=ball.z;P.step(ball,dt);if((prevY-1.37)*(ball.y-1.37)<0){const z=prevZ+(ball.z-prevZ)*(1.37-prevY)/(ball.y-prevY);if(z<.1525){point(ball.owner==='ai','네트에 걸렸어요');return;}}
 if(ball.serving&&ball.z<=0&&ball.vz<0){const own=ball.owner==='you'?ball.y>=0&&ball.y<1.37:ball.y>1.37&&ball.y<=2.74;if(Math.abs(ball.x)>.76||!own){point(ball.owner==='ai','서브 실패');return;}ball.serving=false;ball.z=0;ball.vz=-ball.vz*.8;ball.vy*=1.03;beep(270);}
-else if(ball.z<=0&&ball.vz<0&&!(ball.bounces===1&&(ball.y<0||ball.y>2.74))){if(Math.abs(ball.x)>.76||ball.y<0||ball.y>2.74){point(ball.owner==='ai','테이블 밖으로 나갔어요');return;}const valid=ball.owner==='ai'?ball.y<1.37:ball.y>1.37;if(!valid){point(ball.owner==='ai','자기 코트에 떨어졌어요');return;}ball.bounces++;if(ball.bounces>1){point(ball.owner==='you','두 번 바운드');return;}ball.z=0;ball.vz=-ball.vz*(ball.spin<0?.68:.8);ball.vy*=ball.spin<0?.78:1.03;ball.side=(ball.side||0)*.1;{const g=6+(ball.spin||0)*.55,clear=g*((ball.owner==='ai'?ball.y+.3:3.04-ball.y)/Math.max(Math.abs(ball.vy),.5))/2;ball.vz=Math.min(ball.vz,Math.max(Math.sqrt(2*g*(ball.chance?BOUNCE_CHANCE:BOUNCE_MAX)),clear));
-if(ball.owner==='ai'&&ball.y<1.37||deep&&ball.owner==='you'&&ball.y>1.37)ball.vz=Math.max(ball.vz,g*((ball.owner==='ai'?ball.y+P.back(ball):3.04-ball.y+P.DEEP_M*deep)/Math.max(Math.abs(ball.vy),.5))/2);}beep(270);}   // the table grips and bleeds off side spin
+else if(ball.z<=0&&ball.vz<0&&!(ball.bounces===1&&(ball.y<0||ball.y>2.74))){if(Math.abs(ball.x)>.76||ball.y<0||ball.y>2.74){point(ball.owner==='ai','테이블 밖으로 나갔어요');return;}const valid=ball.owner==='ai'?ball.y<1.37:ball.y>1.37;if(!valid){point(ball.owner==='ai','자기 코트에 떨어졌어요');return;}ball.bounces++;if(ball.bounces>1){point(ball.owner==='you','두 번 바운드');return;}tableBounce(ball);beep(270);}   // the table grips and bleeds off side spin
 // The AI takes the ball past its end line - or over the table when a short / backspin ball would otherwise bounce twice.
 if(!net&&ball.owner==='you'&&ball.bounces===1&&(ball.y>2.8+P.DEEP_M*deep||!deep&&ball.y>1.6&&ball.vz<0&&ball.z<.12)&&!ball.aiAttempt){ball.aiAttempt=true;const dif=difficulty;const chance=P.aiChance(ball,dif,mode==='practice')*(ball.type==='serve'&&LOOKS[charType].serveEdge?1-LOOKS[charType].serveEdge:1)*(1-handEdge(LOOKS[charType],LOOKS[aiChar]));const aiT=LOOKS[aiChar].trait,aiFore=ball.x<0?1:-1;   // AI faces us: balls on our left are its forehand
 if(Math.abs(ball.x)<.87&&ball.z<(ball.chance?1.5:.8+.6*deep)&&Math.random()<chance*(aiT&&aiFore===aiT.weak?1-TRAIT_ERR:1)){const wasChance=!!ball.chance;const L=P.LEVELS[dif]||P.LEVELS.b4,speed=L.speed*(1+handEdge(LOOKS[aiChar],LOOKS[charType])),mix=mode==='practice'?P.LEVELS.b7.mix:L.mix,r=Math.random(),kind=wasChance&&Math.random()<.85?'smash':P.incoming(ball)==='drive'&&Math.random()<AI_BLOCK?'block':r<mix[0]?'drive':r<mix[1]?'cut':'smash';
