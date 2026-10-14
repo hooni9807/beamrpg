@@ -52,7 +52,8 @@ if(Math.hypot(vx,vy)<160)return 'short';
 if(vy>Math.abs(vx)*.6&&!gesture.below)return 'cut';   // from below the ball a quick dip is a backswing, not a cut
 return 'drive';
 }
-const CUT_FROM_BELOW=45,STANCE_PX=10,COURSE_GAIN=1.4;   // course = sideways / vertical travel of the stroke; x1.4 -> about 45 degrees reaches the corner   // a finger that starts below the ball is setting up a drive: only a long drag down counts as a cut
+const CUT_FROM_BELOW=45,STANCE_PX=10,STROKE_SPEED=200,   // STROKE_SPEED: slower drags just reposition the racket
+COURSE_GAIN=1.4;   // course = sideways / vertical travel of the stroke; x1.4 -> about 45 degrees reaches the corner   // a finger that starts below the ball is setting up a drive: only a long drag down counts as a cut
 // Hit window only once the ball has come out past my end line (y<0), like a real drive/push taken beside the body.
 // The PERFECT stretch (.52 m at a normal 3 m/s ball) shrinks with the ball's speed, down to 45% - fast balls are harder to time.
 function perfectSpan(b){return .52*clamp(FAST_REF/Math.max(Math.abs(b.vy||0),.1),.45,1);}
@@ -125,7 +126,7 @@ function step(b,dt){b.vx+=b.side*dt*.3;b.vz-=(6+b.spin*.55)*dt;b.x+=b.vx*dt;b.y+
 // PvP rating: start 1000, win +10 / loss -10, each extra game in a streak adds 1 more (+11, +12 ... / -11, -12 ...).
 function nextRating(o,won){const streak=won?(o.streak>0?o.streak+1:1):(o.streak<0?o.streak-1:-1),delta=won?9+streak:-9+streak;
 return {rating:o.rating+delta,wins:o.wins+(won?1:0),losses:o.losses+(won?0:1),streak,delta};}
-root.PingPhysics={spinMiss,perfectSpan,STANCE_PX,CUT_FROM_BELOW,retime,power,popup,nextRating,LEVELS,clamp,classify,timing,aiChance,shot,planServe,miss,incoming,family,judge,aiReturn,step};if(typeof module!=='undefined')module.exports=root.PingPhysics;
+root.PingPhysics={spinMiss,perfectSpan,STROKE_SPEED,STANCE_PX,CUT_FROM_BELOW,retime,power,popup,nextRating,LEVELS,clamp,classify,timing,aiChance,shot,planServe,miss,incoming,family,judge,aiReturn,step};if(typeof module!=='undefined')module.exports=root.PingPhysics;
 })(typeof window==='undefined'?globalThis:window);
 </script><script>
 'use strict';
@@ -425,8 +426,9 @@ function courtHud(){const eb=$('exit-btn');if(eb.hidden===playing)eb.hidden=!pla
 const info=`${net?'온라인 1:1':LEVEL_NAME[difficulty]||''}  |  랠리 ${rally}  |  최고 ${best}`,w=ctx.measureText(info).width+20;ctx.fillStyle='#0b0820c8';ctx.beginPath();ctx.roundRect(8,8,w,24,12);ctx.fill();ctx.fillStyle='#ece6ff';ctx.fillText(info,18,20.5);
 const legend='드래그 ↑ 드라이브 · ↓ 커트 · 탭 쇼트 · 두 번 탭 디펜스 · 꾹 스매시';ctx.font='bold 10px Arial';const lw=ctx.measureText(legend).width+20;if(lw<W-150){ctx.fillStyle='#0b0820b0';ctx.beginPath();ctx.roundRect(W/2-lw/2,H-26,lw,20,10);ctx.fill();ctx.fillStyle='#d9ccffd0';ctx.textAlign='center';ctx.fillText(legend,W/2,H-15.5);}
 ctx.restore();}
-const CAM_ZOOM=1.6;
+const CAM_ZOOM=1.6,REST_Y=.86;
 function renderScene(){ctx.clearRect(0,0,W,H);ctx.drawImage(arenaBg(),0,0,W,H);const nowR=performance.now(),rdt=Math.min((nowR-lastRenderT)/1000,.05);lastRenderT=nowR;
+if(!down&&touchInput&&playing&&!paused&&time-releasedAt>.3)paddle.y+=(H*REST_Y-paddle.y)*Math.min(1,rdt*5);   // finger lifted: racket returns to the low ready spot
 const opponent=project(net?P.clamp(-net.opp.x,-.9,.9):ball?P.clamp(ball.x,-1,1):0,2.8,.18),far=project(0,2.74),aiScale=Math.min(P.clamp(W/800,.7,1),H/460)*.65*far.scale/.55,aiSide=net?-(net.opp.side||1):ball&&ball.x<0?-1:1;
 // AI faces us: its forehand (black) is on our left.
 foe.stanceK=1+Math.abs(foe.lean||0)*.6;stepBody(foe,opponent.x-aiSide*34*aiScale,rdt,ball&&ball.owner==='you'?.55:.25,aiScale);
@@ -526,22 +528,21 @@ samples.push({x:paddle.x,y:paddle.y,t:now});samples=samples.filter(p=>now-p.t<11
 if(samples.length>1){const first=samples[0],delta=Math.max(8,now-first.t)/1000;const sensitivity=(touchInput?P.clamp(700/W,1,2):1)*cam.z;paddle.vx=(paddle.x-first.x)/delta*sensitivity;paddle.vy=(paddle.y-first.y)/delta*sensitivity;}else paddle.vx=paddle.vy=0;
 if(down&&gesture){gesture.distance=Math.max(gesture.distance,Math.hypot(paddle.x-gesture.x,paddle.y-gesture.y)*cam.z);   // on-screen length: zooming in never makes a swipe count shorter
 if(gesture.held&&gesture.distance>=(touchInput?18:12)){gesture.held=false;smashUntil=-1;}   // moved after holding: a normal swing, not a smash
+if(!gesture.dir&&gesture.distance>=(touchInput?18:12)&&Math.hypot(paddle.vx,paddle.vy)<P.STROKE_SPEED){gesture.x=paddle.x;gesture.y=paddle.y;gesture.lo=gesture.hi=paddle.y;gesture.loX=gesture.hiX=paddle.x;setStance(gesture);}
 if(paddle.y>=(gesture.lo??gesture.y)){gesture.lo=paddle.y;gesture.loX=paddle.x;}if(paddle.y<=(gesture.hi??gesture.y)){gesture.hi=paddle.y;gesture.hiX=paddle.x;}gesture.lo??=gesture.y;gesture.hi??=gesture.y;gesture.loX??=gesture.x;gesture.hiX??=gesture.x;   // lowest / highest point of this drag
 const up=(gesture.lo-paddle.y)*cam.z,dn=(paddle.y-gesture.hi)*cam.z,cutMin=gesture.below?P.CUT_FROM_BELOW:16,upMin=gesture.above?P.CUT_FROM_BELOW:12;   // the opposite direction needs a long, deliberate drag
-if(up>upMin&&paddle.vy<-40&&(gesture.dir!=='down'||up>45))gesture.dir='up';
-else if(dn>cutMin&&paddle.vy>40&&(gesture.dir!=='up'||dn>45))gesture.dir='down';}
+if(up>upMin&&paddle.vy<-P.STROKE_SPEED&&(gesture.dir!=='down'||up>45))gesture.dir='up';   // only a real (fast) stroke picks the direction
+else if(dn>cutMin&&paddle.vy>P.STROKE_SPEED&&(gesture.dir!=='up'||dn>45))gesture.dir='down';}
 if(down&&gesture&&Math.hypot(paddle.vx,paddle.vy)>=55&&gesture.distance>=(touchInput?18:12)){
 const rise=(gesture.y-paddle.y)*cam.z;
 const sideways=Math.abs(paddle.vx)>Math.abs(paddle.vy)*1.5&&Math.hypot(paddle.vx,paddle.vy)>=160,against=gesture.dir==='up'&&paddle.vy>0||gesture.dir==='down'&&paddle.vy<0||!gesture.dir&&(gesture.below||gesture.above)&&!sideways;   // backswing / follow-through: keep the real stroke; from below the ball wait until the stroke picks a direction (a flat sideways swipe still swings)
-if(!against&&(!gesture.side||paddle.vy>=-55||rise>12||sideways)){const previous=samples.length>1?samples[samples.length-2]:paddle;swingMemory={above:gesture.above,course:gesture.dir==='up'?(paddle.x-gesture.loX)/Math.max(gesture.lo-paddle.y,24):gesture.dir==='down'?(paddle.x-gesture.hiX)/Math.max(paddle.y-gesture.hi,24):null,dir:gesture.dir,below:gesture.below,vx:paddle.vx,vy:paddle.vy,side:gesture.side,rise,drop:(paddle.y-gesture.y)*cam.z,dx:(paddle.x-gesture.x)*cam.z,fromX:previous.x,fromY:previous.y,x:paddle.x,y:paddle.y,until:time+.4};}
+if(!against&&(gesture.dir||Math.hypot(paddle.vx,paddle.vy)>=P.STROKE_SPEED)&&(!gesture.side||paddle.vy>=-55||rise>12||sideways)){const previous=samples.length>1?samples[samples.length-2]:paddle;swingMemory={above:gesture.above,course:gesture.dir==='up'?(paddle.x-gesture.loX)/Math.max(gesture.lo-paddle.y,24):gesture.dir==='down'?(paddle.x-gesture.hiX)/Math.max(paddle.y-gesture.hi,24):null,dir:gesture.dir,below:gesture.below,vx:paddle.vx,vy:paddle.vy,side:gesture.side,rise,drop:(paddle.y-gesture.y)*cam.z,dx:(paddle.x-gesture.x)*cam.z,fromX:previous.x,fromY:previous.y,x:paddle.x,y:paddle.y,until:time+.4};}
 }
 if(down&&playing&&!paused)hit();
 }
 canvas.addEventListener('pointerdown',e=>{
 if(!playing||paused||activePointer!==null||e.button>0)return;e.preventDefault();touchInput=e.pointerType==='touch';if(ball&&ball.held&&!ball.tossed)toss();swingMemory=null;samples=[];move(e);activePointer=e.pointerId;
-const target=ball?(ball.owner==='ai'&&!ball.held&&ball.y>0?project(ball.x,-.2,.25):project(ball.x,ball.y,ball.z)):{x:W/2,y:H*.65};   // an incoming ball is judged against where it will be hit, not where it is now
-const dz=(paddle.y-target.y)*cam.z,stance=dz>P.STANCE_PX?'low':dz<-P.STANCE_PX?'high':'mid';   // racket lowered = drive ready, raised = cut ready
-gesture={x:paddle.x,y:paddle.y,t:performance.now(),distance:0,stance,below:stance==='low',above:stance==='high',live:!!ball&&ball.owner==='ai'&&!['wait','none'].includes(P.timing(ball)),side:paddle.y+(touchInput?32:0)>target.y+8?(paddle.x>=target.x?'right':'left'):null};down=true;canvas.setPointerCapture(e.pointerId);
+gesture={x:paddle.x,y:paddle.y,t:performance.now(),distance:0,live:!!ball&&ball.owner==='ai'&&!['wait','none'].includes(P.timing(ball))};setStance(gesture);down=true;canvas.setPointerCapture(e.pointerId);
 });
 canvas.addEventListener('pointermove',move);
 canvas.addEventListener('pointerup',e=>{
@@ -554,7 +555,13 @@ release();
 });
 // Holding still on one spot charges a smash (racket held below the ball = waiting to drive, so no smash): it fires as soon as the incoming ball is in the hit window, for as long as the finger stays down.
 function holdCheck(){if(down&&gesture&&!gesture.below&&ball&&ball.owner==='ai'&&!ball.held&&gesture.distance<(touchInput?18:12)&&performance.now()-gesture.t>250){if(!gesture.held){gesture.held=true;toast('스매시 준비! ⚡',.8);}smashUntil=time+.15;hit();}}
-function release(){if(gesture&&gesture.held)smashUntil=-1;down=false;gesture=null;activePointer=null;samples=[];paddle.vx=paddle.vy=0;}
+// Where the stroke starts decides it: racket below the hit point = drive ready, above = cut ready. An incoming ball is judged
+// against where it will be hit, not where it is now.
+function setStance(g){const target=ball?(ball.owner==='ai'&&!ball.held&&ball.y>0?project(ball.x,-.2,.25):project(ball.x,ball.y,ball.z)):{x:W/2,y:H*.65};
+const dz=(paddle.y-target.y)*cam.z;g.stance=dz>P.STANCE_PX?'low':dz<-P.STANCE_PX?'high':'mid';g.below=g.stance==='low';g.above=g.stance==='high';
+g.side=paddle.y+(touchInput?32:0)>target.y+8?(paddle.x>=target.x?'right':'left'):null;}
+let releasedAt=-10;
+function release(){releasedAt=time;if(gesture&&gesture.held)smashUntil=-1;down=false;gesture=null;activePointer=null;samples=[];paddle.vx=paddle.vy=0;}
 function cancelPointer(e){if(e.pointerId!==activePointer)return;swingMemory=null;release();lastTap=null;smashUntil=-1;}
 canvas.addEventListener('pointercancel',cancelPointer);canvas.addEventListener('lostpointercapture',cancelPointer);
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
