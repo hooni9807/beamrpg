@@ -303,9 +303,9 @@ const STROKE_SETS={hugo:HUGO_STROKES,lee:LEE_STROKES};
 STROKES.crescent=STROKES.loop;STROKES.lightning=STROKES.drive;STROKES.thunder=STROKES.smash;STROKES.phantom=STROKES.chop;
 const lerp=(a,b,t)=>a+(b-a)*t,ease=t=>1-(1-t)*(1-t);
 // since = seconds after contact. prep (0..1, while the finger is still drawing) walks backswing -> just before contact.
-function strokePose(type,since,side,s,shoulder,target,angle,crouch,look={},amp=1,dirX=0,prep=null){
+function strokePose(type,since,side,s,shoulder,target,angle,crouch,look={},amp=1,dirX=0,prep=null,T=1){
 const k=look.strokes&&STROKE_SETS[look.strokes]?.[type]||STROKES[type];if(!k||prep==null&&(since<0||since>.8))return {target,angle,crouch,twist:0};
-const at=f=>({x:shoulder.x+side*f[0]*s,y:shoulder.y+f[1]*s,a:side*f[2],c:f[3],w:f[4]}),B=at(k[0]),C=at(k[1]),F0=at(k[2]),F={...F0,x:C.x+(F0.x-C.x)*amp+dirX*16*s,y:C.y+(F0.y-C.y)*amp},R={x:target.x,y:target.y,a:angle,c:crouch,w:0};
+const at=f=>({x:shoulder.x+side*f[0]*s,y:shoulder.y+f[1]*s*T,a:side*f[2],c:f[3],w:f[4]}),B=at(k[0]),C=at(k[1]),F0=at(k[2]),F={...F0,x:C.x+(F0.x-C.x)*amp+dirX*16*s,y:C.y+(F0.y-C.y)*amp},R={x:target.x,y:target.y,a:angle,c:crouch,w:0};
 const mix=(A,Z,t)=>({target:{x:lerp(A.x,Z.x,t),y:lerp(A.y,Z.y,t)},angle:lerp(A.a,Z.a,t),crouch:lerp(A.c,Z.c,t),twist:lerp(A.w,Z.w,t)});
 if(prep!=null)return prep<.35?mix(R,B,ease(prep/.35)):mix(B,C,(prep-.35)/.65*.85);   // drawing: backswing, then into the stroke
 if(since<.05)return mix(B,C,since/.05);                   // contact lands on the hit itself
@@ -350,7 +350,8 @@ if(st.mode==='one'){if(dir*(home(dir)+lead-F[dir].x)>3*s)step(dir,home(dir)+lead
 if(st.last===dir)step(-dir,st.mode==='cross'&&Math.abs(remain)>stance*2?home(dir)+dir*stance*.3+lead:home(-dir)+dir*stance*.5+lead); // far foot: cross over / close in
 else step(dir,home(dir)+dir*stance*(st.mode==='cross'?.6:.35)+lead);                                                         // near foot steps out
 }
-const me={x:null,vx:0,crouch:.3},foe={x:null,vx:0,crouch:.3},ARM_REACH=78,mySwing={type:'drive',t:-10};
+const BODY_TALL=1.2,me={x:null,vx:0,crouch:.3,tall:BODY_TALL},foe={x:null,vx:0,crouch:.3,tall:BODY_TALL},   // BODY_TALL: figure height vs width
+ARM_REACH=78,mySwing={type:'drive',t:-10};
 // While the finger is drawing at a live ball the figure already plays that stroke (drag up = drive, down = cut ...).
 function liveStroke(){const g=gesture,t=P.classify(paddle.vx,paddle.vy,{rise:g.y-paddle.y,drop:paddle.y-g.y,dx:paddle.x-g.x,side:g.side});if(t!=='short')g.stroke=racketType==='defense'?'chop':t;return g.stroke;}   // the defender cuts every swing
 // The figure loads its racket in time with the incoming ball: from the net to the PERFECT point it eases into the backswing
@@ -360,18 +361,18 @@ function drawingPrep(){if(!ball||ball.owner!=='ai'||ball.held||ball.y>1.37||time
 if(down&&gesture&&!gesture.held&&gesture.distance>=(touchInput?18:12)&&liveStroke()){mySwing.type=gesture.stroke;return .35+P.clamp(gesture.distance/90,0,1)*.65;}
 mySwing.type=expectStroke();return P.clamp((1.37-ball.y)/1.45,0,1)*.35;}let lastShot='drive',aiShot='short',lastRenderT=performance.now();
 function person(st,hipY,target,angle,look,s,type,face,side,stroke,since,prep=null){
-const R=RACKETS[type],skin='#f2cda8',pants=look.pants,x=st.x,moving=P.clamp(Math.abs(st.vx)/160,0,1),dir=Math.sign(st.vx)||1;
-const pose=strokePose(stroke,since,side,s,{x:x+side*15*s,y:hipY-50*s+st.crouch*18*s},target,angle,st.crouch,look,st.amp??1,st.dirX||0,prep);
+const T=st.tall||1,R=RACKETS[type],skin='#f2cda8',pants=look.pants,x=st.x,moving=P.clamp(Math.abs(st.vx)/160,0,1),dir=Math.sign(st.vx)||1;
+const pose=strokePose(stroke,since,side,s,{x:x+side*15*s,y:hipY-50*s*T+st.crouch*18*s},target,angle,st.crouch,look,st.amp??1,st.dirX||0,prep,T);
 const cheer=st.cheerT!=null&&time-st.cheerT<1.2?Math.abs(Math.sin((time-st.cheerT)*8)):-1;   // won the point: jump with both arms up
-if(cheer>=0){pose.target={x:x+side*16*s,y:hipY-128*s};pose.angle=side*.15;pose.crouch=.15;pose.twist=0;}
-const cr=pose.crouch,stepping=st.feet?Math.max(...[-1,1].map(k=>st.feet[k].t<1?Math.sin(Math.PI*st.feet[k].t):0)):0,split=look.split&&st.splitT!=null&&time-st.splitT<.24?Math.sin(Math.PI*(time-st.splitT)/.24):0,bob=look.split&&!stepping&&!split&&!(since>=0&&since<.8)?Math.sin(time*7)*1.2*s:0,hop=stepping*3*s+split*8*s+bob+Math.max(0,cheer)*12*s,hy=hipY+cr*18*s-hop+Math.abs(st.lean||0)*10*s,cx=x+dir*moving*6*s+pose.twist*side*8*s,ground=hipY+30*s;
+if(cheer>=0){pose.target={x:x+side*16*s,y:hipY-128*s*T};pose.angle=side*.15;pose.crouch=.15;pose.twist=0;}
+const cr=pose.crouch,stepping=st.feet?Math.max(...[-1,1].map(k=>st.feet[k].t<1?Math.sin(Math.PI*st.feet[k].t):0)):0,split=look.split&&st.splitT!=null&&time-st.splitT<.24?Math.sin(Math.PI*(time-st.splitT)/.24):0,bob=look.split&&!stepping&&!split&&!(since>=0&&since<.8)?Math.sin(time*7)*1.2*s:0,hop=stepping*3*s+split*8*s+bob+Math.max(0,cheer)*12*s,hy=hipY+cr*18*s-hop+Math.abs(st.lean||0)*10*s,cx=x+dir*moving*6*s+pose.twist*side*8*s,ground=hipY+30*s*T;
 // Lunge: when the racket has to reach past the body, sink lower, widen the stance (stepBody reads st.lean) and lean the upper body toward it.
 const lean=P.clamp((pose.target.x-cx-side*40*s)/(70*s),-1,1);st.lean=lerp(st.lean||0,lean,.25);const ux=cx+st.lean*12*s;
-const shoulder={x:ux+side*15*s,y:hy-50*s},ang=pose.angle,racketScale=s*.78,d=(R.h+R.hl*.55)*racketScale;let tgt=pose.target,hand={x:tgt.x-Math.sin(ang)*d,y:tgt.y+Math.cos(ang)*d};
-{const dx=hand.x-shoulder.x,dy=hand.y-shoulder.y,len=Math.hypot(dx,dy),k=Math.max(0,len-ARM_REACH*s)/(len||1);tgt={x:tgt.x-dx*k,y:tgt.y-dy*k};hand={x:hand.x-dx*k,y:hand.y-dy*k};}   // the arm never stretches past its reach
+const shoulder={x:ux+side*15*s,y:hy-50*s*T},ang=pose.angle,racketScale=s*.78,d=(R.h+R.hl*.55)*racketScale;let tgt=pose.target,hand={x:tgt.x-Math.sin(ang)*d,y:tgt.y+Math.cos(ang)*d};
+{const dx=hand.x-shoulder.x,dy=hand.y-shoulder.y,len=Math.hypot(dx,dy),k=Math.max(0,len-ARM_REACH*s*T)/(len||1);tgt={x:tgt.x-dx*k,y:tgt.y-dy*k};hand={x:hand.x-dx*k,y:hand.y-dy*k};}   // the arm never stretches past its reach
 const elbow={x:(shoulder.x+hand.x)/2,y:(shoulder.y+hand.y)/2+12*s};
 ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
-if(st.aura){const pulse=.55+.45*Math.sin(time*7),g=ctx.createRadialGradient(cx,hy-38*s,6*s,cx,hy-38*s,78*s);g.addColorStop(0,`rgba(${st.aura},${.55*pulse})`);g.addColorStop(1,`rgba(${st.aura},0)`);ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(cx,hy-38*s,62*s,80*s,0,0,Math.PI*2);ctx.fill();}   // special-ready aura
+if(st.aura){const pulse=.55+.45*Math.sin(time*7),g=ctx.createRadialGradient(cx,hy-38*s*T,6*s,cx,hy-38*s*T,78*s);g.addColorStop(0,`rgba(${st.aura},${.55*pulse})`);g.addColorStop(1,`rgba(${st.aura},0)`);ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(cx,hy-38*s*T,62*s,80*s,0,0,Math.PI*2);ctx.fill();}   // special-ready aura
 // 졸라맨 (stick figure): thin glowing limbs, a small team-colour tee, round head (photo face for 휴고범 / 리신범).
 ctx.beginPath();ctx.ellipse(x,ground+2*s,(26+cr*8)*s,5*s,0,0,Math.PI*2);ctx.fillStyle='#00000070';ctx.fill();
 const ink='#f3eeff',lw=3.4*s;ctx.shadowColor=look.shirt;ctx.shadowBlur=10*s;
@@ -379,19 +380,19 @@ for(const k of (st.feet&&st.feet[1].t<1?[-1,1]:[1,-1])){
 const f=st.feet?st.feet[k]:{x:x+k*(17+cr*12)*s,t:1},lift=f.t<1?Math.sin(Math.PI*f.t)*7*s:0;
 const foot={x:f.x+k*split*4*s,y:ground-lift-split*5*s},hip={x:cx,y:hy},knee={x:(hip.x+foot.x)/2+k*(2+cr*8)*s,y:(hip.y+foot.y)/2+cr*2*s-lift*.3};
 line(hip,knee,ink,lw);line(knee,foot,ink,lw);line(foot,{x:foot.x+k*7*s,y:foot.y},ink,lw);}
-const shout=look.shout&&st.shoutT!=null&&time-st.shoutT<.6;const free=cheer>=0?{x:cx-side*20*s,y:hy-98*s}:shout?{x:cx-side*20*s,y:hy-82*s}:st.holding?{x:cx-side*22*s,y:hy-34*s}:look.fist&&!st.tossing?{x:cx-side*24*s,y:hy-(46+pose.twist*6)*s}:st.tossing?{x:cx-side*20*s,y:hy-78*s}:{x:cx-side*(26-pose.twist*6)*s,y:hy-(24+pose.twist*10)*s};st.free=free;
-const fs={x:ux-side*12*s,y:hy-50*s};line(fs,{x:(fs.x+free.x)/2-side*4*s,y:(fs.y+free.y)/2+6*s},ink,lw);line({x:(fs.x+free.x)/2-side*4*s,y:(fs.y+free.y)/2+6*s},free,ink,lw);
-line({x:ux,y:hy-56*s},{x:cx,y:hy},ink,lw);   // spine (leans in a lunge)
-ctx.beginPath();ctx.moveTo(ux-12*s,hy-54*s);ctx.lineTo(ux+12*s,hy-54*s);ctx.lineTo(lerp(cx,ux,.4)+9*s,hy-22*s);ctx.lineTo(lerp(cx,ux,.4)-9*s,hy-22*s);ctx.closePath();ctx.fillStyle=look.shirt;ctx.fill();   // tee
-line({x:ux-12*s,y:hy-54*s},{x:ux-18*s,y:hy-46*s},look.shirt,6*s);line({x:ux+12*s,y:hy-54*s},{x:ux+18*s,y:hy-46*s},look.shirt,6*s);   // sleeves
+const shout=look.shout&&st.shoutT!=null&&time-st.shoutT<.6;const free=cheer>=0?{x:cx-side*20*s,y:hy-98*s*T}:shout?{x:cx-side*20*s,y:hy-82*s*T}:st.holding?{x:cx-side*22*s,y:hy-34*s*T}:look.fist&&!st.tossing?{x:cx-side*24*s,y:hy-(46+pose.twist*6)*s}:st.tossing?{x:cx-side*20*s,y:hy-78*s*T}:{x:cx-side*(26-pose.twist*6)*s,y:hy-(24+pose.twist*10)*s};st.free=free;
+const fs={x:ux-side*12*s,y:hy-50*s*T};line(fs,{x:(fs.x+free.x)/2-side*4*s,y:(fs.y+free.y)/2+6*s},ink,lw);line({x:(fs.x+free.x)/2-side*4*s,y:(fs.y+free.y)/2+6*s},free,ink,lw);
+line({x:ux,y:hy-56*s*T},{x:cx,y:hy},ink,lw);   // spine (leans in a lunge)
+ctx.beginPath();ctx.moveTo(ux-12*s,hy-54*s*T);ctx.lineTo(ux+12*s,hy-54*s*T);ctx.lineTo(lerp(cx,ux,.4)+9*s,hy-22*s*T);ctx.lineTo(lerp(cx,ux,.4)-9*s,hy-22*s*T);ctx.closePath();ctx.fillStyle=look.shirt;ctx.fill();   // tee
+line({x:ux-12*s,y:hy-54*s*T},{x:ux-18*s,y:hy-46*s*T},look.shirt,6*s);line({x:ux+12*s,y:hy-54*s*T},{x:ux+18*s,y:hy-46*s*T},look.shirt,6*s);   // sleeves
 const hx=ux+st.lean*3*s+pose.twist*side*2*s,fimg=faceImg(look);ctx.shadowBlur=0;
-if(fimg){const hh=52*s,hw=hh*fimg.naturalWidth/fimg.naturalHeight;ctx.drawImage(fimg,hx-hw/2,hy-80*s-hh/2,hw,hh);}   // photo head
-else{ctx.beginPath();ctx.arc(hx,hy-72*s,13*s,0,Math.PI*2);ctx.fillStyle='#fbf9ff';ctx.fill();ctx.lineWidth=2*s;ctx.strokeStyle=look.shirt;ctx.stroke();
-if(hipY<H*.5){ctx.fillStyle='#1a1530';for(const k of [-1,1]){ctx.beginPath();ctx.arc(hx+k*4.5*s,hy-74*s,1.8*s,0,Math.PI*2);ctx.fill();}ctx.beginPath();ctx.arc(hx,hy-69*s,4*s,.2,Math.PI-.2);ctx.lineWidth=1.4*s;ctx.strokeStyle='#1a1530';ctx.stroke();}}   // the far player faces us
+if(fimg){const hh=52*s,hw=hh*fimg.naturalWidth/fimg.naturalHeight;ctx.drawImage(fimg,hx-hw/2,hy-80*s*T-hh/2,hw,hh);}   // photo head
+else{ctx.beginPath();ctx.arc(hx,hy-72*s*T,13*s,0,Math.PI*2);ctx.fillStyle='#fbf9ff';ctx.fill();ctx.lineWidth=2*s;ctx.strokeStyle=look.shirt;ctx.stroke();
+if(hipY<H*.5){ctx.fillStyle='#1a1530';for(const k of [-1,1]){ctx.beginPath();ctx.arc(hx+k*4.5*s,hy-74*s*T,1.8*s,0,Math.PI*2);ctx.fill();}ctx.beginPath();ctx.arc(hx,hy-69*s*T,4*s,.2,Math.PI-.2);ctx.lineWidth=1.4*s;ctx.strokeStyle='#1a1530';ctx.stroke();}}   // the far player faces us
 ctx.shadowColor=look.shirt;ctx.shadowBlur=10*s;line(shoulder,elbow,ink,lw);line(elbow,hand,ink,lw);ctx.shadowBlur=0;
 racket(tgt.x,tgt.y,ang,type,face,racketScale);
 ctx.beginPath();ctx.arc(hand.x,hand.y,3.6*s,0,Math.PI*2);ctx.fillStyle=ink;ctx.fill();
-if(shout){ctx.font=`bold ${14*s}px Arial`;ctx.textAlign='center';ctx.fillStyle='#ffe066';ctx.fillText(look.shout,hx+side*22*s,hy-98*s);}
+if(shout){ctx.font=`bold ${14*s}px Arial`;ctx.textAlign='center';ctx.fillStyle='#ffe066';ctx.fillText(look.shout,hx+side*22*s,hy-98*s*T);}
 ctx.restore();
 }
 // Arena backdrop, drawn once per canvas size: crowd in the stands, a row of LED boards behind the far player, a floor grid.
@@ -425,7 +426,7 @@ const opponent=project(net?P.clamp(-net.opp.x,-.9,.9):ball?P.clamp(ball.x,-1,1):
 foe.stanceK=1+Math.abs(foe.lean||0)*.6;stepBody(foe,opponent.x-aiSide*34*aiScale,rdt,ball&&ball.owner==='you'?.55:.25,aiScale);
 foe.depth=lerp(foe.depth||0,ball&&ball.owner==='you'&&!ball.held?P.clamp((ball.y-1.9)/.9,0,1):.2,Math.min(1,rdt*5));   // backs off as a deep ball comes
 const foePrep=!net&&ball&&ball.owner==='you'&&!ball.held&&ball.y>1.37&&time-lastAIHit>.65?P.clamp((ball.y-1.37)/1.43,0,1)*.35:null;
-person(foe,far.y-20*aiScale-foe.depth*16*aiScale,{x:foe.x+aiSide*34*aiScale,y:opponent.y},aiSide*.35,net?LOOKS[net.opp.ch]||LOOKS.ai:LOOKS[aiChar],aiScale,net?net.opp.rk:'shake',aiSide<0?BLACK:RED,aiSide,foePrep!=null?'drive':net?net.opp.shot:aiShot,net?time-net.opp.hitT:time-lastAIHit,foePrep);
+person(foe,far.y-20*aiScale-30*aiScale*(BODY_TALL-1)-foe.depth*16*aiScale,{x:foe.x+aiSide*34*aiScale,y:opponent.y},aiSide*.35,net?LOOKS[net.opp.ch]||LOOKS.ai:LOOKS[aiChar],aiScale,net?net.opp.rk:'shake',aiSide<0?BLACK:RED,aiSide,foePrep!=null?'drive':net?net.opp.shot:aiShot,net?time-net.opp.hitT:time-lastAIHit,foePrep);
 {const since=time-(net?net.opp.hitT:lastAIHit);if(ball&&ball.owner==='ai'&&!ball.held&&since>=0&&since<1.1){const k=KIND[shotKind(ball)],pop=1+Math.max(0,.2-since)*2;   // what the opponent just played, in big letters
 pill(k.label,foe.x+(foe.x<W/2?1:-1)*95*aiScale,far.y-20*aiScale-foe.depth*16*aiScale-62*aiScale,k.rgb,Math.round(16*pop),since>.8?(1.1-since)/.3:1);}}
 ctx.save();const a=project(-.76,0),b=project(.76,0),c=project(.76,2.74),d=project(-.76,2.74);ctx.shadowColor='#00000090';ctx.shadowBlur=30;ctx.shadowOffsetY=18;polygon([a,b,c,d],'#5f9fd2');ctx.restore();polygon([a,b,{x:b.x,y:b.y+13},{x:a.x,y:a.y+13}],'#244a78');polygon([b,c,{x:c.x,y:c.y+10},{x:b.x,y:b.y+13}],'#2c5686');for(const x of [-.66,.66]){let f=project(x,.15),g=project(x,2.45);line(f,{x:f.x-5,y:f.y+H*.115},'#1b1b24',8);line(g,{x:g.x+4,y:g.y+H*.09},'#1b1b24',5);}ctx.lineWidth=2.5;{const tg=ctx.createLinearGradient(0,d.y,0,a.y);tg.addColorStop(0,'#86bde6');tg.addColorStop(1,'#6aa8da');polygon([a,b,c,d],tg,'#ffffff');}line(project(0,0),project(0,2.74),'#ffffffcc',1.2);const n1=project(-.82,1.37),n2=project(.82,1.37),n3=project(.82,1.37,.1525),n4=project(-.82,1.37,.1525);polygon([n1,n2,n3,n4],'#1a1f2e55');for(let i=0;i<=26;i++){const x=-.82+i*1.64/26;line(project(x,1.37),project(x,1.37,.1525),'#e8ecf380',.7);}for(let i=0;i<5;i++)line(project(-.82,1.37,i*.038),project(.82,1.37,i*.038),'#e8ecf390',.7);line(n4,n3,'#ffffff',2.5);line(n1,n4,'#2a2f3a',3);line(n2,n3,'#2a2f3a',3);ctx.fillStyle='#ffffff40';ctx.font=`italic bold ${W*.027}px Arial`;ctx.textAlign='center';ctx.fillText('SPIN LAB',W/2,H*.55);
@@ -442,7 +443,7 @@ me.holding=!!(ball&&ball.held&&ball.owner==='you'&&!ball.tossed);me.tossing=!!(b
 me.depth=lerp(me.depth||0,P.clamp((H*.82-paddle.y)/(H*.3),-.3,1),Math.min(1,rdt*8));   // finger up the screen = step in toward the table
 me.aura=charge===100&&!net?SPECIALS[RACKETS[racketType].special].rgb:null;   // special ready: the figure glows
 if(view==='fp'){drawingPrep();me.free={x:W*.3,y:H*.86};racket(paddle.x,paddle.y,angle,racketType,playerSide>0?BLACK:RED,playerScale*1.25);}
-else person(me,H-40*playerScale-me.depth*34*playerScale,paddle,angle,LOOKS[charType],playerScale,racketType,playerSide>0?BLACK:RED,playerSide,mySwing.type,time-mySwing.t,drawingPrep());
+else person(me,H-40*playerScale-30*playerScale*(BODY_TALL-1)-me.depth*34*playerScale,paddle,angle,LOOKS[charType],playerScale,racketType,playerSide>0?BLACK:RED,playerSide,mySwing.type,time-mySwing.t,drawingPrep());
 if(me.holding){ctx.beginPath();ctx.arc(me.free.x,me.free.y-4*playerScale,6.5*playerScale,0,Math.PI*2);ctx.fillStyle='#fff7dc';ctx.fill();ctx.strokeStyle='#ddaa6890';ctx.stroke();}}
 // Racket side follows where the paddle is relative to the ball (10px dead zone stops flicker).
 function updateSide(){const ref=ball?project(ball.x,ball.y,ball.z).x:W/2;if(paddle.x>ref+10)playerSide=1;else if(paddle.x<ref-10)playerSide=-1;}
@@ -517,6 +518,7 @@ const sx=e.clientX-r.left,sy=e.clientY-r.top-offset;paddle.x=P.clamp(cam.z>1?cam
 samples.push({x:paddle.x,y:paddle.y,t:now});samples=samples.filter(p=>now-p.t<110);
 if(samples.length>1){const first=samples[0],delta=Math.max(8,now-first.t)/1000;const sensitivity=(touchInput?P.clamp(700/W,1,2):1)*cam.z;paddle.vx=(paddle.x-first.x)/delta*sensitivity;paddle.vy=(paddle.y-first.y)/delta*sensitivity;}else paddle.vx=paddle.vy=0;
 if(down&&gesture){gesture.distance=Math.max(gesture.distance,Math.hypot(paddle.x-gesture.x,paddle.y-gesture.y));
+if(gesture.held&&gesture.distance>=(touchInput?18:12)){gesture.held=false;smashUntil=-1;}   // moved after holding: a normal swing, not a smash
 if(paddle.y>=(gesture.lo??gesture.y)){gesture.lo=paddle.y;gesture.loX=paddle.x;}if(paddle.y<=(gesture.hi??gesture.y)){gesture.hi=paddle.y;gesture.hiX=paddle.x;}gesture.lo??=gesture.y;gesture.hi??=gesture.y;gesture.loX??=gesture.x;gesture.hiX??=gesture.x;   // lowest / highest point of this drag
 const up=gesture.lo-paddle.y,dn=paddle.y-gesture.hi,cutMin=gesture.below?P.CUT_FROM_BELOW:16;
 if(up>12&&paddle.vy<-40&&(gesture.dir!=='down'||up>45))gesture.dir='up';
@@ -542,8 +544,8 @@ if(lastTap&&lastTap.touch===touchInput&&now-lastTap.t<(touchInput?360:320)&&Math
 if(gesture&&gesture.stroke&&time-mySwing.t>.65){mySwing.type=gesture.stroke;mySwing.t=time;}   // drawn but never met the ball: swing in the air
 release();
 });
-// Holding still on one spot charges a smash: it fires as soon as the incoming ball is in the hit window, for as long as the finger stays down.
-function holdCheck(){if(down&&gesture&&ball&&ball.owner==='ai'&&!ball.held&&gesture.distance<(touchInput?18:12)&&performance.now()-gesture.t>250){if(!gesture.held){gesture.held=true;toast('스매시 준비! ⚡',.8);}smashUntil=time+.15;hit();}}
+// Holding still on one spot charges a smash (racket held below the ball = waiting to drive, so no smash): it fires as soon as the incoming ball is in the hit window, for as long as the finger stays down.
+function holdCheck(){if(down&&gesture&&!gesture.below&&ball&&ball.owner==='ai'&&!ball.held&&gesture.distance<(touchInput?18:12)&&performance.now()-gesture.t>250){if(!gesture.held){gesture.held=true;toast('스매시 준비! ⚡',.8);}smashUntil=time+.15;hit();}}
 function release(){if(gesture&&gesture.held)smashUntil=-1;down=false;gesture=null;activePointer=null;samples=[];paddle.vx=paddle.vy=0;}
 function cancelPointer(e){if(e.pointerId!==activePointer)return;swingMemory=null;release();lastTap=null;smashUntil=-1;}
 canvas.addEventListener('pointercancel',cancelPointer);canvas.addEventListener('lostpointercapture',cancelPointer);
