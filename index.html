@@ -194,7 +194,7 @@ const store={get:k=>{try{return localStorage.getItem('spinlab.'+k);}catch{return
 if(!ctx.roundRect)ctx.roundRect=function(x,y,w,h){this.rect(x,y,w,h);};
 const TABLE_W=.34;   // table half-width as a share of the court width (smaller = more floor around the table)
 // Two cameras. tp: high behind my player (default). fp: first person - lower and closer, stronger perspective, my body hidden.
-const VIEWS={tp:{tw:TABLE_W,persp:.45,base:.55,dh:.3,zh:.33},fp:{tw:TABLE_W*1.3,persp:.62,base:.7,dh:.4,zh:.42}};
+const VIEWS={tp:{tw:TABLE_W,persp:.45,base:.52,dh:.25,zh:.33},fp:{tw:TABLE_W*1.3,persp:.62,base:.7,dh:.4,zh:.42}};
 let view=store.get('view')==='fp'?'fp':'tp';
 // Camera yaw (radians, eased toward the ball's side in render): turns the court around the middle of my end line, so the
 // spot where I hit barely moves while the far end swings - the table runs diagonally toward the side the ball is on.
@@ -205,7 +205,7 @@ function project(x,y,z=0){{const dx=x-YAW.px,dy=y-YAW.py;x=YAW.px+dx*YAW.c-dy*YA
 // People stand on the floor (z = -.76, the table is .76 m tall) with real proportions: hips at HIP_M (about table height),
 // shoulders TORSO_M above that. pxm = screen pixels per metre of height at the feet.
 const HIP_M=.78,TORSO_M=.5,BODY_SIDE_M=.45,   // BODY_SIDE_M: the ball is played this far beside the body
-MY_FEET_Y=-1.05,FOE_FEET_Y=3.45;
+MY_FEET_Y=-.85,FOE_FEET_Y=3.25;
 const pxm=feet=>H*VIEWS[view].zh*feet.scale,figScale=feet=>TORSO_M*pxm(feet)/(50*BODY_TALL),legPx=feet=>HIP_M*pxm(feet);
 // In-app browsers (KakaoTalk etc.) grow and shrink the viewport as their toolbars hide on drag. The court's CSS height
 // follows the viewport, so it would stretch mid-rally and shift every hit target. Measure it once and pin it in px;
