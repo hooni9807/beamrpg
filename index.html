@@ -150,7 +150,7 @@ shake:{name:'쉐이크핸드',special:'crescent',skill:'백핸드 드라이브: 
 w:24.5,h:24.5,hw:10,hl:30,grip:'#c9c3b6',gripHi:'#e9e5dc',ply:'#5a554a55',wood:'#e9d4a8',flare:true,lens:'#3b3b3b',reach:1,power:1},
 cpen:{name:'중국식 펜홀더',special:'lightning',skill:'빠른 쇼트: 쇼트 속도 ×1.5',boost:{short:1.5},w:24,h:26,hw:8,hl:15,grip:'#9c7a4c',reach:.95,power:1.08},
 jpen:{name:'일본식 펜홀더',special:'thunder',skill:'포핸드 강타: 포핸드 드라이브 속도 ×1.25',w:19,h:28,hw:11,hl:19,grip:'#c9a46b',square:true,reach:.9,power:1.18},
-defense:{name:'수비수 라켓',pips:true,special:'phantom',perfect:.65,skill:'수비 특화: 스윙은 강한 커트(CHOP) · 드라이브 · 스매시는 PERFECT 커트로만 방어 (PERFECT 범위 65%) · 뜬 공은 꾹 눌러 스매시 · 탭 쇼트 · 백핸드 롱핌플',w:27,h:28.5,hw:10,hl:30,grip:'#b58c58',gripHi:'#e2c08a',tape:'#7a1f1f',reach:1.2,power:.85}};
+defense:{name:'수비수 라켓',pips:true,special:'phantom',perfect:.65,skill:'수비 특화: 스윙은 강한 커트(CHOP) · 드라이브 · 스매시는 PERFECT 커트로만 방어 (PERFECT 범위 65%) · 뜬 공(찬스볼)은 스윙하면 자동 스매시 · 탭 쇼트 · 백핸드 롱핌플',w:27,h:28.5,hw:10,hl:30,grip:'#b58c58',gripHi:'#e2c08a',tape:'#7a1f1f',reach:1.2,power:.85}};
 const BLACK='#1b1b1b',RED='#c8312f';
 // Character looks. 'jersey' is drawn from the user's photo: short tousled dark hair, black square glasses,
 // navy jersey with green / lime vertical stripes and a lime V collar, black shorts, black watch on the left wrist.
@@ -632,7 +632,7 @@ if(!playing||paused||!ball||ball.owner!=='ai'||ball.bounces!==1||time-lastHit<.3
 if(tap==='short'&&P.incoming(ball)==='drive')tap='block';
 let smash=time<=smashUntil;const state=P.timing(ball);if(state==='wait'||state==='none')return;
 const motion=swingMemory&&time<=swingMemory.until?swingMemory:null,R=RACKETS[racketType];
-if(!smash&&!tap&&motion&&ball.chance&&motion.dir!=='down')smash=true;
+if(!smash&&!tap&&motion&&ball.chance&&(motion.dir!=='down'||racketType==='defense'))smash=true;   // a floated chance ball: any swing smashes it (the defender's chop swing too)
 const p=project(ball.x,ball.y,ball.z);let distance=Math.hypot(p.x-paddle.x,p.y-paddle.y);
 if(motion){const dx=motion.x-motion.fromX,dy=motion.y-motion.fromY,t=P.clamp(((p.x-motion.fromX)*dx+(p.y-motion.fromY)*dy)/(dx*dx+dy*dy||1),0,1);distance=Math.min(distance,Math.hypot(p.x-motion.fromX-t*dx,p.y-motion.fromY-t*dy));}
 if(distance>Math.max(touchInput?64:52,W*.075)*R.reach*(ball.kill?.75:1)||(!smash&&!motion&&!tap))return;   // a kill smash is harder to reach
