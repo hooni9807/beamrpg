@@ -528,7 +528,7 @@ YAW.a=lerp(YAW.a,offTable?(ball.x>0?1:-1)*YAW_HIT:ball&&!ball.held?-P.clamp(ball
 deepS=lerp(deepS,deep,Math.min(1,cdt*2));
 const focus=!!(ball&&!ball.held&&ball.owner==='ai'&&ball.bounces===1&&ball.y<.4&&ball.y>-.95-P.back(ball));   // from the bounce near my end line through the hit window
 // base view: pulled back a little in fullscreen and when a drive rally drives me away from the table
-const baseZ=(document.fullscreenElement?FS_ZOOM:1)*VIEW_BACK*(1-.4*deepS),goalZ=focus?Math.max(baseZ,CAM_ZOOM*baseZ*(1-.3*deepS)):baseZ;
+const baseZ=(document.fullscreenElement?FS_ZOOM:1)*VIEW_BACK*(1-.4*deepS),goalZ=baseZ;   // no zoom-in on the hit: the camera only pans to keep me centred
 // While the ball is coming to me the camera pans so the hitting spot sits mid-screen and my waist line (the raise /
 // lower divider) runs through the middle of the screen - room to draw the stroke above and below it. The point comes
 // from the ball, not from my finger, so moving the racket never drags the camera along.
@@ -547,7 +547,7 @@ const info=`${net?'온라인 1:1':LEVEL_NAME[difficulty]||''}  |  랠리 ${rally
 const legend='드래그 ↑ 드라이브 · ↓ 커트 · 탭 쇼트 · 두 번 탭 디펜스';ctx.font='bold 10px Arial';const lw=ctx.measureText(legend).width+20;if(lw<W-150){ctx.fillStyle='#0b0820b0';ctx.beginPath();ctx.roundRect(W/2-lw/2,H-26,lw,20,10);ctx.fill();ctx.fillStyle='#d9ccffd0';ctx.textAlign='center';ctx.fillText(legend,W/2,H-15.5);}
 ctx.restore();}
 // VIEW_BACK: the whole camera sits further back, leaving floor all round the table to move about on
-const VIEW_BACK=1,FS_ZOOM=.72,CAM_ZOOM=1.55,REST_Y=.74;
+const VIEW_BACK=1,FS_ZOOM=.72,REST_Y=.74;
 // Competition table, drawn to the ITTF Laws: 2.74 x 1.525 m playing surface 76 cm above the floor, dark matt blue with a
 // 2 cm white line along every edge and a 3 mm centre line; 25 mm top; net 15.25 cm high on posts 15.25 cm outside the side
 // lines. Each half stands on its own steel undercarriage (legs, braces, wheels), the two halves meeting under the net.
