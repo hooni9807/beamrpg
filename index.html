@@ -448,6 +448,33 @@ const info=`${net?'온라인 1:1':LEVEL_NAME[difficulty]||''}  |  랠리 ${rally
 const legend='드래그 ↑ 드라이브 · ↓ 커트 · 탭 쇼트 · 두 번 탭 디펜스 · 꾹 스매시';ctx.font='bold 10px Arial';const lw=ctx.measureText(legend).width+20;if(lw<W-150){ctx.fillStyle='#0b0820b0';ctx.beginPath();ctx.roundRect(W/2-lw/2,H-26,lw,20,10);ctx.fill();ctx.fillStyle='#d9ccffd0';ctx.textAlign='center';ctx.fillText(legend,W/2,H-15.5);}
 ctx.restore();}
 const CAM_ZOOM=1.8,REST_Y=.74;
+// Competition table, drawn to the ITTF Laws: 2.74 x 1.525 m playing surface 76 cm above the floor, dark matt blue with a
+// 2 cm white line along every edge and a 3 mm centre line; 25 mm top; net 15.25 cm high on posts 15.25 cm outside the side
+// lines. Each half stands on its own steel undercarriage (legs, braces, wheels), the two halves meeting under the net.
+const TT={hw:.7625,len:2.74,top:.025,line:.02,netH:.1525,post:.915,blue:['#2462aa','#1c4f8f'],edge:'#163a66',side:'#122f55',steel:'#a7b0ba',steelDark:'#6b747e'};
+function drawTable(){const q=(x,y,z=0)=>project(x,y,z),px=(m,pt)=>Math.max(1,m*W*VIEWS[view].tw*pt.scale);   // px: metres -> screen px at that point
+const F=-.76,hw=TT.hw,L=TT.len,t=TT.top;
+polygon([q(-hw-.05,-.06,F),q(hw+.05,-.06,F),q(hw+.05,L+.06,F),q(-hw-.05,L+.06,F)],'#00000066');   // shadow on the floor
+// undercarriage of each half: two legs near the outer end, a cross bar, braces up toward the net, a wheel under each leg
+for(const [yl,yb] of [[.42,1.05],[L-.42,L-1.05]]){
+ for(const sx of [-1,1]){const x=sx*(hw-.17),top=q(x,yl,-t-.03),foot=q(x,yl,F+.075),mid=q(x,yl,-.42),up=q(sx*(hw-.32),yb,-t-.03);
+  line(top,foot,TT.steel,px(.035,top));line(mid,up,TT.steelDark,px(.022,mid));   // leg + brace
+  const wh=q(x,yl,F+.04),r=px(.045,wh);ctx.beginPath();ctx.arc(wh.x,wh.y,r,0,Math.PI*2);ctx.fillStyle='#16191f';ctx.fill();ctx.beginPath();ctx.arc(wh.x,wh.y,r*.4,0,Math.PI*2);ctx.fillStyle=TT.steel;ctx.fill();}
+ const a=q(-(hw-.17),yl,-.3),b=q(hw-.17,yl,-.3);line(a,b,TT.steel,px(.028,a));   // cross bar
+ const c=q(-(hw-.17),yl,-t-.03),d=q(hw-.17,yl,-t-.03);line(c,d,TT.steelDark,px(.03,c));}   // frame rail under the top
+// the 25 mm top: end and side edges, then the playing surface
+const A=q(-hw,0),B=q(hw,0),C=q(hw,L),D=q(-hw,L),A2=q(-hw,0,-t),B2=q(hw,0,-t),C2=q(hw,L,-t),D2=q(-hw,L,-t);
+polygon([A,D,D2,A2],TT.side);polygon([B,C,C2,B2],TT.side);polygon([A,B,B2,A2],TT.edge);
+polygon([A,B,C,D],'#f4f6f8');   // white edge lines = the white border left showing around the blue
+const l=TT.line,in4=[q(-hw+l,l),q(hw-l,l),q(hw-l,L-l),q(-hw+l,L-l)],g=ctx.createLinearGradient(0,in4[2].y,0,in4[0].y);g.addColorStop(0,TT.blue[1]);g.addColorStop(1,TT.blue[0]);polygon(in4,g);
+line(q(0,l),q(0,L-l),'#f4f6f8',Math.max(1,px(.006,q(0,.2))));   // centre line (3 mm, drawn a touch wider to stay visible)
+line(q(-hw+l,L/2),q(hw-l,L/2),'#0e2a4d',1);   // seam where the two halves meet
+// net: posts clamped to the side edges, black mesh, white top tape
+const P1=q(-TT.post,L/2,-t),P2=q(TT.post,L/2,-t),T1=q(-TT.post,L/2,TT.netH),T2=q(TT.post,L/2,TT.netH);
+for(const [bot,topP,sx] of [[P1,T1,-1],[P2,T2,1]]){line(bot,topP,'#2b2f38',px(.02,bot)+1);const c1=q(sx*(hw-.02),L/2,.006),c2=q(sx*TT.post,L/2,.006);line(c1,c2,'#2b2f38',px(.03,c1));}
+const N1=q(-TT.post,L/2,0),N2=q(TT.post,L/2,0);polygon([N1,N2,T2,T1],'#0b0d12a8');
+ctx.save();ctx.strokeStyle='#ffffff1c';ctx.lineWidth=.6;ctx.beginPath();for(let i=1;i<40;i++){const x=-TT.post+i*2*TT.post/40,a=q(x,L/2,0),b=q(x,L/2,TT.netH);ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);}for(let k=1;k<6;k++){const z=k*TT.netH/6,a=q(-TT.post,L/2,z),b=q(TT.post,L/2,z);ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);}ctx.stroke();ctx.restore();
+line(T1,T2,'#f4f6f8',Math.max(2,px(.015,T1)));line(N1,N2,'#1a1d24',1);}
 function renderScene(){ctx.clearRect(0,0,W,H);ctx.drawImage(arenaBg(),0,0,W,H);
 ctx.save();ctx.strokeStyle='#8f6bff22';ctx.lineWidth=1;ctx.beginPath();for(let x=-4;x<=4;x+=.5){const a=project(x,-1.5,-.76),b=project(x,3.6,-.76);ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);}for(let y=-1.5;y<=3.6;y+=.5){const a=project(-4,y,-.76),b=project(4,y,-.76);ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);}ctx.stroke();ctx.restore();const nowR=performance.now(),rdt=Math.min((nowR-lastRenderT)/1000,.05);lastRenderT=nowR;
 if(!down&&touchInput&&playing&&!paused&&time-releasedAt>.3)paddle.y+=(H*REST_Y-paddle.y)*Math.min(1,rdt*5);   // finger lifted: racket returns to the low ready spot
@@ -459,9 +486,7 @@ const foePrep=!net&&ball&&ball.owner==='you'&&!ball.held&&ball.y>1.37&&time-last
 person(foe,foeFeet.y-foeLeg,{x:foe.x+aiSide*34*aiScale,y:opponent.y},aiSide*.35,net?LOOKS[net.opp.ch]||LOOKS.ai:LOOKS[aiChar],aiScale,net?net.opp.rk:'shake',aiSide<0?BLACK:RED,aiSide,foePrep!=null?'drive':net?net.opp.shot:aiShot,net?time-net.opp.hitT:time-lastAIHit,foePrep);
 {const since=time-(net?net.opp.hitT:lastAIHit);if(ball&&ball.owner==='ai'&&!ball.held&&since>=0&&since<1.1){const k=KIND[shotKind(ball)],pop=1+Math.max(0,.2-since)*2;   // what the opponent just played, in big letters
 pill(k.label,foe.x+(foe.x<W/2?1:-1)*95*aiScale,foeFeet.y-foeLeg-62*aiScale,k.rgb,Math.round(16*pop),since>.8?(1.1-since)/.3:1);}}
-// table shadow on the floor, legs reaching down to it
-polygon([project(-.8,-.05,-.76),project(.8,-.05,-.76),project(.8,2.79,-.76),project(-.8,2.79,-.76)],'#00000059');
-ctx.save();const a=project(-.76,0),b=project(.76,0),c=project(.76,2.74),d=project(-.76,2.74);ctx.shadowColor='#00000090';ctx.shadowBlur=30;ctx.shadowOffsetY=18;polygon([a,b,c,d],'#5f9fd2');ctx.restore();polygon([a,b,{x:b.x,y:b.y+13},{x:a.x,y:a.y+13}],'#244a78');polygon([b,c,{x:c.x,y:c.y+10},{x:b.x,y:b.y+13}],'#2c5686');for(const x of [-.66,.66])for(const y of [.15,2.59]){const f=project(x,y,-.03),g=project(x,y,-.76);line(f,g,'#1b1b24',Math.max(3,8*f.scale));}ctx.lineWidth=2.5;{const tg=ctx.createLinearGradient(0,d.y,0,a.y);tg.addColorStop(0,'#86bde6');tg.addColorStop(1,'#6aa8da');polygon([a,b,c,d],tg,'#ffffff');}line(project(0,0),project(0,2.74),'#ffffffcc',1.2);const n1=project(-.82,1.37),n2=project(.82,1.37),n3=project(.82,1.37,.1525),n4=project(-.82,1.37,.1525);polygon([n1,n2,n3,n4],'#1a1f2e55');for(let i=0;i<=26;i++){const x=-.82+i*1.64/26;line(project(x,1.37),project(x,1.37,.1525),'#e8ecf380',.7);}for(let i=0;i<5;i++)line(project(-.82,1.37,i*.038),project(.82,1.37,i*.038),'#e8ecf390',.7);line(n4,n3,'#ffffff',2.5);line(n1,n4,'#2a2f3a',3);line(n2,n3,'#2a2f3a',3);ctx.fillStyle='#ffffff40';ctx.font=`italic bold ${W*.027}px Arial`;ctx.textAlign='center';ctx.fillText('SPIN LAB',W/2,H*.55);
+drawTable();
 if(ball&&!(ball.held&&!ball.tossed)){const shadow=project(ball.x,ball.y);ctx.beginPath();ctx.ellipse(shadow.x,shadow.y,9*shadow.scale,3*shadow.scale,0,0,Math.PI*2);ctx.fillStyle='#00000070';ctx.fill();const sp=SPECIALS[ball.type],kindNow=shotKind(ball);trail.forEach((p,i)=>{const q=project(p.x,p.y,p.z);ctx.beginPath();ctx.arc(q.x,q.y,(sp?6:kindNow==='smash'||kindNow==='kill'?5.5:3.5)*q.scale,0,Math.PI*2);ctx.fillStyle=sp?`rgba(${sp.rgb},${i/trail.length*.8})`:`rgba(${KIND[kindNow].rgb},${i/trail.length*.7})`;ctx.fill();});const p=project(ball.x,ball.y,ball.z);ctx.beginPath();ctx.arc(p.x,p.y,7*p.scale,0,Math.PI*2);ctx.fillStyle='#fff7dc';ctx.shadowBlur=sp?24:14;ctx.shadowColor=sp?sp.glow:'#ffffffb0';ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle='#ddaa6850';ctx.stroke();line({x:p.x-2,y:p.y-2},{x:p.x+2,y:p.y-4},'#ffffff',2);
 if(!ball.held&&Math.abs(ball.spin||0)>.2){const a=time*16*Math.sign(ball.spin),rr=6.5*p.scale;ctx.save();ctx.strokeStyle=`rgb(${KIND[kindNow].rgb})`;ctx.lineWidth=2.2;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(p.x-Math.cos(a)*rr,p.y-Math.sin(a)*rr);ctx.lineTo(p.x+Math.cos(a)*rr,p.y+Math.sin(a)*rr);ctx.stroke();ctx.restore();}   // spin line
 if(ball.held){const st=serveTiming(ball),col={hold:'#8fd3ff',toss:'#f3c65c',ready:'#f3c65c',perfect:'#baff78',low:'#f69b75'}[st];ctx.save();ctx.strokeStyle=col;ctx.lineWidth=st==='perfect'?4:2;ctx.setLineDash(st==='hold'?[3,4]:[]);ctx.beginPath();ctx.arc(p.x,p.y,(st==='perfect'?22:28)*p.scale,0,Math.PI*2);ctx.stroke();ctx.fillStyle=col;ctx.font='bold 10px Arial';ctx.textAlign='center';ctx.fillText({hold:'TAP → TOSS',toss:'TOSS',ready:'READY',perfect:'HIT!',low:'LOW'}[st],p.x,p.y-32*p.scale);ctx.restore();}else timingRing(p);}
