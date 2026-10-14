@@ -635,15 +635,17 @@ function cancelPointer(e){if(e.pointerId!==activePointer)return;swingMemory=null
 canvas.addEventListener('pointercancel',cancelPointer);canvas.addEventListener('lostpointercapture',cancelPointer);
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
 function pause(){if(!playing||net)return;paused=!paused;lockPage(!paused);swingMemory=null;release();lastTap=null;smashUntil=-1;updateSpecial();$('pause').textContent=paused?'계속하기 ▶':'일시정지 Ⅱ';$('overlay').classList.toggle('hidden',!paused);if(paused){document.querySelector('.start-card h2').innerHTML='잠깐, 숨 고르기.';document.querySelector('.start-card p').textContent='준비가 되면 랠리를 이어가세요.';$('start').firstChild.textContent='계속하기 ';}}
-function setRacket(type){if(!RACKETS[type])return;racketType=type;$('racket').value=type;const R=RACKETS[type];const S=SPECIALS[R.special];$('racket-note').textContent=`타격 범위 ${Math.round(R.reach*100)}% · 파워 ${Math.round(R.power*100)}% · ${R.skill} · 필살기: ${S.name}`;$('special-name').textContent='✦ '+S.name;store.set('racket',type);$('gear').hidden=type!=='shake';if(type==='shake')$('racket-note').textContent+=gearNote();}
-function gearNote(){const B=BLADES[bladeType],U=RUBBERS[rubberType],pc=v=>Math.round(v*100)+'%';return ` · 목판 ${B.name}(${B.note}) · 러버 ${U.name}(${U.note}) → 속도 ${pc(B.speed*U.speed)} · 회전 ${pc(B.spin*U.spin)} · 실수 확률 ${pc(Math.max(0,B.err+U.err))}`;}
+function racketNote(type,blade,rubber){const R=RACKETS[type],S=SPECIALS[R.special];return `타격 범위 ${Math.round(R.reach*100)}% · 파워 ${Math.round(R.power*100)}% · ${R.skill} · 필살기: ${S.name}`+(type==='shake'?gearNote(blade,rubber):'');}
+function setRacket(type){if(!RACKETS[type])return;racketType=type;$('racket').value=type;$('racket-note').textContent=racketNote(type,bladeType,rubberType);$('special-name').textContent='✦ '+SPECIALS[RACKETS[type].special].name;store.set('racket',type);$('gear').hidden=type!=='shake';}
+function gearNote(blade,rubber){const B=BLADES[blade],U=RUBBERS[rubber],pc=v=>Math.round(v*100)+'%';return ` · 목판 ${B.name}(${B.note}) · 러버 ${U.name}(${U.note}) → 속도 ${pc(B.speed*U.speed)} · 회전 ${pc(B.spin*U.spin)} · 실수 확률 ${pc(Math.max(0,B.err+U.err))}`;}
 if(P.LEVELS[store.get('difficulty')])difficulty=store.get('difficulty');$('difficulty').value=difficulty;
 // Settings only take effect when 설정 적용 is pressed, so touching a menu mid-rally changes nothing.
 function pendingSettings(){return $('character').value!==charType||$('racket').value!==racketType||$('difficulty').value!==difficulty||$('blade').value!==bladeType||$('rubber').value!==rubberType;}
 function markPending(){const p=pendingSettings();$('apply-settings').disabled=!p;$('pending-note').hidden=!p;}
 function applySettings(){if(!pendingSettings())return;setCharacter($('character').value);bladeType=$('blade').value;rubberType=$('rubber').value;store.set('blade',bladeType);store.set('rubber',rubberType);setRacket($('racket').value);difficulty=$('difficulty').value;store.set('difficulty',difficulty);markPending();
 toast(`설정 적용 · ${LOOKS[charType].nick||LOOKS[charType].name} · ${RACKETS[racketType].name} · 난이도 ${$('difficulty').selectedOptions[0].text.split(' · ')[0]}`,2);}
-for(const id of ['character','racket','difficulty','blade','rubber'])$(id).onchange=()=>{markPending();if(id==='racket')$('gear').hidden=$('racket').value!=='shake';};
+function previewSettings(){const rk=$('racket').value,ch=LOOKS[$('character').value]||LOOKS.jersey;$('gear').hidden=rk!=='shake';$('racket-note').textContent=racketNote(rk,$('blade').value,$('rubber').value);drawFace($('char-face'),ch);$('char-name').textContent=ch.nick||ch.name;}
+for(const id of ['character','racket','difficulty','blade','rubber'])$(id).onchange=()=>{markPending();previewSettings();};
 $('blade').value=bladeType;$('rubber').value=rubberType;
 // Front-facing portrait (the in-game figure is seen from behind). Drawn in a 112-unit box into any canvas.
 // 휴고범, from the user's photo: longish oval face with a narrow jaw, full dark-brown hair swept to one side with the
