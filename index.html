@@ -1118,8 +1118,8 @@ let lastTouchEnd=0;document.addEventListener('touchend',e=>{const now=Date.now()
 const rpgOn=()=>!net&&window.beamRpgV2?.active?window.beamRpgV2:null;
 function frame(t){const elapsed=Math.min((t-last)/1000||0,.1);last=t;for(let left=elapsed;left>1e-6&&playing&&!paused;left-=1/60)(net&&net.role==='guest'?guestUpdate:update)(Math.min(left,1/60));if(net&&net.conn.open&&t-net.sent>33){net.sent=t;net.conn.send(net.role==='host'?snapshot():{t:'P',...me4net()});}if(samples.length&&t-samples.at(-1).t>120){paddle.vx=paddle.vy=0;}$('speed').innerHTML=Math.round(Math.hypot(paddle.vx,paddle.vy))+' <small>px/s</small>';$('meter').style.width=Math.min(100,Math.hypot(paddle.vx,paddle.vy)/18)+'%';render();requestAnimationFrame(frame);}requestAnimationFrame(frame);
 </script><script>
-/* BeamRPG v2: town progression is intentionally local-only, so it stays playable on Pages. */
-(()=>{
+/* Replaced by the town-walk flow below. */
+if(false)(()=>{
  const screen=document.querySelector('#rpg-screen'),modal=document.querySelector('#rpg-modal'),oldKey='beamrpg.v2';
  const base={level:1,xp:0,wins:{},stats:{power:0,spin:0,control:0,footwork:0,crit:0,focus:0}};
  let s;try{s=Object.assign({},base,JSON.parse(localStorage.getItem(oldKey)||'{}'));s.stats=Object.assign({},base.stats,s.stats);s.wins=s.wins||{};}catch{s=structuredClone(base)}
@@ -1162,6 +1162,55 @@ function frame(t){const elapsed=Math.min((t-last)/1000||0,.1);last=t;for(let lef
  $('rpg-open').onclick=()=>{if(playing)return toast('경기를 마치거나 처음 화면으로 나간 뒤 열 수 있어요',2);render();screen.hidden=false;};
  const characterSelect=$('character');if(!characterSelect.querySelector('option[value="heebeom"]')){const o=new Option('희범 · 밸런스형 · 집중력 있는 스윙','heebeom');characterSelect.prepend(o);characterSelect.value='heebeom';}
  const picker=$('char-pick');if(!picker.querySelector('[data-char="heebeom"]')){const b=document.createElement('button');b.type='button';b.setAttribute('role','radio');b.dataset.char='heebeom';b.innerHTML='<canvas width="96" height="96" aria-hidden="true"></canvas>희범';picker.prepend(b);}
+ render();screen.hidden=false;
+})();
+</script><script>
+/* BeamRPG: keep the proven rally engine, but start every session in one walkable town. */
+(()=>{
+ const screen=$('rpg-screen'),modal=$('rpg-modal'),key='beamrpg.v3';
+ const base={level:1,xp:0,stats:{power:0,spin:0,control:0,footwork:0,crit:0,focus:0},pos:{x:50,y:78}};
+ let s;try{s=Object.assign({},base,JSON.parse(localStorage.getItem(key)||'{}'));s.stats=Object.assign({},base.stats,s.stats);s.pos=Object.assign({},base.pos,s.pos);}catch{s=structuredClone(base)}
+ const save=()=>localStorage.setItem(key,JSON.stringify(s)),need=()=>100+(s.level-1)*40;
+ const rivals=[
+  {name:'동네 고수 민수',diff:'b7',x:22,y:32,color:'#e56a5d'},
+  {name:'수비 장인 준호',diff:'b7',x:76,y:28,color:'#7b9bd8'},
+  {name:'서브 괴물 지훈',diff:'b7',x:30,y:74,color:'#e7b35a'},
+  {name:'아재범',diff:'b7',x:74,y:70,color:'#b778d1'}
+ ];
+ let meeting=false,active=false;
+ const statText={power:'파워 +10% · 드라이브·스매시 위력',spin:'회전 +10% · 상대가 처리하기 까다롭게',control:'컨트롤 +10% · 코스 정확도·실수 감소',footwork:'풋워크 +10 · 넓은 코스 대응',crit:'치명타 확률 +5% · 속도·파워 2배',focus:'집중력 +10% · 필살기 게이지 효율'};
+ const unlocks=()=>[[10,'라켓 필살기'],[20,'고요한 호흡'],[30,'치키타 스파이럴'],[40,'챔피언 심장'],[50,'제니스 오버드라이브']].filter(([lv])=>s.level>=lv).map(([,name])=>name);
+ document.title='BEAMRPG — 대환장 파티';
+ document.querySelector('meta[name="description"]')?.setAttribute('content','임희범과 함께 7부 마을을 누비며 탁구 고수와 겨루는 성장 RPG');
+ document.querySelector('meta[property="og:title"]')?.setAttribute('content','BEAMRPG — 대환장 파티');
+ document.querySelector('meta[property="og:description"]')?.setAttribute('content','임희범과 함께 7부 마을을 누비며 탁구 고수와 겨루는 성장 RPG');
+ document.querySelector('meta[property="og:url"]')?.setAttribute('content','https://hooni9807.github.io/beamrpg/');
+ document.head.append(Object.assign(document.createElement('style'),{textContent:`
+  body.rpg-battle header,body.rpg-battle .intro,body.rpg-battle aside,body.rpg-battle .techniques,body.rpg-battle footer{display:none}
+  body.rpg-battle main{max-width:none;padding:0}body.rpg-battle .layout{display:block}body.rpg-battle .arena{border-radius:0;border:0;min-height:100vh}
+  .town-controls{display:grid;grid-template-columns:repeat(3,52px);justify-content:center;gap:6px;margin-top:15px}.town-controls button{border:0;border-radius:10px;background:#332450;color:#fff;font-weight:800}.town-controls button:first-child{grid-column:2}.rpg-npc{transition:left .25s,top .25s}.rpg-player{transition:left .12s,top .12s}
+ `}));
+ const character=$('character');if(!character.querySelector('option[value="heebeom"]'))character.prepend(new Option('희범','heebeom'));
+ character.value='heebeom';setCharacter('heebeom');
+ function paint(){
+  const player=screen.querySelector('#town-player');if(player){player.style.left=s.pos.x+'%';player.style.top=s.pos.y+'%';}
+  rivals.forEach((r,i)=>{const node=screen.querySelector(`[data-rival="${i}"]`);if(node){node.style.left=r.x+'%';node.style.top=r.y+'%';}});
+ }
+ function render(){
+  screen.innerHTML=`<div class="rpg-shell"><div class="rpg-head"><div><div class="eyebrow">BEAMRPG · 대환장 파티</div><h1>7부 마을</h1><p>희범을 움직여 마을의 상대와 부딪히면 탁구 대결이 시작됩니다.</p></div><button id="rpg-stats">내 성장</button></div><div class="rpg-card"><b>Lv. ${s.level} 희범</b><div class="rpg-bar"><i style="width:${s.xp/need()*100}%"></i></div><div class="rpg-stats"><div>경험치 <b>${s.xp} / ${need()}</b></div><div>상대 <b>${rivals.length}명</b></div><div>필살기 <b>${unlocks().at(-1)||'Lv.10'}</b></div></div></div><div id="town-map" class="rpg-map" tabindex="0" aria-label="7부 마을. 방향키 또는 WASD로 희범을 이동하세요."><span class="rpg-place" style="left:8%;top:10%">희범의 집</span><span class="rpg-place" style="right:8%;top:10%">동네 탁구장</span><span class="rpg-place" style="left:8%;bottom:10%">공원</span>${rivals.map((r,i)=>`<span class="rpg-npc" data-rival="${i}" style="left:${r.x}%;top:${r.y}%;background:${r.color}">${r.name}<small>대결 상대</small></span>`).join('')}<span id="town-player" class="rpg-player" style="left:${s.pos.x}%;top:${s.pos.y}%" aria-label="희범"></span></div><div class="town-controls" aria-label="희범 이동"><button data-move="0,-5">▲</button><button data-move="-5,0">◀</button><button data-move="0,5">▼</button><button data-move="5,0">▶</button></div><p class="rpg-tip">방향키 또는 WASD로 이동 · 상대와 닿으면 대결이 성사됩니다.</p></div>`;
+  screen.querySelector('#town-map').onkeydown=e=>{const d={ArrowLeft:[-5,0],a:[-5,0],ArrowRight:[5,0],d:[5,0],ArrowUp:[0,-5],w:[0,-5],ArrowDown:[0,5],s:[0,5]}[e.key];if(d){e.preventDefault();move(...d);}};
+  screen.querySelectorAll('[data-move]').forEach(b=>b.onclick=()=>move(...b.dataset.move.split(',').map(Number)));
+  screen.querySelector('#rpg-stats').onclick=showStats;paint();screen.querySelector('#town-map').focus();
+ }
+ function move(dx,dy){if(meeting)return;s.pos.x=Math.max(5,Math.min(95,s.pos.x+dx));s.pos.y=Math.max(8,Math.min(92,s.pos.y+dy));save();paint();const rival=rivals.find(r=>Math.hypot(s.pos.x-r.x,s.pos.y-r.y)<9);if(rival)encounter(rival);}
+ function encounter(rival){meeting=true;modal.innerHTML=`<div class="rpg-card"><h2>${rival.name}와 마주쳤다!</h2><p>라켓을 든 상대가 대결을 신청합니다. 11점 경기 승리 시 경험치 +70을 얻습니다.</p><div class="rpg-actions"><button id="town-fight">대결 시작</button><button id="town-flee" class="secondary">도망친다</button></div></div>`;modal.hidden=false;modal.querySelector('#town-fight').onclick=()=>battle(rival);modal.querySelector('#town-flee').onclick=()=>{modal.hidden=true;meeting=false;s.pos.x=Math.max(5,s.pos.x-10);save();paint();};}
+ function battle(rival){active=true;window.beamRpgV2={active:true,activeSpecial:null,specialType};modal.hidden=true;screen.hidden=true;document.body.classList.add('rpg-battle');$('difficulty').value=rival.diff;applySettings();setMode('match');begin();}
+ function finish(){if(!active||playing)return;active=false;meeting=false;window.beamRpgV2.active=false;document.body.classList.remove('rpg-battle');screen.hidden=false;const won=you>cpu;if(won){s.xp+=70;let levels=0;while(s.xp>=need()){s.xp-=need();s.level++;levels++;}save();render();if(levels){showUpgrade();return;}modal.innerHTML='<div class="rpg-card"><h2>승리!</h2><p>경험치 +70을 얻었습니다. 다시 7부 마을을 돌아다니세요.</p><div class="rpg-actions"><button id="town-close">마을로</button></div></div>';modal.hidden=false;modal.querySelector('#town-close').onclick=()=>modal.hidden=true;}else{render();modal.innerHTML='<div class="rpg-card"><h2>아쉽습니다</h2><p>경험치는 잃지 않았습니다. 다른 상대를 찾아 다시 도전하세요.</p><div class="rpg-actions"><button id="town-close">마을로</button></div></div>';modal.hidden=false;modal.querySelector('#town-close').onclick=()=>modal.hidden=true;}}
+ function showUpgrade(){const picks=Object.entries(statText).sort(()=>Math.random()-.5).slice(0,3);modal.innerHTML=`<div class="rpg-card"><h2>LEVEL UP · 3개 중 하나 선택</h2><div class="rpg-actions">${picks.map(([k,v])=>`<button data-up="${k}">${v}</button>`).join('')}</div></div>`;modal.hidden=false;modal.querySelectorAll('[data-up]').forEach(b=>b.onclick=()=>{s.stats[b.dataset.up]++;save();modal.hidden=true;render();});}
+ function showStats(){modal.innerHTML=`<div class="rpg-card"><h2>희범의 성장</h2><p>${Object.entries(s.stats).map(([k,v])=>`${k} +${v}`).join(' · ')}</p><p>해금: ${unlocks().join(' · ')||'Lv.10에 첫 필살기 해금'}</p><div class="rpg-actions"><button id="town-close" class="secondary">닫기</button></div></div>`;modal.hidden=false;modal.querySelector('#town-close').onclick=()=>modal.hidden=true;}
+ function specialType(base){const turn=s.specialTurn||0;s.specialTurn=turn+1;save();return s.level>=50&&turn%3===2?'zenith':s.level>=30&&turn%2?'chiquita':base;}
+ let applied=false;setInterval(()=>{finish();if(!active)applied=false;if(active&&charge<100)window.beamRpgV2.activeSpecial=null;if(active&&playing&&!applied){const q=s.stats;P.EQUIP.speed*=1+q.power*.03;P.EQUIP.spin*=1+q.spin*.03;P.EQUIP.len*=1+(q.control+q.footwork)*.02;if(s.level>=20)P.EQUIP.len*=1.15;if(s.level>=40){P.EQUIP.speed*=1.1;P.EQUIP.spin*=1.1;}applied=true;}},250);
+ setInterval(()=>{if(screen.hidden||meeting)return;rivals.forEach(r=>{r.x=Math.max(10,Math.min(90,r.x+(Math.random()-.5)*5));r.y=Math.max(18,Math.min(86,r.y+(Math.random()-.5)*5));});paint();const rival=rivals.find(r=>Math.hypot(s.pos.x-r.x,s.pos.y-r.y)<9);if(rival)encounter(rival);},1100);
  render();screen.hidden=false;
 })();
 </script></body></html>
