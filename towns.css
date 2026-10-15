@@ -1,0 +1,39 @@
+/* Keep the original controls available to the battle engine, outside the RPG UI. */
+body>header,main>.intro,main .layout>aside,main>.techniques,main>.ranking,main>footer{display:none!important}
+body:not(.rpg-battle)>main{visibility:hidden;pointer-events:none}
+body.rpg-battle main{max-width:1200px;padding:12px;margin:auto}
+body.rpg-battle .layout{display:block}
+body.rpg-battle .arena{border-radius:16px}
+#char-pick,#login-box,#net-box,#rank-submit,#resume,#restart,#setup,#char-info{display:none!important}
+#rpg-screen{padding:24px max(14px,env(safe-area-inset-left));background:linear-gradient(145deg,#14212e,#241e3c)}
+.rpg-shell{max-width:1050px}
+.rpg-head h1{font-size:clamp(28px,4vw,40px)}
+.rpg-head p{line-height:1.6;font-size:14px}
+.town-status{display:flex;align-items:center;gap:12px 24px;flex-wrap:wrap;padding:14px 20px}
+.town-status>span{font-size:13px;color:#d3c9e8}
+.town-status .rpg-bar{width:100%}
+.walk-map{height:clamp(380px,55vh,540px);min-height:0;background:var(--ground);border:6px solid #274339;box-shadow:inset 0 0 0 5px #ffffff12;touch-action:manipulation;cursor:crosshair;isolation:isolate}
+.walk-map:before{background:linear-gradient(90deg,transparent 45%,var(--road) 45% 55%,transparent 55%),linear-gradient(transparent 40%,var(--road) 40% 50%,transparent 50%);opacity:1}
+.world-map:before{background:linear-gradient(90deg,transparent 15%,var(--road) 15% 21%,transparent 21% 47%,var(--road) 47% 53%,transparent 53% 79%,var(--road) 79% 85%,transparent 85%),linear-gradient(transparent 24%,var(--road) 24% 29%,transparent 29% 60%,var(--road) 60% 66%,transparent 66% 85%,var(--road) 85% 90%,transparent 90%)}
+.town-building{position:absolute;transform:translate(-50%,-50%);z-index:1;width:132px;min-height:80px;padding:8px 6px;background:#eee0bf;color:#312e34;border:3px solid #534239;border-radius:7px;box-shadow:0 7px 0 #0003;text-align:center;cursor:pointer}
+.town-building:before{content:'';position:absolute;top:-16px;left:-7px;right:-7px;height:22px;background:var(--accent);clip-path:polygon(10% 0,90% 0,100% 100%,0 100%)}
+.town-building i{font-style:normal;font-size:22px;display:block}.town-building b{font-size:14px;display:block}.town-building small{display:block;font-size:10px;line-height:1.5;margin-top:4px}
+.world-town.locked{filter:grayscale(.85);background:#b4b4ad;color:#3f3f40}.boss-building{border-color:#ffd166}.garden-building{background:#c1d9a2}.garden-building:before{background:#7f9c58}
+.return-gate{position:absolute;transform:translate(-50%,-50%);padding:10px 16px;border:3px solid #e5f5ff;border-radius:6px;background:#285f81;color:white;font-size:13px;font-weight:bold;white-space:nowrap}
+.town-sign{position:absolute;left:50%;top:63%;transform:translateX(-50%);text-align:center;color:#f9f3dd;font-size:13px;text-shadow:0 1px 3px #000;pointer-events:none}.town-sign small{display:block;font-size:11px;margin-top:5px}
+.walker{position:absolute;width:46px;height:76px;transform:translate(-50%,-75%);pointer-events:none;--facing:1}
+.walker-figure{position:relative;width:46px;height:64px;transform:scaleX(var(--facing));transform-origin:50% 90%}
+.walker-shadow{position:absolute;bottom:11px;left:5px;width:36px;height:9px;background:#17291b66;border-radius:50%}
+.walker-face{position:absolute;top:-19px;left:-9px;width:64px;height:64px;z-index:5;cursor:inherit;filter:drop-shadow(0 1px 1px #222)}
+.walker-body{position:absolute;left:12px;top:30px;width:23px;height:23px;background:linear-gradient(90deg,#151721 60%,#3e4770 60%);border:2px solid #0c101d;border-radius:5px 5px 3px 3px;z-index:3}
+.walker-arm{position:absolute;top:34px;width:7px;height:20px;background:linear-gradient(#252638 55%,#e6b994 55%);border-radius:4px;transform-origin:50% 4px;z-index:2}.walker-arm.left{left:7px;transform:rotate(10deg)}.walker-arm.right{right:5px;transform:rotate(-10deg)}
+.walker-leg{position:absolute;top:48px;width:9px;height:17px;background:linear-gradient(#394459 75%,#171b24 75%);border-radius:2px;transform-origin:50% 2px}.walker-leg.left{left:13px}.walker-leg.right{right:11px}
+.walker-racket{position:absolute;right:-2px;top:43px;width:11px;height:15px;background:#d34850;border:2px solid #692d3b;border-radius:5px;transform:rotate(-25deg);z-index:4}
+.walker>b{position:absolute;top:68px;left:50%;transform:translateX(-50%);padding:2px 7px;background:#172331e8;border:1px solid #acc8ff;border-radius:4px;color:#fff;font-size:11px;white-space:nowrap}
+.walking .walker-leg.left,.walking .walker-arm.right{animation:walk-limb .3s infinite alternate ease-in-out}.walking .walker-leg.right,.walking .walker-arm.left{animation:walk-limb .3s infinite alternate-reverse ease-in-out}.walking .walker-body,.walking .walker-face{animation:walk-bob .3s infinite alternate ease-in-out}
+@keyframes walk-limb{from{transform:rotate(-24deg)}to{transform:rotate(24deg)}}@keyframes walk-bob{from{translate:0 0}to{translate:0 -2px}}
+.town-bottom{display:flex;justify-content:space-between;align-items:center;gap:16px}.town-bottom p{font-size:12px;line-height:1.6;color:#d0c5e1;max-width:580px}
+.town-controls{display:grid;grid-template-columns:repeat(3,44px);gap:5px;margin-top:10px;flex:none}.town-controls button{border:1px solid #696080;border-radius:8px;background:#302843;color:#fff;touch-action:none;user-select:none}.town-controls button:first-child{grid-column:2}.town-controls button:nth-child(2){grid-column:1}
+.rpg-modal .rpg-card{width:min(480px,100%);max-height:85vh;overflow:auto}.rpg-modal p{font-size:14px;line-height:1.6}.rpg-modal .rpg-actions{margin-top:16px}
+@media(max-width:600px){#rpg-screen{padding-top:14px}.rpg-head{display:flex}.rpg-head p{font-size:12px}.rpg-head h1{font-size:26px}.town-status{gap:8px 14px;padding:12px}.town-status>span{font-size:11px}.town-building{width:91px;min-height:72px}.town-building b{font-size:12px}.town-building small{font-size:9px}.town-building:before{left:-4px;right:-4px}.town-sign{top:61%;width:160px;font-size:11px}.town-bottom{align-items:flex-start}.walk-map{height:430px}.return-gate{font-size:12px;padding:8px 10px}.town-controls{grid-template-columns:repeat(3,42px)}}
+@media(prefers-reduced-motion:reduce){.walking .walker-leg,.walking .walker-arm,.walking .walker-body,.walking .walker-face{animation:none}}
