@@ -25,7 +25,8 @@
   s.legacyCamp=legacy.legacyCamp===true||(!legacy.mapVersion&&s.wins.three===true);
   const open=z=>zones.indexOf(z)===0||!!s.wins[zones[zones.indexOf(z)-1].id]||(z.id==='camp'&&s.legacyCamp);
   s.zone=zones.some(z=>z.id===legacy.zone)?legacy.zone:'seven';
-  s.place=['world','town','interior','park'].includes(legacy.place)&&open(zones.find(z=>z.id===s.zone))?legacy.place:'world';
+  // A brand-new journey begins in Heebeom's room; a saved valid place always wins.
+  s.place=['world','town','interior','park'].includes(legacy.place)&&open(zones.find(z=>z.id===s.zone))?legacy.place:'interior';
   s.facility=['home','shop','cafe','training','clinic','hall','gym','park'].includes(legacy.facility)?legacy.facility:'home';
   s.positions=legacy.mapVersion===2&&legacy.positions&&typeof legacy.positions==='object'?legacy.positions:{};
   s.mapVersion=2;s.introSeen=legacy.introSeen===true;delete s.worldPos;delete s.townPos;delete s.pos;
@@ -35,7 +36,7 @@
   let scene,sceneId,player,map,ctx,mini,grid,cols,rows,path=[],target=null,last=0,grace=480,travelled=0,rolls=0,facing=1,direction='down',walking=false,latched=null,lastSave=0;
   let camera={x:0,y:0,scale:1,width:0,height:0,dpr:1};
   const keys=new Set(),dirs={ArrowLeft:[-1,0],a:[-1,0],ArrowRight:[1,0],d:[1,0],ArrowUp:[0,-1],w:[0,-1],ArrowDown:[0,1],s:[0,1]};
-  const save=()=>{try{localStorage.setItem(key,JSON.stringify(s));}catch{message('저장 공간을 사용할 수 없습니다. 브라우저 저장 공간을 확인해 주세요.');}};
+  const save=()=>{try{if(sceneId&&player&&Number.isFinite(player.x)&&Number.isFinite(player.y))s.positions[sceneId]={x:player.x,y:player.y};localStorage.setItem(key,JSON.stringify(s));}catch{message('저장 공간을 사용할 수 없습니다. 브라우저 저장 공간을 확인해 주세요.');}};
   function message(text){screen.querySelector('#town-message')?.replaceChildren(text);}
   function stop(){path=[];target=null;keys.clear();walking=false;}
   function close(){modal.hidden=true;map?.focus({preventScroll:true});}
@@ -172,7 +173,7 @@
   modal.addEventListener('keydown',e=>{if(e.key==='Escape'&&!s.pendingUpgrades)close();if(e.key==='Tab'){const buttons=[...modal.querySelectorAll('button:not(:disabled)')],first=buttons[0],end=buttons.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();end?.focus();}else if(!e.shiftKey&&document.activeElement===end){e.preventDefault();first?.focus();}}});
   document.addEventListener('keydown',e=>{if(screen.hidden||!modal.hidden)return;const k=e.key.length===1?e.key.toLowerCase():e.key;if(k==='e'){const p=scene.portals.find(p=>Math.hypot(player.x-p.x,player.y-p.y)<85);if(p)activate(p);return;}if(!dirs[k])return;e.preventDefault();path=[];target=null;keys.add(k);});
   document.addEventListener('keyup',e=>{const k=e.key.length===1?e.key.toLowerCase():e.key;keys.delete(k);if(dirs[k])save();});
-  window.addEventListener('blur',stop);window.addEventListener('pagehide',save);document.addEventListener('visibilitychange',()=>{if(document.hidden){stop();save();}});
+  window.addEventListener('blur',stop);window.addEventListener('beforeunload',save);window.addEventListener('pagehide',save);document.addEventListener('visibilitychange',()=>{if(document.hidden){stop();save();}});
   function draw(t){
     const r=map.getBoundingClientRect();if(!r.width||!r.height)return;const dpr=Math.min(window.devicePixelRatio||1,2),scale=s.place==='interior'&&r.width>=720?Math.min(r.width/scene.width,r.height/scene.height)*.96:r.width<600?.75:.85;
     if(map.width!==Math.round(r.width*dpr)||map.height!==Math.round(r.height*dpr)){map.width=Math.round(r.width*dpr);map.height=Math.round(r.height*dpr);}
