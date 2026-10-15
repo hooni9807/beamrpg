@@ -604,10 +604,10 @@ const VIEW_BACK=1,FS_ZOOM=.72,REST_Y=.74;
 // 2 cm white line along every edge and a 3 mm centre line; 25 mm top; net 15.25 cm high on posts 15.25 cm outside the side
 // lines. Each half stands on its own steel undercarriage (legs, braces, wheels), the two halves meeting under the net.
 // Tables and balls - a random pair every game. speed / spin / len: +-fractions (len = the PERFECT window, the hit ring).
-const TABLES=[{name:'블루 프로 탁구대',mark:'B',blue:['#2462aa','#1c4f8f'],edge:'#163a66',side:'#122f55',speed:-.2,spin:0,len:-.2},
-{name:'스피드 X 탁구대',mark:'X',blue:['#1d2b6b','#121c4a'],edge:'#0c1433',side:'#0a102a',speed:.2,spin:-.2,len:0},
-{name:'클래식 C 탁구대',mark:'C',blue:['#2f7d55','#25643f'],edge:'#1b4a2f',side:'#163d27',speed:0,spin:0,len:0}];
-const BALLS=[{name:'B 볼',color:'#fbfaf5',dot:'#d8343c',speed:-.1,spin:.1,len:-.1},{name:'X 볼',color:'#f6f8fb',dot:'#2a5bd7',speed:.1,spin:-.1,len:.1},{name:'C 볼',color:'#ff9a3c',dot:'#ffffff',speed:0,spin:0,len:0}];
+const TABLES=[{name:'나비 탁구대',mark:'B',blue:['#2462aa','#1c4f8f'],edge:'#163a66',side:'#122f55',speed:-.2,spin:0,len:-.2},
+{name:'액션 탁구대',mark:'X',blue:['#1d2b6b','#121c4a'],edge:'#0c1433',side:'#0a102a',speed:.2,spin:-.2,len:0},
+{name:'코늴리리아 탁구대',mark:'C',blue:['#2f7d55','#25643f'],edge:'#1b4a2f',side:'#163d27',speed:0,spin:0,len:0}];
+const BALLS=[{name:'나비 공',color:'#fbfaf5',dot:'#d8343c',speed:-.1,spin:.1,len:-.1},{name:'액션 공',color:'#f6f8fb',dot:'#2a5bd7',speed:.1,spin:-.1,len:.1},{name:'코늴리리아 공',color:'#ff9a3c',dot:'#ffffff',speed:0,spin:0,len:0}];
 let gear={table:TABLES[2],ball:BALLS[2]};
 const TT={hw:.7625,len:2.74,top:.025,line:.02,netH:.1525,post:.915,blue:['#2462aa','#1c4f8f'],edge:'#163a66',side:'#122f55',steel:'#a7b0ba',steelDark:'#6b747e'};
 function drawTable(){const q=(x,y,z=0)=>project(x,y,z),px=(m,pt)=>Math.max(1,m*W*VIEWS[view].tw*pt.scale);   // px: metres -> screen px at that point
