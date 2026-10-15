@@ -69,9 +69,9 @@ COURSE_GAIN=1.4;   // course = sideways / vertical travel of the stroke; x1.4 ->
 // table + ball of this game (set by the page): speed scales flight time, spin the spin felt, len the PERFECT window
 const EQUIP={speed:1,spin:1,len:1};
 function perfectSpan(b){return .52*EQUIP.len*clamp(FAST_REF/Math.max(Math.abs(b.vy||0),.1),.45,1);}
-// In a drive-vs-drive rally the ball carries further (b.deep, 0..1): the whole window moves up to 55 cm back from the table.
+// In a drive-vs-drive rally the ball carries further (b.deep, 0..1): the whole window moves up to DEEP_M back from the table.
 function timing(b){if(!b||b.owner!=='ai')return 'none';const d=back(b);if(b.bounces!==1||b.y>-d||b.y<-.95-d)return 'wait';if(b.y<-.08-d-perfectSpan(b))return 'late';return b.y<=-.08-d?'perfect':'ready';}
-const DEEP_M=1,OFF_T=.18,DEEP_STEP=.2;
+const DEEP_M=1.4,OFF_T=.18,DEEP_STEP=.2;   // up to 1.4 m further back after a long drive-vs-drive rally
 // how far past my end line the hit window starts: always clearly off the table, further back in a drive rally
 function back(b){return OFF_T+DEEP_M*(b&&b.deep||0);}
 // Spin the receiver has to deal with: every 1.0 of spin above SPIN_FREE adds SPIN_MISS to the chance the return fails.
@@ -294,7 +294,8 @@ if(!plan){sp=0;plan=P.planServe(0,L.serve,-x0,.3,tx())||P.planServe(0,2.4,-x0,.3
 ball={x:x0,y:2.89,z:.3,vx:-plan.vx,vy:-plan.vy,vz:plan.vz,spin:sp,side:0,bounces:0,owner:'ai',serving:true,type:'serve'};trail=[];toast('상대 서브 · 바운드 후 끝선 밖에서 타격!',1.2);}
 // when the opponent wins a point it teases me, half the time
 // counter-drive: a drive answered with a drive moves both players a step further back; anything else brings them in
-function deepen(counter){const was=deep;deep=counter?Math.min(1,deep+P.DEEP_STEP):Math.max(0,deep-2*P.DEEP_STEP);if(ball)ball.deep=deep;if(!was&&deep)toast('맞드라이브! 🔥 둘 다 한 걸음 물러나요',1.4);else if(deep>was&&deep>=1&&was<1)toast('🔥 끝까지 물러난 맞드라이브 랠리!',1.2);}
+// each counter-drive pushes further than the last: steps grow with how deep the rally already is
+function deepen(counter){const was=deep;deep=counter?Math.min(1,deep+P.DEEP_STEP*(.75+deep)):Math.max(0,deep-2*P.DEEP_STEP);if(ball)ball.deep=deep;if(!was&&deep)toast('맞드라이브! 🔥 둘 다 한 걸음 물러나요',1.4);else if(deep>was&&deep>=1&&was<1)toast('🔥 끝까지 물러난 맞드라이브 랠리!',1.2);}
 const TAUNTS=['흠.. 그정돈가?','냐옹냐옹~','풉키 풉키!'];
 function point(player,reason){if(!ball)return;
 if(!net&&(reason==='아웃'||reason==='테이블 밖으로 나갔어요')){const mine=ball.owner==='you'&&!player,claimer=mine?LOOKS[charType]:ball.owner==='ai'&&player?LOOKS[aiChar]:null;
