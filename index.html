@@ -154,7 +154,7 @@ let googleUser=null,deep=0,deepS=0,pops=[],net=null,difficulty='b4',matchBest=0,
 const names={loop:['LOOP DRIVE','루프 드라이브 · 높은 전진 회전'],back:['BACK DRIVE','백드라이브 · 빠른 전진 회전'],chiquita:['CHIQUITA','필살기 · 치키타 스파이럴'],lightning:['LIGHTNING','필살기 · 번개 속공'],thunder:['THUNDER','필살기 · 천둥 스매시'],phantom:['PHANTOM','필살기 · 유령 커트'],crescent:['CRESCENT','필살기 · 초승달 드라이브'],zenith:['ZENITH','필살기 · 제니스 오버드라이브'],drive:['DRIVE','드라이브 · 전진 회전'],cut:['CUT','커트 · 후진 회전'],chop:['CHOP','수비 커트 · 강한 후진 회전'],short:['SHORT','쇼트 · 짧은 밀어치기'],block:['BLOCK','디펜스 쇼트 · 각도를 숙여 막기'],smash:['SMASH','스매시 · 강한 공격'],side:['SIDE SPIN','사이드스핀 · 휘어지는 궤적'],serve:['SERVE','서브']};
 // w/h: blade half-size, hw/hl: handle width/length, reach: hit radius, power: swing speed multiplier
 const RACKETS={
-// Starter racket: plain blade + plain rubber, no skill or boost (the special still unlocks at Lv.10 in BeamRPG)
+// Starter racket: plain blade + plain rubber, no skill or boost; special unlocks at Lv.2.
 basic:{name:'일반 라켓',special:'crescent',skill:'일반 러버 · 특수 효과 없음',
 w:24.5,h:24.5,hw:10,hl:30,grip:'#c9c3b6',gripHi:'#e9e5dc',ply:'#5a554a55',wood:'#e9d4a8',flare:true,lens:'#3b3b3b',reach:1,power:1},
 // Shakehand = ALC carbon blade, Viscaria look: 157x150 mm near-round head, flared FL handle, 5 wood + 2 arylate-carbon plies
@@ -1120,4 +1120,4 @@ let lastTouchEnd=0;document.addEventListener('touchend',e=>{const now=Date.now()
 // BeamRPG battle in progress (set by the league map script below), or null.
 const rpgOn=()=>!net&&window.beamRpgV2?.active?window.beamRpgV2:null;
 function frame(t){const elapsed=Math.min((t-last)/1000||0,.1);last=t;for(let left=elapsed;left>1e-6&&playing&&!paused;left-=1/60)(net&&net.role==='guest'?guestUpdate:update)(Math.min(left,1/60));if(net&&net.conn.open&&t-net.sent>33){net.sent=t;net.conn.send(net.role==='host'?snapshot():{t:'P',...me4net()});}if(samples.length&&t-samples.at(-1).t>120){paddle.vx=paddle.vy=0;}$('speed').innerHTML=Math.round(Math.hypot(paddle.vx,paddle.vy))+' <small>px/s</small>';$('meter').style.width=Math.min(100,Math.hypot(paddle.vx,paddle.vy)/18)+'%';render();requestAnimationFrame(frame);}requestAnimationFrame(frame);
-</script><script src="towns.js"></script></body></html>
+</script><script src="towns-renderer.js"></script><script src="towns.js"></script></body></html>

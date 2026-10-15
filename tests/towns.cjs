@@ -1,126 +1,55 @@
-// Run with Node and Playwright installed; the browser serves only repository files.
-const assert = require('node:assert/strict');
-const fs = require('node:fs/promises');
-const path = require('node:path');
-const {chromium} = require('playwright');
-const root = path.resolve(__dirname, '..');
-const origin = 'https://beamrpg.test';
-const ids = ['seven','six','five','four','three','camp'];
-const names = ['7부 마을','6부 마을','5부 마을','4부 마을','3부 마을','선수촌'];
-const xp = [70,90,110,140,170,220];
-const stats = {power:0,spin:0,control:0,footwork:0,crit:0,focus:0};
-
-(async () => {
-  const browser = await chromium.launch({channel:'chrome',headless:true});
-  try {
-    const context = await browser.newContext({viewport:{width:1100,height:900}});
-    await context.route('**/*', async route => {
-      const u = new URL(route.request().url());
-      if(u.origin!==origin)return route.abort();
-      if(u.pathname==='/__test_seed')return route.fulfill({contentType:'text/html',body:'<!doctype html><title>Test storage</title>'});
-      const file = path.join(root,u.pathname==='/'?'index.html':u.pathname);
-      const types = {'.html':'text/html','.js':'text/javascript','.css':'text/css','.png':'image/png'};
-      try {await route.fulfill({body:await fs.readFile(file),contentType:types[path.extname(file)]||'text/plain'});} catch {await route.fulfill({status:404,body:''});}
+// Local browser smoke check; no remote services or real account data.
+const assert=require('node:assert/strict'),fs=require('node:fs/promises'),path=require('node:path');
+const {chromium}=require('playwright');
+const root=path.resolve(__dirname,'..'),origin='https://beamrpg.test';
+(async()=>{
+  const browser=await chromium.launch({channel:'chrome',headless:true});
+  try{
+    const context=await browser.newContext({viewport:{width:1440,height:960}});
+    await context.route('**/*',async route=>{
+      const u=new URL(route.request().url());if(u.origin!==origin)return route.abort();
+      if(u.pathname==='/seed')return route.fulfill({contentType:'text/html',body:'<!doctype html><title>Seed</title>'});
+      const file=path.join(root,u.pathname==='/'?'index.html':u.pathname),types={'.html':'text/html','.js':'text/javascript','.css':'text/css','.png':'image/png'};
+      try{let body=await fs.readFile(file);if(u.pathname==='/towns.js')body=Buffer.from(body.toString().replace('  buildScene();screen.hidden=false;', '  window.__townTest={zones,get scene(){return scene},get player(){return player}};buildScene();screen.hidden=false;'));await route.fulfill({body,contentType:types[path.extname(file)]||'text/plain'});}catch{return route.fulfill({status:404,body:''});}
     });
-    const page = await context.newPage(), errors=[];
-    page.on('pageerror', e=>errors.push(e.message));
-    await page.goto(origin);
-    await page.clock.install();
-    await page.evaluate(()=>Math.random=()=>.9);
-    const state = ()=>page.evaluate(()=>JSON.parse(localStorage.getItem('beamrpg.v3')));
-    const tick = ms=>page.clock.runFor(ms);
-    const click = async selector=>{await page.locator(selector).click();await tick(50);};
-    const reload = async s=>{await page.goto(origin+'/__test_seed');await page.evaluate(s=>localStorage.setItem('beamrpg.v3',JSON.stringify(s)),s);await page.goto(origin);await page.evaluate(()=>Math.random=()=>.9);await tick(100);};
-    const settle = async (predicate, limit=12000)=>{for(let n=0;n<limit;n+=200){if(await page.evaluate(predicate))return;await tick(200);}throw Error('Timed out: '+predicate+' '+JSON.stringify(await page.evaluate(()=>({state:JSON.parse(localStorage.getItem('beamrpg.v3')),player:document.querySelector('#town-player').style.cssText,modal:document.querySelector('#rpg-modal').hidden,playing,paused}))));};
-    const resolveUpgrades = async()=>{
-      if(await page.locator('#town-upgrade').count())await click('#town-upgrade');
-      while(await page.locator('#rpg-modal').isVisible() && await page.locator('[data-up]').count()){await page.locator('[data-up]').first().click();await tick(50);}
-      if(await page.locator('#town-close').isVisible())await click('#town-close');
+    const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
+    await page.goto(origin);await page.clock.install();await page.evaluate(()=>Math.random=()=>.9);
+    const state=()=>page.evaluate(()=>JSON.parse(localStorage.getItem('beamrpg.v3'))),tick=ms=>page.clock.runFor(ms);
+    const reload=async s=>{await page.goto(origin+'/seed');await page.evaluate(s=>localStorage.setItem('beamrpg.v3',JSON.stringify(s)),s);await page.goto(origin);await page.evaluate(()=>Math.random=()=>.9);await tick(50);};
+    const visit=async(action,value)=>{
+      const index=await page.evaluate(({action,value})=>{const t=window.__townTest,i=t.scene.portals.findIndex(p=>p.action===action&&(value==null||p.value===value)),p=t.scene.portals[i];const q=[[0,72],[0,-72],[72,0],[-72,0]].map(([x,y])=>({x:p.x+x,y:p.y+y})).find(q=>!t.scene.obstacles.some(o=>q.x>o.x-10&&q.x<o.x+o.w+10&&q.y>o.y-10&&q.y<o.y+o.h+10));Object.assign(t.player,q);return i;},{action,value});
+      await page.locator(`[data-destination="${index}"]`).click();await tick(500);
     };
-    const conclude = async won=>{await page.evaluate(won=>{you=won?10:0;cpu=won?0:10;ball={owner:'ai',type:'drive'};point(won,'test match point');},won);await tick(100);};
-    assert.equal(await page.evaluate(()=>charType),'heebeom');
-    assert.equal(await page.locator('[data-zone]').count(),6);
-    assert.equal(await page.locator('.rpg-npc').count(),0);
-    assert.equal(await page.locator('#char-pick').isVisible(),false);
-    await page.screenshot({path:'/tmp/beamrpg-world.png'});
-
-    // A locked town requires reaching its entrance; clicking never teleports.
-    await click('[data-zone="six"]');
-    assert.equal((await state()).place,'world');
-    assert.equal(await page.locator('.walker.walking').count(),1);
-    await settle(()=>!document.querySelector('#rpg-modal').hidden);
-    assert.match(await page.locator('#rpg-modal').innerText(),/아직 닫힌 마을/);
-    await click('#town-close');
-    await reload({...(await state()),worldPos:{x:18,y:40}});
-
-    // Every real entrance, boss, reward, unlock and return uses the shared flow.
-    for(let i=0;i<6;i++) {
-      await click(`[data-zone="${ids[i]}"]`);
-      await settle(()=>JSON.parse(localStorage.getItem('beamrpg.v3')).place==='town');
-      assert.equal((await state()).zone,ids[i]);
-      assert.equal(await page.locator('#rpg-screen h1').innerText(),names[i]);
-      assert.equal(await page.locator('[data-rival],.rpg-npc').count(),0);
-      const beforeIdle=await state();await tick(3000);
-      assert.equal(await page.evaluate(()=>playing),false,'no encounter while idle');
-      assert.deepEqual((await state()).townPos,beforeIdle.townPos);
-      if(i===1)await page.screenshot({path:'/tmp/beamrpg-six.png'});
-      await click('[data-boss]');
-      await settle(()=>playing);
-      assert.equal(await page.evaluate(()=>charType),'heebeom');
-      assert.equal(await page.evaluate(()=>aiChar),['ajae','sleepy','leesin','percival','jersey','boss'][i]);
-      assert.equal(await page.evaluate(()=>aiDif()),['b6','b5','b4','b3','b2','boss'][i]);
-      assert.equal(await page.evaluate(()=>rpgOn().level),(await state()).level);
-      assert.equal(await page.evaluate(()=>!!rpgOn().stats),true);
-      await conclude(true);
-      assert.equal((await state()).wins[ids[i]],true);
-      assert.match(await page.locator('#rpg-modal').innerText(),new RegExp('경험치 \\+'+xp[i]*2));
-      await resolveUpgrades();
-      await reload(await state()); // the unlock and chosen growth survive a reload
-      await click('[data-return]');
-      await settle(()=>JSON.parse(localStorage.getItem('beamrpg.v3')).place==='world');
-      assert.equal((await state()).place,'world');
-      if(i<5){const p=await page.locator(`[data-zone="${ids[i+1]}"]`).evaluate(n=>({x:parseFloat(n.style.left),y:parseFloat(n.style.top)+15}));await reload({...(await state()),worldPos:p});}
-      console.log('PASS',names[i],': boss, reward, unlock, save and return');
-    }
-    assert.equal(await page.locator('.world-town.locked').count(),0);
-
-    // Random opponents appear after walking, not as moving circles or on idle timers.
-    await reload({...(await state()),place:'town',zone:'four',townPos:{x:50,y:82}});
-    await page.evaluate(()=>Math.random=()=>0);
-    await page.locator('#town-map').click({position:{x:100,y:340}});await tick(100);
-    await settle(()=>playing);
-    assert.equal(await page.evaluate(()=>rpgOn().boss),false);
-    assert.equal(await page.evaluate(()=>rpgOn().zone.id),'four');
-    assert.equal(await page.evaluate(()=>aiChar),'percival');
-    assert.equal(await page.locator('#cpu-name').innerText(),'왼손 라이벌');
-    assert.equal(await page.locator('#character').isVisible(),false);
-    await click('#pause');
-    assert.equal(await page.locator('#char-pick').isVisible(),false);
-    await click('#start');
-    const beforeFlee=await state();
-    await click('#home');
-    assert.equal((await state()).xp,beforeFlee.xp);
-    assert.deepEqual((await state()).wins,beforeFlee.wins);
-    await click('#town-close');
-
-    // A loss never unlocks a town, and first-time legacy saves keep their progress.
-    await reload({level:10,xp:25,stats,wins:{},place:'town',zone:'seven',townPos:{x:50,y:82}});
-    await click('[data-boss]');await settle(()=>playing);await conclude(false);
-    assert.deepEqual((await state()).wins,{});assert.equal((await state()).xp,25);
-    await page.goto(origin+'/__test_seed');
-    await page.evaluate(()=>{localStorage.removeItem('beamrpg.v3');localStorage.setItem('beamrpg.v2',JSON.stringify({level:30,xp:42,wins:{seven:true,six:true},stats:{power:4}}));});
-    await page.goto(origin);await tick(100);
-    assert.equal((await state()).level,30);assert.equal((await state()).stats.power,4);assert.equal((await state()).wins.six,true);
-
-    // Touch-size viewport, tap-to-walk and the held directional controls.
-    await page.setViewportSize({width:390,height:844});
-    await reload({...(await state()),place:'world',worldPos:{x:18,y:41}});
-    await click('[data-zone="seven"]');await settle(()=>JSON.parse(localStorage.getItem('beamrpg.v3')).place==='town');
-    await page.screenshot({path:'/tmp/beamrpg-mobile.png'});
-    const start=await page.locator('#town-player').evaluate(n=>parseFloat(n.style.left));
-    await page.locator('[data-dir="ArrowRight"]').hover();await page.mouse.down();await tick(200);await page.mouse.up();
-    assert.ok(await page.locator('#town-player').evaluate(n=>parseFloat(n.style.left))>start);
-    assert.deepEqual(errors,[]);
-    console.log('PASS random walking encounters, idle safety, flee/loss, migration and mobile controls; no browser errors');
-  } finally {await browser.close();}
+    assert.equal(await page.locator('[data-zone]').count(),8);assert.equal(await page.evaluate(()=>charType),'heebeom');assert.equal((await state()).racket,'basic');
+    await page.screenshot({path:'/tmp/beamrpg-world-new.png'});
+    const disconnected=await page.evaluate(()=>{
+      const zones=window.__townTest.zones,scenes=[BeamMap.createScene({kind:'world',zones,isOpen:()=>true})];
+      for(const zone of zones)for(const kind of ['town','park'])scenes.push(BeamMap.createScene({kind,zone}));
+      for(const facility of ['home','shop','cafe','training','clinic','hall','gym'])scenes.push(BeamMap.createScene({kind:'interior',zone:zones[0],facility}));
+      const failures=[];
+      for(const s of scenes){
+        const cols=Math.ceil(s.width/32),rows=Math.ceil(s.height/32),valid=p=>p.x>=20&&p.y>=20&&p.x<=s.width-20&&p.y<=s.height-20&&!s.obstacles.some(o=>p.x>o.x-10&&p.x<o.x+o.w+10&&p.y>o.y-10&&p.y<o.y+o.h+10);
+        const point=i=>({x:i%cols*32+16,y:Math.floor(i/cols)*32+16}),seen=new Set(),q=[];
+        let start=-1,best=Infinity;for(let i=0;i<cols*rows;i++){const p=point(i),d=Math.hypot(p.x-s.spawn.x,p.y-s.spawn.y);if(valid(p)&&d<best){start=i;best=d;}}
+        if(!valid(s.spawn))failures.push(s.title+': spawn blocked');q.push(start);seen.add(start);
+        for(let j=0;j<q.length;j++){const i=q[j],x=i%cols,y=Math.floor(i/cols);for(const [dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const xx=x+dx,yy=y+dy,k=yy*cols+xx;if(xx<0||xx>=cols||yy<0||yy>=rows||seen.has(k)||!valid(point(k)))continue;seen.add(k);q.push(k);}}
+        for(const p of s.portals)if(!valid(p)||!q.some(i=>{const n=point(i);return Math.hypot(n.x-p.x,n.y-p.y)<p.radius;}))failures.push(s.title+': '+p.label);
+      }return failures;
+    });
+    assert.deepEqual(disconnected,[],'every door and service is reachable');
+    await visit('zone','seven');assert.equal((await state()).place,'town');await page.screenshot({path:'/tmp/beamrpg-town-new.png'});
+    await tick(1200);assert.equal(await page.evaluate(()=>playing),false,'idle never triggers encounters');
+    await visit('facility','home');assert.equal((await state()).place,'interior');await page.screenshot({path:'/tmp/beamrpg-home-new.png'});
+    await visit('service','home');await page.locator('#facility-action').click();assert.equal((await state()).rested,true);await page.locator('#town-close').click();
+    await visit('return');assert.equal((await state()).place,'town');
+    await visit('facility','park');assert.equal((await state()).place,'park');await page.screenshot({path:'/tmp/beamrpg-park-new.png'});await visit('return');
+    await reload({...await state(),mapVersion:undefined,positions:undefined,level:13,xp:33,coins:500,wins:{seven:true,six:true,five:true,four:true,three:true},place:'town',zone:'two'});
+    assert.equal((await state()).level,13);assert.equal((await state()).xp,33);assert.equal((await state()).legacyCamp,true);
+    await visit('facility','shop');await visit('service','shop');await page.locator('[data-racket="cpen"]').click();assert.equal((await state()).coins,350);assert.equal(await page.evaluate(()=>racketType),'cpen');await page.locator('#town-close').click();
+    await visit('return');await visit('facility','gym');await visit('service','gym');await page.locator('#facility-action').click();await tick(50);assert.equal(await page.evaluate(()=>playing),true);assert.equal(await page.evaluate(()=>window.beamRpgV2.rival.name),'만취범');
+    await page.evaluate(()=>{you=11;cpu=0;playing=false;});await tick(50);assert.equal((await state()).wins.two,true);assert.match(await page.locator('#rpg-modal').innerText(),/1부 마을이 열렸습니다/);
+    await reload({...await state(),place:'town',zone:'one',pendingUpgrades:0});await page.screenshot({path:'/tmp/beamrpg-one-new.png'});
+    await page.setViewportSize({width:390,height:844});await tick(100);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.screenshot({path:'/tmp/beamrpg-mobile-new.png'});
+    assert.deepEqual(errors,[]);console.log('PASS: 8 towns, portal paths, home/park, save migration, equipment, 2부 boss→1부, desktop/mobile.');
+  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
