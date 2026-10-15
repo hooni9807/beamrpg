@@ -875,8 +875,11 @@ let ciChar=null;
 function showCharInfo(k){const L=LOOKS[k],I=CHAR_INFO[k];if(!L||!I){setCharacter(k);markPending();return;}ciChar=k;drawFace($('ci-face'),L);$('ci-name').textContent=L.nick||L.name;$('ci-tag').textContent=I.tag;
 const ul=$('ci-list');ul.textContent='';for(const [cls,lab,txt] of I.rows){const li=document.createElement('li'),b=document.createElement('b'),sp=document.createElement('span');li.className=cls;b.textContent=lab;sp.textContent=txt;li.append(b,sp);ul.append(li);}
 $('ci-pick').textContent=k===charType?'지금 선택된 캐릭터예요 ✓':'이 캐릭터로 할래요 ✓';$('char-info').showModal();}
-$('ci-close').onclick=()=>$('char-info').close();$('ci-pick').onclick=()=>{if(ciChar&&ciChar!==charType){setCharacter(ciChar);markPending();toast(LOOKS[charType].nick+' 선택!',1.2);}$('char-info').close();};
+$('ci-close').onclick=()=>{$('char-info').close();ciSync();};$('ci-pick').onclick=()=>{if(ciChar&&ciChar!==charType){setCharacter(ciChar);markPending();toast(LOOKS[charType].nick+' 선택!',1.2);}$('char-info').close();ciSync();};
 document.querySelectorAll('#char-pick button').forEach(b=>b.onclick=()=>showCharInfo(b.dataset.char));
+// the settings panel's character list opens the same card; closing it without picking puts the list back
+const ciSync=()=>{$('character').value=charType;markPending();previewSettings();};
+$('character').onchange=()=>showCharInfo($('character').value);$('char-info').addEventListener('close',ciSync);
 // Save & resume: score, mode and special gauge, stored after every point. The rally resumes from the next serve.
 function clearSave(){try{localStorage.removeItem('spinlab.save');}catch{}}
 function loadSave(){try{const v=JSON.parse(store.get('save'));return v&&Number.isInteger(v.you)&&Number.isInteger(v.cpu)&&['practice','match'].includes(v.mode)?v:null;}catch{return null;}}
