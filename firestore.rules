@@ -1,10 +1,11 @@
 rules_version = '2';
-// SPIN LAB ranking: anyone may read the boards; only Google-signed-in players add a well-formed record; nobody may edit or delete.
+// SPIN LAB ranking: anyone may read the boards; only signed-in players (Google, or Naver via the custom-token worker) add a
+// well-formed record; nobody may edit or delete. Guest (anonymous) accounts are not accepted.
 service cloud.firestore {
   match /databases/{database}/documents {
     function valid(maxValue) {
       let d = request.resource.data;
-      return request.auth != null && request.auth.token.firebase.sign_in_provider == 'google.com'
+      return request.auth != null && request.auth.token.firebase.sign_in_provider in ['google.com', 'custom']
         && d.keys().hasOnly(['name', 'value', 'level', 'character', 'racket', 'detail', 'at'])
         && d.keys().hasAll(['name', 'value', 'level', 'character', 'racket', 'detail', 'at'])
         && d.name is string && d.name.size() >= 1 && d.name.size() <= 12
@@ -37,7 +38,7 @@ service cloud.firestore {
     match /settings/{uid} {
       allow read: if request.auth != null && request.auth.uid == uid;
       allow write: if request.auth != null && request.auth.uid == uid
-        && request.auth.token.firebase.sign_in_provider == 'google.com'
+        && request.auth.token.firebase.sign_in_provider in ['google.com', 'custom']
         && request.resource.data.keys().hasOnly(['racket', 'blade', 'rubber', 'difficulty', 'character', 'at'])
         && request.resource.data.keys().hasAll(['racket', 'blade', 'rubber', 'difficulty', 'character', 'at'])
         && request.resource.data.racket is string && request.resource.data.racket.size() <= 12
@@ -49,12 +50,12 @@ service cloud.firestore {
     }
     match /players/{uid} {
       allow read: if true;
-      allow create: if request.auth != null && request.auth.uid == uid && request.auth.token.firebase.sign_in_provider == 'google.com' && pvpShape(request.resource.data)
+      allow create: if request.auth != null && request.auth.uid == uid && request.auth.token.firebase.sign_in_provider in ['google.com', 'custom'] && pvpShape(request.resource.data)
         && ((request.resource.data.wins == 1 && request.resource.data.losses == 0
              && request.resource.data.streak == 1 && request.resource.data.rating == 1010)
          || (request.resource.data.wins == 0 && request.resource.data.losses == 1
              && request.resource.data.streak == -1 && request.resource.data.rating == 990));
-      allow update: if request.auth != null && request.auth.uid == uid && request.auth.token.firebase.sign_in_provider == 'google.com' && pvpShape(request.resource.data)
+      allow update: if request.auth != null && request.auth.uid == uid && request.auth.token.firebase.sign_in_provider in ['google.com', 'custom'] && pvpShape(request.resource.data)
         && request.time > resource.data.at + duration.value(90, 's')
         && ((request.resource.data.wins == resource.data.wins + 1
              && request.resource.data.losses == resource.data.losses
