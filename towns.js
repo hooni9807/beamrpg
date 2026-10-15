@@ -28,7 +28,7 @@
   s.place=['world','town','interior','park'].includes(legacy.place)&&open(zones.find(z=>z.id===s.zone))?legacy.place:'world';
   s.facility=['home','shop','cafe','training','clinic','hall','gym','park'].includes(legacy.facility)?legacy.facility:'home';
   s.positions=legacy.mapVersion===2&&legacy.positions&&typeof legacy.positions==='object'?legacy.positions:{};
-  s.mapVersion=2;delete s.worldPos;delete s.townPos;delete s.pos;
+  s.mapVersion=2;s.introSeen=legacy.introSeen===true;delete s.worldPos;delete s.townPos;delete s.pos;
   const zone=()=>zones.find(z=>z.id===s.zone),need=()=>100+(s.level-1)*40;
   const unlocks=()=>milestones.filter(([lv])=>s.level>=lv).map(([,name])=>name);
   window.beamRpgMilestones=()=>({level:s.level,unlocks:unlocks()});
@@ -90,7 +90,10 @@
     $('town-stats').onclick=()=>s.pendingUpgrades?upgrade():showStats();$('town-guide').onclick=guide;map.focus({preventScroll:true});
   }
   function showStats(){show({title:'희범의 성장 기록',body:`<p>배운 기술: ${unlocks().join(' · ')||'Lv.2에 첫 필살기를 배웁니다.'}</p><div class="stat-grid">${Object.entries(statText).map(([k,[n,fx]])=>`<div class="stat-item"><b>${n} +${s.stats[k]}</b><small>${fx}</small></div>`).join('')}</div><p>${milestones.map(([lv,n])=>`Lv.${lv} ${n}`).join(' · ')}</p><p>휴식 ${s.rested?'준비됨':'없음'} · 식사 보너스 ${s.meal}승 남음</p>`});}
-  function guide(){show({title:'희범의 새로운 동네',body:'<p>지도나 오른쪽 목적지를 누르면 희범이 건물과 물을 피해 걸어갑니다. 방향키·WASD·화면 버튼으로 직접 움직일 수도 있어요.</p><p>건물의 문에 닿으면 내부로 들어갑니다. 내부 안내 위치에 닿거나 가까이서 E를 누르면 시설을 이용합니다. 출구로 걸으면 원래 마을로 돌아옵니다.</p><p>광장과 시설 주변은 안전합니다. 마을 외곽을 걷는 동안 확률적으로 탁구 선수를 만납니다. 집과 공원에서는 대결이 일어나지 않습니다.</p><p>체육관 안에서 보스에게 도전하세요. 승리하면 경험치·골드를 얻고 다음 마을이 열립니다. 진행은 이 브라우저에 자동 저장됩니다.</p>'});}
+  function guide(){show({title:'희범의 새로운 동네',body:'<p>지도나 오른쪽 목적지를 누르면 희범이 건물과 물을 피해 걸어갑니다. 방향키·WASD·화면 버튼으로 직접 움직일 수도 있어요.</p><p>건물의 문에 닿으면 내부로 들어갑니다. 내부 안내 위치에 닿거나 가까이서 E를 누르면 시설을 이용합니다. 출구로 걸으면 원래 마을로 돌아옵니다.</p><p>광장과 시설 주변은 안전합니다. 마을 외곽을 걷는 동안 확률적으로 탁구 선수를 만납니다. 집과 공원에서는 대결이 일어나지 않습니다.</p><p>체육관 안에서 보스에게 도전하세요. 승리하면 경험치·골드를 얻고 다음 마을이 열립니다. 진행은 이 브라우저에 자동 저장됩니다.</p>'},'<button id="story-replay">스토리 다시 보기</button><button id="town-close" class="secondary">계속 걷기</button>');$('story-replay').onclick=playIntro;}
+  function playIntro(){
+    stop();BeamStory.play({modal,screen,zones,onFinish:()=>{s.introSeen=true;save();close();if(s.pendingUpgrades)upgrade();}});
+  }
   function activate(p){
     latched=p.id;stop();
     if(p.action==='zone'){
@@ -180,7 +183,7 @@
   }
   function tick(t){
     const dt=Math.min((t-last)/1000||0,.05);last=t;finish();const b=rpgOn();if(b&&charge<100)b.activeSpecial=null;
-    if(!screen.hidden&&!document.hidden){walking=false;if(modal.hidden){
+    if(!screen.hidden&&!screen.inert&&!document.hidden){walking=false;if(modal.hidden){
       let dx=0,dy=0;for(const k of keys){dx+=dirs[k][0];dy+=dirs[k][1];}let distance=240*dt;
       if(path.length&&!keys.size){dx=path[0].x-player.x;dy=path[0].y-player.y;distance=Math.min(distance,Math.hypot(dx,dy));}
       const d=Math.hypot(dx,dy),old={...player};if(d>0){const nx=player.x+dx/d*distance,ny=player.y+dy/d*distance;if(!blocked(nx,player.y))player.x=nx;if(!blocked(player.x,ny))player.y=ny;if(dx)facing=dx<0?-1:1;direction=Math.abs(dx)>Math.abs(dy)?(dx<0?'left':'right'):(dy<0?'up':'down');}
@@ -191,5 +194,5 @@
     }if(!screen.hidden)draw(t);}
     requestAnimationFrame(tick);
   }
-  buildScene();screen.hidden=false;if(s.pendingUpgrades)upgrade();requestAnimationFrame(tick);
+  buildScene();screen.hidden=false;if(!s.introSeen)playIntro();else if(s.pendingUpgrades)upgrade();requestAnimationFrame(tick);
 })();

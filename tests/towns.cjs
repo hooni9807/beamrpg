@@ -20,6 +20,28 @@ const root=path.resolve(__dirname,'..'),origin='https://beamrpg.test';
       const index=await page.evaluate(({action,value})=>{const t=window.__townTest,i=t.scene.portals.findIndex(p=>p.action===action&&(value==null||p.value===value)),p=t.scene.portals[i];const q=[[0,72],[0,-72],[72,0],[-72,0]].map(([x,y])=>({x:p.x+x,y:p.y+y})).find(q=>!t.scene.obstacles.some(o=>q.x>o.x-10&&q.x<o.x+o.w+10&&q.y>o.y-10&&q.y<o.y+o.h+10));Object.assign(t.player,q);return i;},{action,value});
       await page.locator(`[data-destination="${index}"]`).click();await tick(500);
     };
+    // Intro appears once, blocks walking, advances by keyboard, and preserves the save.
+    assert.equal(await page.locator('.story-scene').getAttribute('data-scene'),'0');
+    const opening=await state(),initialPlayer=await page.evaluate(()=>({...window.__townTest.player}));
+    await page.keyboard.down('w');await tick(200);await page.keyboard.up('w');
+    assert.deepEqual(await page.evaluate(()=>({...window.__townTest.player})),initialPlayer);
+    await page.screenshot({path:'/tmp/beamrpg-intro-desktop.png'});
+    await page.locator('#story-next').click();assert.equal(await page.locator('.story-scene').getAttribute('data-scene'),'1');
+    await page.keyboard.press('Enter');assert.equal(await page.locator('.story-scene').getAttribute('data-scene'),'2');
+    await page.keyboard.press('Space');assert.equal(await page.locator('.story-scene').getAttribute('data-scene'),'3');
+    await page.locator('#story-next').click();assert.equal((await state()).introSeen,true);
+    assert.deepEqual({...await state(),introSeen:false},opening,'completion must not change gameplay state');
+    await page.reload();await tick(50);assert.equal(await page.locator('.story-scene').count(),0,'no repeated intro');
+    await page.locator('#town-guide').click();await page.locator('#story-replay').click();
+    const beforeReplay=await state();await page.setViewportSize({width:390,height:844});await tick(100);
+    await page.screenshot({path:'/tmp/beamrpg-intro-mobile.png'});
+    assert.equal(await page.evaluate(()=>document.querySelector('.story-scene').scrollWidth<=innerWidth),true);
+    await page.keyboard.press('Escape');assert.deepEqual(await state(),beforeReplay,'replay/skip preserve progress');
+    assert.equal(await page.evaluate(()=>document.querySelector('#rpg-screen').inert),false);
+    await page.setViewportSize({width:1440,height:960});
+    await reload({...await state(),introSeen:false,pendingUpgrades:1});await page.locator('#story-skip').click();
+    assert.equal(await page.locator('[data-up]').count(),3,'pending level reward follows intro');
+    await page.locator('[data-up]').first().click();assert.equal((await state()).pendingUpgrades,0);
     assert.equal(await page.locator('[data-zone]').count(),8);assert.equal(await page.evaluate(()=>charType),'heebeom');assert.equal((await state()).racket,'basic');
     await page.screenshot({path:'/tmp/beamrpg-world-new.png'});
     const disconnected=await page.evaluate(()=>{
@@ -50,6 +72,6 @@ const root=path.resolve(__dirname,'..'),origin='https://beamrpg.test';
     await page.evaluate(()=>{you=11;cpu=0;playing=false;});await tick(50);assert.equal((await state()).wins.two,true);assert.match(await page.locator('#rpg-modal').innerText(),/1부 마을이 열렸습니다/);
     await reload({...await state(),place:'town',zone:'one',pendingUpgrades:0});await page.screenshot({path:'/tmp/beamrpg-one-new.png'});
     await page.setViewportSize({width:390,height:844});await tick(100);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.screenshot({path:'/tmp/beamrpg-mobile-new.png'});
-    assert.deepEqual(errors,[]);console.log('PASS: 8 towns, portal paths, home/park, save migration, equipment, 2부 boss→1부, desktop/mobile.');
+    assert.deepEqual(errors,[]);console.log('PASS: intro completion/skip/replay, saved progress, keyboard/mobile, towns and battle flow.');
   }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
