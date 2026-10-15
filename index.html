@@ -82,7 +82,7 @@ const FAST_REF=3,SPIN_FREE=.6,SPIN_MISS=.06;
 // AI return chance. Specials and smashes stay hard to return; wide balls and spin only nibble at it.
 // Five AI levels: return chance, serve speed, return speed, mix of drive/cut (rest smash) and how wide it aims.
 // Korean club divisions: 7부 (easiest) up to 1부, then 선수부 (pro players).
-const LEVELS={b7:{base:.7,serve:2.2,speed:1.9,mix:[.62,1],aim:.75},b6:{base:.76,serve:2.3,speed:2.1,mix:[.62,.98],aim:.8},
+const LEVELS={b7:{base:.7,serve:2.2,speed:2.15,mix:[.62,1],aim:.75},b6:{base:.76,serve:2.3,speed:2.1,mix:[.62,.98],aim:.8},
 b5:{base:.82,serve:2.4,speed:2.35,mix:[.61,.95],aim:.88},b4:{base:.87,serve:2.5,speed:2.55,mix:[.6,.92],aim:.95},
 b3:{base:.91,serve:2.7,speed:2.85,mix:[.59,.88],aim:1},b2:{base:.94,serve:2.9,speed:3.15,mix:[.58,.85],aim:1.05},
 b1:{base:.96,serve:3.1,speed:3.45,mix:[.56,.82],aim:1.1},pro:{base:.975,serve:3.3,speed:3.8,mix:[.52,.76],aim:1.2},
@@ -1168,14 +1168,14 @@ if(false)(()=>{
 /* BeamRPG: keep the proven rally engine, but start every session in one walkable town. */
 (()=>{
  const screen=$('rpg-screen'),modal=$('rpg-modal'),key='beamrpg.v3';
- const base={level:1,xp:0,stats:{power:0,spin:0,control:0,footwork:0,crit:0,focus:0},pos:{x:50,y:78}};
- let s;try{s=Object.assign({},base,JSON.parse(localStorage.getItem(key)||'{}'));s.stats=Object.assign({},base.stats,s.stats);s.pos=Object.assign({},base.pos,s.pos);}catch{s=structuredClone(base)}
+ const base={level:1,xp:0,stats:{power:0,spin:0,control:0,footwork:0,crit:0,focus:0},place:'world',worldPos:{x:50,y:78},townPos:{x:50,y:78}};
+ let s;try{s=Object.assign({},base,JSON.parse(localStorage.getItem(key)||'{}'));s.stats=Object.assign({},base.stats,s.stats);s.townPos=Object.assign({},base.townPos,s.townPos||s.pos);s.worldPos=Object.assign({},base.worldPos,s.worldPos);}catch{s=structuredClone(base)}
  const save=()=>localStorage.setItem(key,JSON.stringify(s)),need=()=>100+(s.level-1)*40;
  const rivals=[
-  {name:'동네 고수 민수',diff:'b7',x:22,y:32,color:'#e56a5d'},
-  {name:'수비 장인 준호',diff:'b7',x:76,y:28,color:'#7b9bd8'},
-  {name:'서브 괴물 지훈',diff:'b7',x:30,y:74,color:'#e7b35a'},
-  {name:'아재범',diff:'b7',x:74,y:70,color:'#b778d1'}
+  {name:'동네 고수 민수',face:'jersey',diff:'b7',x:22,y:32,color:'#e56a5d'},
+  {name:'수비 장인 준호',face:'sleepy',diff:'b7',x:76,y:28,color:'#7b9bd8'},
+  {name:'서브 괴물 지훈',face:'leesin',diff:'b7',x:30,y:74,color:'#e7b35a'},
+  {name:'아재범',face:'ajae',diff:'b7',x:74,y:70,color:'#b778d1'}
  ];
  let meeting=false,active=false;
  const statText={power:'파워 +10% · 드라이브·스매시 위력',spin:'회전 +10% · 상대가 처리하기 까다롭게',control:'컨트롤 +10% · 코스 정확도·실수 감소',footwork:'풋워크 +10 · 넓은 코스 대응',crit:'치명타 확률 +5% · 속도·파워 2배',focus:'집중력 +10% · 필살기 게이지 효율'};
@@ -1188,7 +1188,7 @@ if(false)(()=>{
  document.head.append(Object.assign(document.createElement('style'),{textContent:`
   body.rpg-battle header,body.rpg-battle .intro,body.rpg-battle aside,body.rpg-battle .techniques,body.rpg-battle footer{display:none}
   body.rpg-battle main{max-width:none;padding:0}body.rpg-battle .layout{display:block}body.rpg-battle .arena{border-radius:0;border:0;min-height:100vh}
-  .town-controls{display:grid;grid-template-columns:repeat(3,52px);justify-content:center;gap:6px;margin-top:15px}.town-controls button{border:0;border-radius:10px;background:#332450;color:#fff;font-weight:800}.town-controls button:first-child{grid-column:2}.rpg-npc{transition:left .25s,top .25s}.rpg-player{transition:left .12s,top .12s}
+  .town-controls{display:grid;grid-template-columns:repeat(3,52px);justify-content:center;gap:6px;margin-top:15px}.town-controls button{border:0;border-radius:10px;background:#332450;color:#fff;font-weight:800}.town-controls button:first-child{grid-column:2}.rpg-npc{transition:left .25s,top .25s}.rpg-player{transition:left .12s,top .12s}.rpg-map{cursor:pointer}.world-town{border:2px solid #fff7;background:#563b27;color:#fff;box-shadow:0 4px 0 #2d1a11}.world-town.locked{filter:grayscale(1);opacity:.55}
  `}));
  const character=$('character');if(!character.querySelector('option[value="heebeom"]'))character.prepend(new Option('희범','heebeom'));
  character.value='heebeom';setCharacter('heebeom');
@@ -1210,7 +1210,19 @@ if(false)(()=>{
  function showStats(){modal.innerHTML=`<div class="rpg-card"><h2>희범의 성장</h2><p>${Object.entries(s.stats).map(([k,v])=>`${k} +${v}`).join(' · ')}</p><p>해금: ${unlocks().join(' · ')||'Lv.10에 첫 필살기 해금'}</p><div class="rpg-actions"><button id="town-close" class="secondary">닫기</button></div></div>`;modal.hidden=false;modal.querySelector('#town-close').onclick=()=>modal.hidden=true;}
  function specialType(base){const turn=s.specialTurn||0;s.specialTurn=turn+1;save();return s.level>=50&&turn%3===2?'zenith':s.level>=30&&turn%2?'chiquita':base;}
  let applied=false;setInterval(()=>{finish();if(!active)applied=false;if(active&&charge<100)window.beamRpgV2.activeSpecial=null;if(active&&playing&&!applied){const q=s.stats;P.EQUIP.speed*=1+q.power*.03;P.EQUIP.spin*=1+q.spin*.03;P.EQUIP.len*=1+(q.control+q.footwork)*.02;if(s.level>=20)P.EQUIP.len*=1.15;if(s.level>=40){P.EQUIP.speed*=1.1;P.EQUIP.spin*=1.1;}applied=true;}},250);
- setInterval(()=>{if(screen.hidden||meeting)return;rivals.forEach(r=>{r.x=Math.max(10,Math.min(90,r.x+(Math.random()-.5)*5));r.y=Math.max(18,Math.min(86,r.y+(Math.random()-.5)*5));});paint();const rival=rivals.find(r=>Math.hypot(s.pos.x-r.x,s.pos.y-r.y)<9);if(rival)encounter(rival);},1100);
+ setInterval(()=>{if(screen.hidden||meeting||s.place!=='town')return;rivals.forEach(r=>{r.x=Math.max(10,Math.min(90,r.x+(Math.random()-.5)*5));r.y=Math.max(18,Math.min(86,r.y+(Math.random()-.5)*5));});paint();const rival=rivals.find(r=>Math.hypot(s.townPos.x-r.x,s.townPos.y-r.y)<9);if(rival)encounter(rival);},1100);
+ const worldTowns=[{name:'7부 마을',x:50,y:38,open:true,color:'#78b957'},{name:'6부 마을',x:25,y:55},{name:'5부 마을',x:75,y:55},{name:'4부 마을',x:18,y:22},{name:'3부 마을',x:82,y:22},{name:'선수촌',x:50,y:76}];
+ document.head.append(Object.assign(document.createElement('style'),{textContent:'.rpg-npc .town-face{width:34px;height:34px;margin:0 auto 2px;border-radius:50%;background:#251a3d;border:1px solid #fff8}.rpg-npc{padding:5px 3px!important;line-height:1.05}'}));
+ let walkTarget=null;
+ function pos(){return s.place==='town'?s.townPos:s.worldPos;}
+ function paint(){const p=pos(),player=screen.querySelector('#town-player');if(player){player.style.left=p.x+'%';player.style.top=p.y+'%';}if(s.place==='town')rivals.forEach((r,i)=>{const node=screen.querySelector(`[data-rival="${i}"]`);if(node){node.style.left=r.x+'%';node.style.top=r.y+'%';}});}
+ function arrive(){const p=pos();if(s.place==='world'&&Math.hypot(p.x-worldTowns[0].x,p.y-worldTowns[0].y)<9){s.place='town';s.townPos={x:50,y:82};save();walkTarget=null;render();return;}if(s.place==='town'){const rival=rivals.find(r=>Math.hypot(p.x-r.x,p.y-r.y)<9);if(rival){walkTarget=null;encounter(rival);return;}if(Math.hypot(p.x-50,p.y-12)<9){s.place='world';s.worldPos={x:50,y:48};save();walkTarget=null;render();}}}
+ function move(dx,dy){if(meeting)return;walkTarget=null;const p=pos();p.x=Math.max(5,Math.min(95,p.x+dx));p.y=Math.max(8,Math.min(92,p.y+dy));save();paint();arrive();}
+ function walkTo(x,y){if(meeting)return;walkTarget={x:Math.max(5,Math.min(95,x)),y:Math.max(8,Math.min(92,y))};}
+ setInterval(()=>{if(!walkTarget||screen.hidden||meeting)return;const p=pos(),dx=walkTarget.x-p.x,dy=walkTarget.y-p.y,d=Math.hypot(dx,dy);if(d<1){p.x=walkTarget.x;p.y=walkTarget.y;walkTarget=null;}else{p.x+=dx/d*2.4;p.y+=dy/d*2.4;}save();paint();arrive();},35);
+ function render(){const town=s.place==='town',p=pos();screen.innerHTML=town?`<div class="rpg-shell"><div class="rpg-head"><div><div class="eyebrow">BEAMRPG · 대환장 파티</div><h1>7부 마을</h1><p>희범을 움직여 상대와 부딪히면 탁구 대결이 시작됩니다.</p></div><button id="rpg-stats">내 성장</button></div><div class="rpg-card"><b>Lv. ${s.level} 희범</b><div class="rpg-bar"><i style="width:${s.xp/need()*100}%"></i></div><div class="rpg-stats"><div>경험치 <b>${s.xp} / ${need()}</b></div><div>상대 <b>${rivals.length}명</b></div><div>필살기 <b>${unlocks().at(-1)||'Lv.10'}</b></div></div></div><div id="town-map" class="rpg-map" tabindex="0" aria-label="7부 마을. 방향키 또는 WASD로 희범을 이동하세요."><span class="rpg-place" style="left:8%;top:10%">희범의 집</span><span class="rpg-place" style="right:8%;top:10%">동네 탁구장</span><span class="rpg-place" style="left:8%;bottom:10%">공원</span><span class="rpg-place" style="left:42%;top:8%;background:#2f6ca8">마을 귀환</span>${rivals.map((r,i)=>`<span class="rpg-npc" data-rival="${i}" style="left:${r.x}%;top:${r.y}%;background:${r.color}">${r.name}<small>대결 상대</small></span>`).join('')}<span id="town-player" class="rpg-player" style="left:${p.x}%;top:${p.y}%" aria-label="희범"></span></div><div class="town-controls" aria-label="희범 이동"><button data-move="0,-5">▲</button><button data-move="-5,0">◀</button><button data-move="0,5">▼</button><button data-move="5,0">▶</button></div><p class="rpg-tip">상대와 닿으면 대결 · <b>마을 귀환</b>에 닿으면 바깥 지도에 돌아갑니다.</p></div>`:`<div class="rpg-shell"><div class="rpg-head"><div><div class="eyebrow">BEAMRPG · 대환장 파티</div><h1>희범의 마을 지도</h1><p>지도의 원하는 곳을 클릭하면 희범이 그곳까지 걸어갑니다.</p></div><button id="rpg-stats">내 성장</button></div><div class="rpg-card"><b>Lv. ${s.level} 희범</b><div class="rpg-bar"><i style="width:${s.xp/need()*100}%"></i></div><div class="rpg-stats"><div>경험치 <b>${s.xp} / ${need()}</b></div><div>현재 위치 <b>마을 지도</b></div><div>목표 <b>7부 마을</b></div></div></div><div id="town-map" class="rpg-map" tabindex="0" aria-label="마을 지도. 클릭 또는 방향키로 희범을 이동하세요.">${worldTowns.map(t=>`<span class="rpg-place world-town${t.open?'':' locked'}" style="left:${t.x}%;top:${t.y}%;background:${t.open?t.color:'#563b27'}">${t.name}<small>${t.open?'들어가기':'준비 중'}</small></span>`).join('')}<span id="town-player" class="rpg-player" style="left:${p.x}%;top:${p.y}%" aria-label="희범"></span></div><div class="town-controls" aria-label="희범 이동"><button data-move="0,-5">▲</button><button data-move="-5,0">◀</button><button data-move="0,5">▼</button><button data-move="5,0">▶</button></div><p class="rpg-tip">7부 마을에 닿으면 내부 마을로 이동합니다.</p></div>`;
+  const map=screen.querySelector('#town-map');map.onkeydown=e=>{const d={ArrowLeft:[-5,0],a:[-5,0],ArrowRight:[5,0],d:[5,0],ArrowUp:[0,-5],w:[0,-5],ArrowDown:[0,5],s:[0,5]}[e.key];if(d){e.preventDefault();move(...d);}};map.onclick=e=>{const rect=map.getBoundingClientRect();walkTo((e.clientX-rect.left)/rect.width*100,(e.clientY-rect.top)/rect.height*100);};screen.querySelectorAll('[data-move]').forEach(b=>b.onclick=()=>move(...b.dataset.move.split(',').map(Number)));if(town)screen.querySelectorAll('[data-rival]').forEach((node,i)=>{const face=document.createElement('canvas');face.className='town-face';face.width=68;face.height=68;node.prepend(face);drawFace(face,LOOKS[rivals[i].face]);});screen.querySelector('#rpg-stats').onclick=showStats;paint();map.focus();
+ }
  render();screen.hidden=false;
 })();
 </script></body></html>
