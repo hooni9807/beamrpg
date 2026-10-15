@@ -1084,7 +1084,8 @@ for(const k of SETUP_KEYS)if(typeof d[k]==='string'&&[...$(k).options].some(o=>o
 async function saveCloudSetup(){if(!googleUser)return;try{const db=await remote();if(!db)return;const d={at:rankFs.serverTimestamp()};for(const k of SETUP_KEYS)d[k]=$(k).value;await rankFs.setDoc(rankFs.doc(db,'settings',googleUser.uid),d);}catch{}}
 // Naver login (네이버): Firebase has no Naver provider, so a small Cloudflare Worker (naver-worker.js) swaps the Naver
 // authorization code for a Firebase custom token. Only the public client id is here; the secret stays in the worker.
-const NAVER={clientId:'UMAizd5RXHoZm_Bcd1CZ',worker:'https://spinlab-naver.dchkimppi.workers.dev'};
+// Naver login paused: worker:'' hides the button. Turn it back on with worker:'https://spinlab-naver.dchkimppi.workers.dev'
+const NAVER={clientId:'UMAizd5RXHoZm_Bcd1CZ',worker:''};
 function naverLogin(){if(!NAVER.worker)return;const st=Array.from(crypto.getRandomValues(new Uint8Array(12)),b=>b.toString(16).padStart(2,'0')).join('');sessionStorage.setItem('naverState',st);
 location.href='https://nid.naver.com/oauth2.0/authorize?'+new URLSearchParams({response_type:'code',client_id:NAVER.clientId,redirect_uri:location.origin+location.pathname.replace(/index\.html$/,''),state:st});}
 async function naverReturn(){const q=new URLSearchParams(location.search),code=q.get('code'),st=q.get('state');if(!code||!st||!NAVER.worker)return false;
