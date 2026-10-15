@@ -89,7 +89,7 @@
   function battle(rival) {
     if(rpgOn())return;stop();save();const z=zone();
     window.beamRpgV2={active:true,zone:z,boss:rival.boss,rival,stats:s.stats,level:s.level,specialType};
-    setCharacter('heebeom');$('difficulty').value=rival.boss?(z.id==='camp'?'pro':z.bossDiff):z.diff;applySettings();setMode(rival.boss&&z.id==='camp'?'boss':'match');
+    setCharacter('heebeom');$('racket').value='basic';$('difficulty').value=rival.boss?(z.id==='camp'?'pro':z.bossDiff):z.diff;applySettings();setMode(rival.boss&&z.id==='camp'?'boss':'match');
     modal.hidden=true;screen.hidden=true;document.body.classList.add('rpg-battle');resize();begin();
     P.EQUIP.len*=(1+s.stats.control*.03)*(s.level>=4?1.15:1);
     toast(`${z.name} · ${rival.name}${rival.boss?' 보스':' 등장'}!`,3);
