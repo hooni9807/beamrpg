@@ -131,10 +131,20 @@ BeamRPG는 SPIN LAB과 **완전히 별개의 프로그램**입니다. 탁구 엔
 - 기기 저장 키: RPG 진행 `beamrpg.v3`, 경기 설정·기록 `beamrpg.game.*` (SPIN LAB의 `spinlab.*`와 섞이지 않음)
 - 온라인 방 ID 접두어: `beamrpg-` (SPIN LAB 방과 매칭되지 않음)
 
+### BeamRPG 전용 Firebase 프로젝트
+
+- 프로젝트: `beamrpg` (ID `beamrpg-e22ac`), 웹 앱 `beamrpg-web` 등록 완료. 애널리틱스·Gemini는 끔.
+- 아직 게임 코드에는 연결하지 않았습니다. 무엇을 저장할지 정한 뒤 아래 값을 `FIREBASE_CONFIG`에 넣습니다.
+
+```js
+{apiKey:"AIzaSyBTIUSAXRfNM3WEjSam6q3CUcSY09viwMQ",authDomain:"beamrpg-e22ac.firebaseapp.com",projectId:"beamrpg-e22ac",
+ storageBucket:"beamrpg-e22ac.firebasestorage.app",messagingSenderId:"1025506288091",appId:"1:1025506288091:web:081430f5ce9d721840c7fe"}
+```
+
 ### BeamRPG 전용 Firebase 연결하기
 
-1. [Firebase 콘솔](https://console.firebase.google.com/)에서 **새 프로젝트**를 만듭니다. SPIN LAB 프로젝트(`spin-lab-ea7df`)는 쓰지 않습니다.
-2. 웹 앱을 추가하고 나온 설정값을 `index.html`의 `FIREBASE_CONFIG`에 넣습니다.
+1. ~~새 프로젝트 만들기~~ 완료 (`beamrpg-e22ac`). SPIN LAB 프로젝트(`spin-lab-ea7df`)는 쓰지 않습니다.
+2. 위 설정값을 `index.html`의 `FIREBASE_CONFIG`에 넣습니다.
 3. Authentication에서 Google 로그인을 켜고, 승인된 도메인에 `hooni9807.github.io`를 추가합니다.
 4. Firestore를 만들고 이 저장소의 [`firestore.rules`](firestore.rules)를 배포합니다.
 5. 네이버 로그인을 쓰려면 BeamRPG용 네이버 앱과 [`naver-worker.js`](naver-worker.js) 워커를 따로 만들어 `NAVER` 설정에 넣습니다.
