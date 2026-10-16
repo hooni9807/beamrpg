@@ -11,14 +11,14 @@
   const IMMUNE={normal:['ghost'],electric:['ground'],fighting:['ghost'],poison:['steel'],ground:['flying'],psychic:['dark'],ghost:['normal']};
   const MOVES={
     drive:{name:'포핸드 드라이브',type:'normal',category:'physical',power:50,accuracy:100,pp:25,description:'안정적인 기본 공격.'},
-    quick:{name:'쾌속 쇼트',type:'flying',category:'physical',power:35,accuracy:100,pp:20,priority:1,description:'상대보다 먼저 공격한다.'},
+    quick:{name:'쾌속 쇼트',type:'flying',category:'physical',power:35,accuracy:100,pp:20,description:'빠르고 안정적으로 넣는 쇼트.'},
     cut:{name:'회전 커트',type:'dark',category:'special',power:40,accuracy:100,pp:20,slow:.3,description:'30% 확률로 상대 스피드 1단계 감소.'},
     guard:{name:'철벽 준비',type:'steel',category:'status',power:0,accuracy:100,pp:15,description:'자신의 방어와 특수방어를 1단계 높인다.'},
     crescent:{name:'초승달 드라이브',type:'psychic',category:'special',power:75,accuracy:95,pp:10,description:'크게 휘어지는 강력한 회전 공격.'},
-    lightning:{name:'번개 속공',type:'electric',category:'physical',power:60,accuracy:100,pp:10,priority:1,description:'선공으로 꽂아 넣는 라켓 필살기.'},
+    lightning:{name:'번개 속공',type:'electric',category:'physical',power:60,accuracy:100,pp:10,description:'번개처럼 꽂아 넣는 라켓 필살기.'},
     thunder:{name:'천둥 스매시',type:'electric',category:'physical',power:95,accuracy:85,pp:10,description:'명중률은 낮지만 위력이 높은 한 방.'},
     phantom:{name:'유령 커트',type:'ghost',category:'special',power:60,accuracy:100,pp:10,slow:1,description:'상대 스피드를 1단계 낮추는 필살기.'},
-    counter:{name:'스틸 카운터',type:'fighting',category:'physical',power:72,accuracy:100,pp:12,priority:1,description:'상대보다 먼저 파고드는 강력한 카운터.'},
+    counter:{name:'스틸 카운터',type:'fighting',category:'physical',power:72,accuracy:100,pp:12,description:'강하게 파고드는 카운터.'},
     chiquita:{name:'치키타 스파이럴',type:'grass',category:'special',power:85,accuracy:95,pp:10,slow:.4,description:'40% 확률로 상대 스피드 1단계 감소.'},
     meteor:{name:'메테오 스매시',type:'rock',category:'physical',power:108,accuracy:88,pp:8,description:'별똥별처럼 꽂히는 강한 스매시.'},
     zenith:{name:'제니스 오버드라이브',type:'dragon',category:'special',power:120,accuracy:90,pp:5,description:'희범의 모든 힘을 담은 최종 필살기.'},
@@ -55,7 +55,7 @@
   function create(config){
     const p=profile(config),v=normalizeVitals(config.vitals,p),zoneIndex=finite(config.zoneIndex,0,7,0),zoneLevel=finite(config.zoneLevel,1,999,1),enemyIndex=finite(config.enemyIndex,0,2,Math.floor(Math.random()*3));
     const enemy=actor(enemyProfile(zoneIndex,zoneLevel,enemyIndex,config.enemyType));
-    return {version:1,zoneIndex,zoneLevel,enemyIndex,hero:actor(p,v),enemy,turn:1,outcome:null,log:[`${enemy.name}이 나타났다! 희범은 무엇을 할까?`],potions:v.potions,escapeAttempts:0};
+    return {version:2,zoneIndex,zoneLevel,enemyIndex,hero:actor(p,v),enemy,turn:1,side:'hero',outcome:null,log:[`${enemy.name}이 나타났다! 희범은 무엇을 할까?`],potions:v.potions,escapeAttempts:0};
   }
   function extractVitals(b){return {hp:b.hero.hp,pp:{...b.hero.pp},potions:b.potions};}
   function effectiveness(moveType,targetType){if(!TYPES[moveType]||!TYPES[targetType])return 1;if(IMMUNE[moveType]?.includes(targetType))return 0;if(STRONG[moveType]?.includes(targetType))return 2;if(WEAK[moveType]?.includes(targetType))return .5;return 1;}
@@ -82,12 +82,19 @@
   }
   function step(b,action,rng=Math.random){
     if(b.outcome||!action)return b;
+    if(!['hero','enemy'].includes(b.side))return b;
+    if(faint(b))return b;
+    if(b.side==='enemy'){
+      if(action.type!=='enemy')return b;
+      b.log=[];
+      const options=available(b.enemy),enemyMove=options[Math.floor(rng()*options.length)];
+      attack(b,b.enemy,b.hero,enemyMove,rng);if(!faint(b)){b.side='hero';b.turn++;}return b;
+    }
     const moves=available(b.hero);
     if(action.type==='move'&&!moves.includes(action.move))return b;
     if(action.type==='potion'&&(b.potions<=0||b.hero.hp>=b.hero.maxHp))return b;
     if(!['move','potion','run'].includes(action.type))return b;
-    b.log=[];if(faint(b))return b;
-    const options=available(b.enemy),enemyMove=options[Math.floor(rng()*options.length)];
+    b.log=[];
     if(action.type==='potion'){
       b.potions--;const restored=Math.min(40,b.hero.maxHp-b.hero.hp);b.hero.hp+=restored;b.log.push(`회복약을 사용했다! 희범의 HP ${restored} 회복.`);
     }else if(action.type==='run'){
@@ -95,17 +102,12 @@
       if(rng()<chance){b.outcome='escaped';b.log.push('무사히 도망쳤다! 남은 HP와 PP는 그대로 유지된다.');return b;}
       b.log.push('도망치지 못했다!');
     }else{
-      const priority=(MOVES[action.move].priority||0)-(MOVES[enemyMove].priority||0),speed=b.hero.speed*stage(b.hero.stages.speed)-b.enemy.speed*stage(b.enemy.stages.speed);
-      const first=priority?priority>0:speed?speed>0:rng()<.5;
-      for(const [a,d,id] of first?[[b.hero,b.enemy,action.move],[b.enemy,b.hero,enemyMove]]:[[b.enemy,b.hero,enemyMove],[b.hero,b.enemy,action.move]]){
-        attack(b,a,d,id,rng);if(faint(b))return b;
-      }
-      b.turn++;return b;
+      attack(b,b.hero,b.enemy,action.move,rng);if(faint(b))return b;
     }
-    attack(b,b.enemy,b.hero,enemyMove,rng);if(!faint(b))b.turn++;return b;
+    b.side='enemy';return b;
   }
   function restore(raw,config){
-    if(!raw||raw.version!==1||raw.zoneIndex!==config.zoneIndex||raw.zoneLevel!==config.zoneLevel||![0,1,2].includes(raw.enemyIndex))return null;
+    if(!raw||![1,2].includes(raw.version)||raw.zoneIndex!==config.zoneIndex||raw.zoneLevel!==config.zoneLevel||![0,1,2].includes(raw.enemyIndex))return null;
     if(![null,'win','lose','escaped'].includes(raw.outcome)||!Number.isInteger(raw.turn)||raw.turn<1||raw.turn>100000)return null;
     if(!TYPES[raw.enemy?.type])return null;const b=create({...config,enemyIndex:raw.enemyIndex,enemyType:raw.enemy.type});
     for(const key of ['hero','enemy']){
@@ -118,7 +120,8 @@
     if((raw.outcome===null||raw.outcome==='escaped')&&(!b.hero.hp||!b.enemy.hp))return null;
     if(raw.outcome==='win'&&(b.enemy.hp!==0||b.hero.hp===0))return null;
     if(raw.outcome==='lose'&&b.hero.hp!==0)return null;
-    b.turn=raw.turn;b.outcome=raw.outcome;b.potions=finite(raw.potions,0,99,0);b.escapeAttempts=finite(raw.escapeAttempts,0,100000,0);
+    if(raw.version===2&&!['hero','enemy'].includes(raw.side))return null;
+    b.turn=raw.turn;b.side=raw.version===2?raw.side:'hero';b.outcome=raw.outcome;b.potions=finite(raw.potions,0,99,0);b.escapeAttempts=finite(raw.escapeAttempts,0,100000,0);
     b.log=Array.isArray(raw.log)?raw.log.filter(t=>typeof t==='string').slice(-12).map(t=>t.slice(0,200)):[];
     return b;
   }

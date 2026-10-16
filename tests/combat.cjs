@@ -3,14 +3,15 @@ const C=require('../combat.js');
 const config={level:1,stats:{},racket:'basic',zoneIndex:0,zoneLevel:1,enemyIndex:0};
 const fresh=()=>C.create(config),move=(b,id,rng=()=>.5)=>C.step(b,{type:'move',move:id},rng);
 const b=fresh(),hp=b.hero.hp,enemyHp=b.enemy.hp;
-move(b,'drive',()=>.3);assert(b.hero.hp<hp&&b.enemy.hp<enemyHp);assert.equal(b.hero.pp.drive,24);assert.equal(b.turn,2);
+move(b,'drive',()=>.3);assert.equal(b.hero.hp,hp);assert(b.enemy.hp<enemyHp);assert.equal(b.hero.pp.drive,24);assert.equal(b.side,'enemy');assert.equal(b.turn,1);
+C.step(b,{type:'enemy'},()=>.3);assert(b.hero.hp<hp);assert.equal(b.side,'hero');assert.equal(b.turn,2);
 assert.equal(C.effectiveness('fire','grass'),2);assert.equal(C.effectiveness('grass','fire'),.5);assert.equal(C.effectiveness('fighting','ghost'),0);assert.equal(C.effectiveness('water','electric'),1);
 const typed=C.create({...config,elementType:'fire',enemyType:'grass'});assert.equal(typed.hero.type,'fire');assert.equal(typed.enemy.type,'grass');
-// Priority overrides speed, and a fainted opponent cannot retaliate.
+// The hero always acts first, and a fainted opponent cannot retaliate.
 const first=fresh();first.hero.speed=1;first.enemy.speed=999;first.enemy.hp=1;first.enemy.moves=['drive'];
 move(first,'quick');assert.equal(first.outcome,'win');assert.equal(first.hero.hp,first.hero.maxHp);
-const last=fresh();last.hero.hp=1;last.hero.speed=1;last.enemy.moves=['quick'];move(last,'drive');
-assert.equal(last.outcome,'lose');assert.equal(last.hero.pp.drive,25,'fainted hero spends no PP');
+const last=fresh();last.hero.hp=1;last.enemy.moves=['quick'];move(last,'guard');assert.equal(last.outcome,null);C.step(last,{type:'enemy'});
+assert.equal(last.outcome,'lose');assert.equal(last.hero.pp.guard,14);
 // Switching equipment must never restore previously spent special PP.
 const v=C.normalizeVitals({hp:12,pp:{crescent:0},potions:2},C.profile(config));
 assert.equal(C.normalizeVitals(v,C.profile({...config,level:7,racket:'shake'})).pp.crescent,0);
@@ -19,9 +20,9 @@ const exhausted=fresh();for(const id of exhausted.hero.moves)exhausted.hero.pp[i
 const before=JSON.stringify(exhausted);move(exhausted,'drive');assert.equal(JSON.stringify(exhausted),before);
 move(exhausted,'struggle');assert(exhausted.hero.hp<=exhausted.hero.maxHp-16);assert(exhausted.enemy.hp<exhausted.enemy.maxHp);
 const item=fresh();item.hero.hp=10;item.enemy.moves=['drive'];C.step(item,{type:'potion'},()=>.5);
-assert.equal(item.potions,2);assert(item.hero.hp<50&&item.hero.hp>10);assert.equal(item.turn,2);
+assert.equal(item.potions,2);assert.equal(item.hero.hp,50);assert.equal(item.side,'enemy');C.step(item,{type:'enemy'},()=>.5);assert(item.hero.hp<50&&item.hero.hp>10);assert.equal(item.turn,2);
 const full=fresh(),fullBefore=JSON.stringify(full);C.step(full,{type:'potion'});assert.equal(JSON.stringify(full),fullBefore);
-const run=fresh();C.step(run,{type:'run'},()=>.99);assert.equal(run.outcome,null);assert(run.hero.hp<run.hero.maxHp);
+const run=fresh();C.step(run,{type:'run'},()=>.99);assert.equal(run.outcome,null);assert.equal(run.side,'enemy');C.step(run,{type:'enemy'},()=>.99);assert(run.hero.hp<run.hero.maxHp);
 C.step(run,{type:'run'},()=>0);assert.equal(run.outcome,'escaped');
 const resume=C.restore(JSON.parse(JSON.stringify(b)),config);assert.deepEqual(resume,b);
 assert.equal(C.restore({...b,enemyIndex:19},config),null);
@@ -43,4 +44,4 @@ const home=C.profile({...config,buff:'home'}),park=C.profile({...config,buff:'pa
 assert.equal(home.attack,Math.round(base.attack*1.15));assert.equal(home.spAttack,Math.round(base.spAttack*1.15));
 assert.equal(park.speed,Math.round(base.speed*1.25));assert.equal(park.crit,Math.min(.5,base.crit+.1));
 assert.equal(clinic.defense,Math.round(base.defense*1.25));assert.equal(clinic.spDefense,Math.round(base.spDefense*1.25));
-console.log('PASS: damage, priority, fainting, PP, healing, items, escape, save validation and milestones.');
+console.log('PASS: alternating turns, damage, fainting, PP, healing, items, escape, save validation and milestones.');
