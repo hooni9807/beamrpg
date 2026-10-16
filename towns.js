@@ -2,14 +2,14 @@
 (() => {
   const screen=$('rpg-screen'), modal=$('rpg-modal'), key='beamrpg.v3';
   const zones=[
-    {id:'seven',name:'7부 마을',level:1,diff:'b7',bossDiff:'b6',boss:'아재범',face:'ajae',color:'#88b86b',ground:'#709260',road:'#dfc99d',theme:'meadow',home:'희범의 집',park:'새싹 공원',gym:'동네 탁구장',xp:70,rivals:[['동네 고수 민수','jersey'],['수비 장인 준호','sleepy'],['서브 괴물 지훈','leesin']]},
-    {id:'six',name:'6부 마을',level:3,diff:'b6',bossDiff:'b5',boss:'꿀잠범',face:'sleepy',color:'#d8b365',ground:'#a59765',road:'#eddbb4',theme:'autumn',home:'햇살 여관',park:'낮잠 정원',gym:'해질녘 탁구장',xp:90,rivals:[['새벽 연습생','plain'],['끈질긴 수비수','ajae'],['리듬의 달인','jersey']]},
-    {id:'five',name:'5부 마을',level:5,diff:'b5',bossDiff:'b4',boss:'리신범',face:'leesin',color:'#cf8665',ground:'#b18a69',road:'#ecd0a7',theme:'desert',home:'불꽃 숙소',park:'붉은 바위 공원',gym:'드라이브 도장',xp:110,rivals:[['속공 신예','leesin'],['회전 연구가','percival'],['카운터 장인','drunk']]},
-    {id:'four',name:'4부 마을',level:7,diff:'b4',bossDiff:'b3',boss:'퍼시벌',face:'percival',color:'#a78ac9',ground:'#7c8199',road:'#d4cadf',theme:'moon',home:'달빛 여관',park:'회전 정원',gym:'퍼시벌 체육관',xp:140,rivals:[['왼손 라이벌','percival'],['커트 마스터','sleepy'],['변칙 승부사','drunk']]},
-    {id:'three',name:'3부 마을',level:9,diff:'b3',bossDiff:'b2',boss:'휴고범',face:'jersey',color:'#75adc9',ground:'#70999a',road:'#cfddd7',theme:'harbor',home:'선수 합숙소',park:'해안 공원',gym:'휴고범 경기장',xp:170,rivals:[['백핸드 에이스','jersey'],['랠리 전문가','leesin'],['전국대회 유망주','plain']]},
-    {id:'two',name:'2부 마을',level:11,diff:'b2',bossDiff:'b1',boss:'만취범',face:'drunk',color:'#73b4af',ground:'#7b9c96',road:'#d5e3da',theme:'canal',home:'운하 게스트하우스',park:'물빛 수변공원',gym:'그랜드 리버 코트',xp:195,rivals:[['스핀 설계자','percival'],['전국 랭커','jersey'],['속공 챌린저','leesin']]},
-    {id:'one',name:'1부 마을',level:13,diff:'b1',bossDiff:'pro',boss:'백야범',face:'plain',color:'#c7bb8c',ground:'#9daba0',road:'#e7e3d3',theme:'royal',home:'챔피언 레지던스',park:'왕관 정원',gym:'크라운 챔피언십',xp:220,rivals:[['챔피언 도전자','jersey'],['황금 백핸드','percival'],['무패의 수비수','ajae']]},
-    {id:'camp',name:'선수촌',level:15,diff:'pro',bossDiff:'boss',boss:'탁구 마왕',face:'boss',color:'#ba7d92',ground:'#838498',road:'#d5c5d2',theme:'citadel',home:'국가대표 숙소',park:'별빛 올림픽 공원',gym:'마왕의 아레나',xp:260,rivals:[['국가대표 후보','jersey'],['월드 투어 선수','percival'],['전설의 수비수','sleepy']]}
+    {id:'seven',name:'7부 마을',level:1,diff:'b7',bossDiff:'b6',boss:'아재범',face:'ajae',bossType:'normal',coachType:'fighting',color:'#88b86b',ground:'#709260',road:'#dfc99d',theme:'meadow',home:'희범의 집',park:'새싹 공원',gym:'동네 탁구장',xp:70,rivals:[['동네 고수 민수','jersey'],['수비 장인 준호','sleepy'],['서브 괴물 지훈','leesin']]},
+    {id:'six',name:'6부 마을',level:3,diff:'b6',bossDiff:'b5',boss:'꿀잠범',face:'sleepy',bossType:'ice',coachType:'electric',color:'#d8b365',ground:'#a59765',road:'#eddbb4',theme:'autumn',home:'햇살 여관',park:'낮잠 정원',gym:'해질녘 탁구장',xp:90,rivals:[['새벽 연습생','plain'],['끈질긴 수비수','ajae'],['리듬의 달인','jersey']]},
+    {id:'five',name:'5부 마을',level:5,diff:'b5',bossDiff:'b4',boss:'리신범',face:'leesin',bossType:'fire',coachType:'ground',color:'#cf8665',ground:'#b18a69',road:'#ecd0a7',theme:'desert',home:'불꽃 숙소',park:'붉은 바위 공원',gym:'드라이브 도장',xp:110,rivals:[['속공 신예','leesin'],['회전 연구가','percival'],['카운터 장인','drunk']]},
+    {id:'four',name:'4부 마을',level:7,diff:'b4',bossDiff:'b3',boss:'퍼시벌',face:'percival',bossType:'psychic',coachType:'ghost',color:'#a78ac9',ground:'#7c8199',road:'#d4cadf',theme:'moon',home:'달빛 여관',park:'회전 정원',gym:'퍼시벌 체육관',xp:140,rivals:[['왼손 라이벌','percival'],['커트 마스터','sleepy'],['변칙 승부사','drunk']]},
+    {id:'three',name:'3부 마을',level:9,diff:'b3',bossDiff:'b2',boss:'휴고범',face:'jersey',bossType:'water',coachType:'flying',color:'#75adc9',ground:'#70999a',road:'#cfddd7',theme:'harbor',home:'선수 합숙소',park:'해안 공원',gym:'휴고범 경기장',xp:170,rivals:[['백핸드 에이스','jersey'],['랠리 전문가','leesin'],['전국대회 유망주','plain']]},
+    {id:'two',name:'2부 마을',level:11,diff:'b2',bossDiff:'b1',boss:'만취범',face:'drunk',bossType:'poison',coachType:'steel',color:'#73b4af',ground:'#7b9c96',road:'#d5e3da',theme:'canal',home:'운하 게스트하우스',park:'물빛 수변공원',gym:'그랜드 리버 코트',xp:195,rivals:[['스핀 설계자','percival'],['전국 랭커','jersey'],['속공 챌린저','leesin']]},
+    {id:'one',name:'1부 마을',level:13,diff:'b1',bossDiff:'pro',boss:'백야범',face:'plain',bossType:'dragon',coachType:'dark',color:'#c7bb8c',ground:'#9daba0',road:'#e7e3d3',theme:'royal',home:'챔피언 레지던스',park:'왕관 정원',gym:'크라운 챔피언십',xp:220,rivals:[['챔피언 도전자','jersey'],['황금 백핸드','percival'],['무패의 수비수','ajae']]},
+    {id:'camp',name:'선수촌',level:15,diff:'pro',bossDiff:'boss',boss:'탁구 마왕',face:'boss',bossType:'rock',coachType:'bug',color:'#ba7d92',ground:'#838498',road:'#d5c5d2',theme:'citadel',home:'국가대표 숙소',park:'별빛 올림픽 공원',gym:'마왕의 아레나',xp:260,rivals:[['국가대표 후보','jersey'],['월드 투어 선수','percival'],['전설의 수비수','sleepy']]}
   ];
   const statText={power:['파워','공격 +5% · 타구 속도 +5%'],spin:['회전','특수공격 +5% · 타구 회전 +5%'],control:['컨트롤','방어 +5% · PERFECT 폭 +3%'],footwork:['풋워크','스피드 +5% · 회전 공 실수 −10%'],crit:['치명타','급소 확률 +5% · 탁구 치명타 +5%'],focus:['집중력','특수방어 +5% · 필살기 게이지 +10%']};
   const restBuffs={
@@ -130,8 +130,8 @@
   function service(facility){
     const z=zone(),done='<button id="town-close" class="secondary">둘러보기</button>';
     if(facility==='gym'){
-      show({title:z.gym,body:`<p>이번 마을의 보스 <strong>${z.boss}</strong>가 기다립니다.</p><p>권장 Lv.${z.level} · 승리 보상 ${z.xp*2} XP · ${120+zones.indexOf(z)*20} G</p><p>${s.wins[z.id]?'이미 이긴 보스에게 다시 도전할 수 있습니다.':'보스를 이기면 다음 마을로 가는 길이 열립니다.'}</p>`},'<button id="facility-action">보스에게 도전</button>'+done);
-      $('facility-action').onclick=()=>battle({name:z.boss,face:z.face,boss:true});
+      show({title:z.gym,body:`<p>이번 마을의 보스 <strong>${z.boss}</strong>가 기다립니다. · <strong>${BeamCombat.TYPES[z.bossType].name} 타입</strong></p><p>권장 Lv.${z.level} · 승리 보상 ${z.xp*2} XP · ${120+zones.indexOf(z)*20} G</p><p>${s.wins[z.id]?'이미 이긴 보스에게 다시 도전할 수 있습니다.':'보스를 이기면 다음 마을로 가는 길이 열립니다.'}</p>`},'<button id="facility-action">보스에게 도전</button>'+done);
+      $('facility-action').onclick=()=>battle({name:z.boss,face:z.face,boss:true,type:z.bossType});
     }else if(facility==='shop'){
       show({title:'희범의 라켓 공방',body:`<p>가진 골드 ${s.coins} G · 구입한 라켓은 언제든 바꿀 수 있어요.</p><div class="shop-grid">${Object.entries(RACKETS).map(([k,r])=>`<article class="shop-item ${s.racket===k?'equipped':''}"><h3>${r.name}</h3><p>${r.skill}</p><small>Lv.2 필살기 · ${SPECIALS[r.special].name}</small><button data-racket="${k}" ${s.racket===k||(!s.owned.includes(k)&&s.coins<prices[k])?'disabled':''}>${s.racket===k?'장착 중':s.owned.includes(k)?'장착하기':prices[k]+' G · 구입'}</button></article>`).join('')}</div>`},done);
       modal.querySelectorAll('[data-racket]').forEach(b=>b.onclick=()=>{const k=b.dataset.racket;if(!s.owned.includes(k)){if(s.coins<prices[k])return;s.coins-=prices[k];s.owned.push(k);}s.racket=k;setRacket(k);save();render();service('shop');});
@@ -139,8 +139,8 @@
       show({title:'랠리 카페',body:`<p>창가에서 쉬어 가세요. 챔피언 샌드위치를 먹으면 <strong>다음 3번 승리의 경험치가 20% 증가</strong>합니다.</p><p>가격 40 G · 가진 골드 ${s.coins} G · 현재 ${s.meal}승 남음</p>`},`<button id="facility-action" ${s.coins<40||s.meal>0?'disabled':''}>${s.meal?'식사 효과 적용 중':'샌드위치 주문 · 40 G'}</button>`+done);
       $('facility-action').onclick=()=>{if(s.coins<40||s.meal>0)return;s.coins-=40;s.meal=3;save();render();service('cafe');};
     }else if(facility==='training'){
-      show({title:'트레이닝 센터',body:`<p>코치와 탁구를 치며 보스전의 스윙 조작을 익혀보세요. 훈련 경기에서는 HP와 PP를 사용하지 않습니다.</p><p>이 마을 첫 훈련 승리 시 ${z.xp} XP를 얻습니다. ${s.trained[z.id]?'첫 훈련 보상 수령 완료 · 이후에는 연습 경기입니다.':'경기에서 져도 경험치를 잃지 않습니다.'}</p>`},'<button id="facility-action">코치와 훈련 경기</button>'+done);
-      $('facility-action').onclick=()=>battle({name:'전담 코치',face:'plain',boss:false,training:true});
+      show({title:'트레이닝 센터',body:`<p>코치와 탁구를 치며 보스전의 스윙 조작을 익혀보세요. · <strong>${BeamCombat.TYPES[z.coachType].name} 타입</strong></p><p>훈련 경기에서는 HP와 PP를 사용하지 않습니다.</p><p>이 마을 첫 훈련 승리 시 ${z.xp} XP를 얻습니다. ${s.trained[z.id]?'첫 훈련 보상 수령 완료 · 이후에는 연습 경기입니다.':'경기에서 져도 경험치를 잃지 않습니다.'}</p>`},'<button id="facility-action">코치와 훈련 경기</button>'+done);
+      $('facility-action').onclick=()=>battle({name:'전담 코치',face:'plain',boss:false,training:true,type:z.coachType});
     }else if(facility==='hall'){
       show({title:'리그 기념관',body:`<p>희범이 걸어온 길 · 트로피 ${Object.keys(s.wins).length} / 8</p><div class="stat-grid">${zones.map(z=>`<div class="stat-item"><b>${s.wins[z.id]?'★':'☆'} ${z.name}</b><small>${s.wins[z.id]?z.boss+' 격파':z.boss+'에게 도전하세요'}</small></div>`).join('')}</div>`});
     }else{
@@ -178,7 +178,7 @@
   }
   function specialType(baseType){const b=rpgOn();if(!b)return baseType;if(b.activeSpecial)return b.activeSpecial;const learned=[baseType,...(s.level>=4?['counter']:[]),...(s.level>=7?['chiquita']:[]),...(s.level>=10?['meteor']:[]),...(s.level>=13?['zenith']:[])];b.activeSpecial=learned[Math.floor(Math.random()*learned.length)];save();return b.activeSpecial;}
   function battle(rival){
-    if(rpgOn()||battleUI)return;stop();const z=zone(),restBuff=takeRestBuff(),rivalType=elementTypes[Math.floor(Math.random()*elementTypes.length)];
+    if(rpgOn()||battleUI)return;stop();const z=zone(),restBuff=takeRestBuff(),rivalType=BeamCombat.TYPES[rival.type]?rival.type:'normal';
     window.beamRpgV2={active:true,zone:z,boss:rival.boss,rival,rivalType,stats:s.stats,level:s.level,restBuff,specialType};
     setCharacter('heebeom');setRacket(s.racket);$('difficulty').value=rival.training?'b7':rival.boss?(z.id==='camp'?'pro':z.bossDiff):z.diff;applySettings();setMode(rival.boss&&z.id==='camp'?'boss':'match');
     modal.hidden=true;screen.hidden=true;document.body.classList.add('rpg-battle');resize();begin();P.EQUIP.len*=(1+s.stats.control*.03)*(restBuff==='park'?1.2:restBuff==='clinic'?1.1:1);save();toast(`${z.name} · ${rival.name}${rival.boss?' 보스':' 등장'} · ${BeamCombat.TYPES[rivalType].name} 타입${restBuff?' · '+restBuffs[restBuff].name+' 적용':''}`,3);
