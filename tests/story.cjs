@@ -38,7 +38,7 @@ const {chromium}=require('playwright');
     await page.evaluate(()=>BeamStory.playSix({...storyOptions,onChoice:choice=>storyChoices.push(choice)}));
     await page.locator('#story-next').click();
     await page.keyboard.press('Enter');
-    assert.deepEqual(await page.evaluate(()=>storyChoices),['shake','cpen']);
+    assert.deepEqual(await page.evaluate(()=>storyChoices),['shake','jpen']);
     assert.deepEqual(errors,[]);
     console.log('PASS: dated prologue, mandatory 6부 racket choice, keyboard and mobile layout.');
   }finally{await browser.close();}

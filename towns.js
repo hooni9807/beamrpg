@@ -25,7 +25,7 @@
   const saved=read(key), legacy=Object.keys(saved).length?saved:read('beamrpg.v2');
   const integer=(n,fallback=0)=>Number.isFinite(n)&&n>=0?Math.floor(n):fallback;
   const s={...legacy,level:Math.max(1,integer(legacy.level,1)),xp:integer(legacy.xp),stats:Object.fromEntries(Object.keys(statText).map(k=>[k,integer(legacy.stats?.[k])])),wins:Object.fromEntries(zones.filter(z=>legacy.wins?.[z.id]===true).map(z=>[z.id,true])),pendingUpgrades:integer(legacy.pendingUpgrades),specialTurn:integer(legacy.specialTurn),coins:integer(legacy.coins,120),meal:Math.min(3,integer(legacy.meal)),trained:Object.fromEntries(zones.filter(z=>legacy.trained?.[z.id]===true).map(z=>[z.id,true]))};
-  s.racket=Object.hasOwn(RACKETS,legacy.racket)?legacy.racket:'cpen';
+  s.racket=Object.hasOwn(RACKETS,legacy.racket)?legacy.racket:'jpen';
   const elementTypes=Object.keys(BeamCombat.TYPES);s.elementType=elementTypes.includes(legacy.elementType)?legacy.elementType:elementTypes[Math.floor(Math.random()*elementTypes.length)];
   s.owned=[...new Set(['basic',s.racket,...(Array.isArray(legacy.owned)?legacy.owned.filter(k=>Object.hasOwn(RACKETS,k)):[])])];
   s.equipment=BeamEquipment.normalize(legacy.equipment,s.racket,s.owned);s.racket=s.equipment.equipped.racket;
@@ -138,7 +138,7 @@
   function playSixStory(){
     if(s.sixChoiceSeen||s.zone!=='six'||!s.wins.seven)return;
     stop();BeamStory.playSix({modal,screen,zones,onChoice:choice=>{
-      const racket=choice==='shake'?'shake':'cpen';
+      const racket=choice==='shake'?'shake':'jpen';
       s.equipment.inventory[racket]=Math.max(1,s.equipment.inventory[racket]||0);
       if(!s.owned.includes(racket))s.owned.push(racket);
       BeamEquipment.equip(s,racket);s.sixChoiceSeen=true;
