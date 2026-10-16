@@ -30,4 +30,8 @@ assert.equal(C.restore({...b,hero:{...b.hero,moves:['<script>']}},config),null);
 for(const level of [1,2,4,7,10,13])assert.equal(C.profile({...config,level}).moves.length,4);
 assert(C.profile({...config,level:7}).moves.includes('chiquita'));
 assert(C.profile({...config,level:13}).moves.includes('zenith'));
+const home=C.profile({...config,buff:'home'}),park=C.profile({...config,buff:'park'}),clinic=C.profile({...config,buff:'clinic'}),base=C.profile(config);
+assert.equal(home.attack,Math.round(base.attack*1.15));assert.equal(home.spAttack,Math.round(base.spAttack*1.15));
+assert.equal(park.speed,Math.round(base.speed*1.25));assert.equal(park.crit,Math.min(.5,base.crit+.1));
+assert.equal(clinic.defense,Math.round(base.defense*1.25));assert.equal(clinic.spDefense,Math.round(base.spDefense*1.25));
 console.log('PASS: damage, priority, fainting, PP, healing, items, escape, save validation and milestones.');

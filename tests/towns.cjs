@@ -68,15 +68,16 @@ const root=path.resolve(__dirname,'..'),origin='https://beamrpg.test';
     await visit('zone','seven');assert.equal((await state()).place,'town');await page.screenshot({path:'/tmp/beamrpg-town-new.png'});
     await tick(1200);assert.equal(await page.evaluate(()=>playing),false,'idle never triggers encounters');
     await visit('facility','home');assert.equal((await state()).place,'interior');await page.screenshot({path:'/tmp/beamrpg-home-new.png'});
-    await visit('service','home');await page.locator('#facility-action').click();assert.equal((await state()).rested,true);await page.locator('#town-close').click();
+    await visit('service','home');await page.locator('#facility-action').click();assert.deepEqual((await state()).restBuff,{id:'home',uses:3});await page.locator('#town-close').click();
     await visit('return');assert.equal((await state()).place,'town');
-    await visit('facility','park');assert.equal((await state()).place,'park');await page.screenshot({path:'/tmp/beamrpg-park-new.png'});await visit('return');
+    await visit('facility','park');assert.equal((await state()).place,'park');await page.screenshot({path:'/tmp/beamrpg-park-new.png'});await visit('service','park');await page.locator('#facility-action').click();assert.deepEqual((await state()).restBuff,{id:'park',uses:3});await page.locator('#town-close').click();await visit('return');
     // Ordinary encounters spend persistent HP/PP and resume at the last completed turn.
     await page.evaluate(()=>{window.__townTest.normalBattle();Math.random=()=>.4;});
     assert.equal(await page.locator('.beam-combat').count(),1);assert.equal(await page.evaluate(()=>playing),false);
     assert.equal(await page.locator('[data-move]').count(),4);
     await page.locator('[data-move="quick"]').click();await tick(650);
     const fighting=await state();assert(fighting.vitals.hp<64);assert.equal(fighting.vitals.pp.quick,19);
+    assert.equal(fighting.restBuff.uses,2,'a rest buff lasts three battles and is used when combat starts');assert.equal(fighting.combatBuff,'park');assert.equal(fighting.combat.hero.speed,Math.round(21*1.25));
     await page.screenshot({path:'/tmp/beamrpg-turn-desktop.png'});
     await page.reload();await tick(80);assert.deepEqual((await state()).combat,fighting.combat,'battle survives reload');
     await page.keyboard.press('Escape');assert.equal(await page.locator('.beam-combat').count(),1,'Escape never bypasses an enemy turn');

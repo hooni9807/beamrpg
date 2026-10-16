@@ -20,14 +20,15 @@
   const stage=n=>n>=0?(2+n)/2:2/(2-n);
   const special={basic:'crescent',shake:'crescent',cpen:'lightning',jpen:'thunder',defense:'phantom'};
   const typeFor={basic:'power',shake:'spin',cpen:'speed',jpen:'power',defense:'spin'};
-  function profile({level=1,stats={},racket='basic'}={}){
-    const lv=finite(level,1,999,1),point=k=>finite(stats[k],0,999,0),champ=lv>=10?1.1:1;
+  function profile({level=1,stats={},racket='basic',buff=null}={}){
+    const lv=finite(level,1,999,1),point=k=>finite(stats[k],0,999,0),champ=lv>=10?1.1:1,
+      boost=id=>buff===id?1.15:1,swift=buff==='park'?1.25:1,guard=buff==='clinic'?1.25:1;
     return {name:'희범',kind:'hero',level:lv,type:typeFor[racket]||'power',maxHp:56+lv*8,
-      attack:Math.round((20+lv*5)*(1+point('power')*.05)*champ),
-      defense:Math.round((16+lv*4)*(1+point('control')*.05)*(lv>=4?1.15:1)),
-      spAttack:Math.round((20+lv*5)*(1+point('spin')*.05)*champ),
-      spDefense:Math.round((18+lv*4)*(1+point('focus')*.05)*(lv>=4?1.15:1)),
-      speed:Math.round((18+lv*3)*(1+point('footwork')*.05)),crit:Math.min(.5,1/24+point('crit')*.05),
+      attack:Math.round((20+lv*5)*(1+point('power')*.05)*champ*boost('home')),
+      defense:Math.round((16+lv*4)*(1+point('control')*.05)*(lv>=4?1.15:1)*guard),
+      spAttack:Math.round((20+lv*5)*(1+point('spin')*.05)*champ*boost('home')),
+      spDefense:Math.round((18+lv*4)*(1+point('focus')*.05)*(lv>=4?1.15:1)*guard),
+      speed:Math.round((18+lv*3)*(1+point('footwork')*.05)*swift),crit:Math.min(.5,1/24+point('crit')*.05+(buff==='park'?.1:0)),
       moves:['drive',lv>=13?'zenith':'quick',lv>=7?'chiquita':'cut',lv>=2?(special[racket]||'crescent'):'guard']};
   }
   function normalizeVitals(v={},p){
