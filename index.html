@@ -28,7 +28,7 @@ html,body{overscroll-behavior:none;touch-action:manipulation;-webkit-text-size-a
 #su-note{font-size:11px;line-height:1.6;color:#8d79c0;margin:10px 0 0}.su-row{display:flex;gap:8px;margin-top:14px}.su-row button{flex:2;min-height:46px;border:0;border-radius:8px;background:var(--orange);color:#fff;font:inherit;font-weight:700}.su-row button.ghost{flex:1;background:transparent;border:1px solid #3a2c5a;color:var(--ink)}
 #rpg-screen{position:fixed;inset:0;z-index:30;background:linear-gradient(145deg,#101b38,#34214f);padding:clamp(16px,4vw,50px);overflow:auto}#rpg-screen[hidden]{display:none}.rpg-shell{max-width:1040px;margin:auto}.rpg-head{display:flex;align-items:start;justify-content:space-between;gap:16px;margin-bottom:18px}.rpg-head h1{margin:4px 0;font-size:clamp(30px,6vw,54px)}.rpg-head p{color:#c8b8ea;margin:0}.rpg-card{background:#17122c;border:1px solid #5a4389;border-radius:16px;padding:18px;box-shadow:0 16px 50px #0006}.rpg-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}.rpg-stats div{background:#251a3d;border-radius:10px;padding:10px;font-size:12px}.rpg-stats b{display:block;font-size:20px;color:#ffd166}.rpg-map{position:relative;min-height:430px;margin-top:18px;border:1px solid #6b5593;border-radius:16px;overflow:hidden;background:linear-gradient(#6cb96c 0 64%,#c8ac6e 64%);box-shadow:inset 0 0 0 14px #3f834c}.rpg-map:before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent 47%,#dfca90 47% 53%,transparent 53%),linear-gradient(transparent 45%,#dfca90 45% 55%,transparent 55%);opacity:.8}.rpg-place{position:absolute;z-index:1;padding:9px 12px;border:2px solid #fff4;border-radius:10px;background:#563b27;color:#fff;font-weight:700}.rpg-npc{position:absolute;z-index:2;transform:translate(-50%,-50%);border:0;border-radius:50%;width:76px;height:76px;background:#ff526f;color:#fff;font-weight:800;box-shadow:0 5px 0 #7a2437}.rpg-npc small{display:block;font-size:10px}.rpg-npc[data-locked="true"]{filter:grayscale(1);opacity:.7}.rpg-player{position:absolute;z-index:3;transform:translate(-50%,-50%);width:36px;height:36px;border:3px solid #fff;border-radius:50%;background:#398cff;box-shadow:0 3px 0 #153f87}.rpg-tip{margin:12px 0 0;color:#c8b8ea;font-size:13px}.rpg-actions{display:flex;gap:8px;flex-wrap:wrap}.rpg-actions button{border:0;border-radius:9px;padding:10px 14px;background:#ff345d;color:#fff;font-weight:700}.rpg-actions button.secondary{background:#332450}.rpg-modal{position:fixed;inset:0;display:grid;place-items:center;padding:20px;background:#0009;z-index:31}.rpg-modal[hidden]{display:none}.rpg-modal .rpg-card{max-width:420px}.rpg-modal h2{margin-top:0}.rpg-statbtn{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;margin:7px 0}.rpg-statbtn button{border:0;border-radius:8px;background:#ffd166;color:#231933;font-weight:800;padding:6px 10px}.rpg-bar{height:7px;border-radius:5px;background:#4c386a;overflow:hidden}.rpg-bar i{display:block;height:100%;background:#ff345d}@media(max-width:600px){.rpg-head{display:block}.rpg-map{min-height:370px}.rpg-npc{width:62px;height:62px;font-size:11px}}
 </style><link rel="stylesheet" href="towns.css"><link rel="stylesheet" href="story.css"><link rel="stylesheet" href="combat.css"></head>
-<body><header><a class="brand" href="./"><span class="brandmark">◒</span> SPIN LAB<span class="edition">INTERACTIVE TABLE TENNIS</span></a><div class="header-right"><span class="input-label"><span class="status-dot"></span> 마우스 · 터치 플레이</span> <button id="rpg-open" type="button">🗺 리그 지도</button><button id="sound" aria-pressed="false">사운드 OFF</button></div></header>
+<body><header><a class="brand" href="./"><span class="brandmark">◒</span> BEAMRPG<span class="edition">임희범 키우기</span></a><div class="header-right"><span class="input-label"><span class="status-dot"></span> 마우스 · 터치 플레이</span> <button id="rpg-open" type="button">🗺 리그 지도</button><button id="sound" aria-pressed="false">사운드 OFF</button></div></header>
 <section id="rpg-screen" aria-label="임희범 리그 로드" hidden></section><section id="rpg-modal" class="rpg-modal" hidden></section>
 <main><div class="intro"><div><div class="eyebrow">DRAG. SWING. SPIN.</div><h1>탁구의 감각을,<br class="mobile"> 손끝으로.</h1><p>속도와 방향, 그리고 타이밍. 같은 공도 다르게 넘겨보세요.</p></div><div class="intro-note"><span>01 / THE PLAYGROUND</span><b>당신의 드래그가<br>하나의 스윙이 됩니다.</b></div></div>
 <div class="layout"><section class="arena"><div class="arena-top"><span><i class="live-dot"></i> <b id="mode-label">11점 경기</b></span><div class="score"><canvas id="you-face" width="112" height="112" aria-hidden="true"></canvas><span id="you-name">YOU</span><b id="you">00</b><i>:</i><b id="cpu">00</b><span id="cpu-name">AI</span></div><button id="pause" disabled>일시정지 Ⅱ</button></div><div class="court-wrap"><div id="equip-pop" hidden><b class="eq-title">이번 판 장비 🎲</b><div class="eq-row"><span id="eq-table-sw" class="eq-sw"></span><div><b id="eq-table"></b><small id="eq-table-stat"></small></div></div><div class="eq-row"><span id="eq-ball-sw" class="eq-sw eq-ball"></span><div><b id="eq-ball"></b><small id="eq-ball-stat"></small></div></div><small id="eq-total" class="eq-total"></small></div><canvas id="court" aria-label="손가락이나 마우스로 드래그하여 스윙하는 탁구 게임"></canvas><div class="court-label left">◀ 백핸드</div><div class="court-label right">포핸드 ▶</div><div class="court-hud"><button id="view-btn" type="button">1인칭 시점</button><button id="exit-btn" type="button" hidden>나가기</button></div><button id="toss-btn" type="button" hidden>🏓 토스</button><dialog id="char-info" aria-labelledby="ci-name"><div class="ci-head"><canvas id="ci-face" width="224" height="224" aria-hidden="true"></canvas><div><h3 id="ci-name"></h3><p id="ci-tag"></p></div></div><ul id="ci-list"></ul><div class="su-row"><button type="button" id="ci-close" class="ghost">닫기</button><button type="button" id="ci-pick">이 캐릭터로 할래요 ✓</button></div></dialog>
@@ -49,7 +49,7 @@ html,body{overscroll-behavior:none;touch-action:manipulation;-webkit-text-size-a
 </div></section>
 <section class="ranking" aria-labelledby="rank-title"><div class="tech-heading"><h3 id="rank-title">🏆 랭킹</h3><span id="rank-src">내 기기 기록</span></div>
 <div class="segmented rank-tabs" role="tablist"><button data-board="pvp" class="active" role="tab">PvP 레이팅</button><button data-board="rally" role="tab">최고 랠리</button><button data-board="wins" role="tab">AI전 승리</button><button data-board="boss" role="tab">보스 클리어</button></div>
-<ol id="rank-list"></ol><p class="help-note">PvP 레이팅: 온라인 1:1 랭킹전, 1000점 시작 · 이기면 +10 지면 −10 · 연승/연패마다 1점씩 더. 최고 랠리 · AI전 승리는 11점 AI 경기 후 등록 (승리 점수 = 난이도 × 10 + 점수 차).</p></section><footer><span>SPIN LAB</span> <span>작은 움직임이 만드는, 새로운 랠리.</span><span>BUILT FOR THE FEEL OF PLAY</span></footer></main><script>
+<ol id="rank-list"></ol><p class="help-note">PvP 레이팅: 온라인 1:1 랭킹전, 1000점 시작 · 이기면 +10 지면 −10 · 연승/연패마다 1점씩 더. 최고 랠리 · AI전 승리는 11점 AI 경기 후 등록 (승리 점수 = 난이도 × 10 + 점수 차).</p></section><footer><span>BEAMRPG</span> <span>작은 움직임이 만드는, 새로운 랠리.</span><span>BUILT FOR THE FEEL OF PLAY</span></footer></main><script>
 /* Shared swing classification and ball physics. */
 (function(root){
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -226,7 +226,7 @@ thunder:{name:'천둥 스매시',en:'THUNDER',rgb:'255,224,102',glow:'#ffe066',d
 crescent:{name:'초승달 드라이브',en:'CRESCENT',rgb:'255,60,200',glow:'#ff4fd8',desc:'강한 옆회전으로 바깥쪽으로 빠지는 듯하다가 크게 휘어 반대쪽 코너로 꽂히는 드라이브',coach:'초승달 드라이브! 바깥으로 빠지는 듯하다 크게 휘어 반대쪽 코너에 꽂힙니다.'},
 phantom:{name:'유령 커트',en:'PHANTOM',rgb:'180,140,255',glow:'#b48cff',desc:'둥실 떠서 네트 앞에 툭 떨어지는 초강력 하회전',coach:'유령 커트! 느리게 떠오른 공이 네트 앞에서 힘없이 죽어버립니다.'},
 zenith:{name:'제니스 오버드라이브',en:'ZENITH',rgb:'106,240,255',glow:'#6af0ff',desc:'초고속 전진 회전과 큰 횡회전으로 코트 끝을 꿰뚫는 최종 필살기',coach:'제니스 오버드라이브! 희범의 모든 감각을 담아 반대 코너를 관통합니다.'}};
-const store={get:k=>{try{return localStorage.getItem('spinlab.'+k);}catch{return null;}},set:(k,v)=>{try{localStorage.setItem('spinlab.'+k,v);}catch{}}};
+const store={get:k=>{try{return localStorage.getItem('beamrpg.game.'+k);}catch{return null;}},set:(k,v)=>{try{localStorage.setItem('beamrpg.game.'+k,v);}catch{}}};
 if(!ctx.roundRect)ctx.roundRect=function(x,y,w,h){this.rect(x,y,w,h);};
 const TABLE_W=.34;   // table half-width as a share of the court width (smaller = more floor around the table)
 // Two cameras. tp: high behind my player (default). fp: first person - lower and closer, stronger perspective, my body hidden.
@@ -369,7 +369,7 @@ if(!R.pipPaths){R.pipPaths=[[.35,.45,.85,'#6e1214'],[0,0,.75,'#d8393b'],[-.25,-.
 for(let py=-H,row=0;py<cut;py+=2.4,row++)for(let px=-R.w+(row%2)*1.2;px<R.w;px+=2.4){p.moveTo(px+ox+rr,py+oy);p.arc(px+ox,py+oy,rr,0,Math.PI*2);}return [p,col];});}
 for(const [p,col] of R.pipPaths){ctx.fillStyle=col;ctx.fill(p);}}
 else{ctx.fillStyle='#ffffff10';ctx.beginPath();ctx.ellipse(-R.w*.32,-H*.42,R.w*.42,H*.26,-.5,0,Math.PI*2);ctx.fill();}   // sheen on smooth (inverted) rubber
-ctx.fillStyle='#ffffff55';ctx.font='bold 4.2px Arial';ctx.textAlign='center';ctx.fillText('SPIN LAB',0,cut-H*.1);
+ctx.fillStyle='#ffffff55';ctx.font='bold 4.2px Arial';ctx.textAlign='center';ctx.fillText('BEAMRPG',0,cut-H*.1);
 ctx.restore();
 ctx.strokeStyle=R.tape||'#202020';ctx.lineWidth=1.6;ctx.stroke(blade);   // edge tape
 // handle
@@ -595,7 +595,7 @@ const top=H*.075,bh=H*.05;let seed=7;const rnd=()=>(seed=(seed*16807)%2147483647
 const sg=g.createLinearGradient(0,0,0,top);sg.addColorStop(0,'#1a1040');sg.addColorStop(1,'#2b1a5e');g.fillStyle=sg;g.fillRect(0,0,W,top);
 for(let row=0;row<4;row++)for(let x=4+(row%2)*5;x<W;x+=10){g.fillStyle=['#5b3fb0','#7a52d6','#c04fb5','#3d2b80','#9a6cf0'][Math.floor(rnd()*5)];g.beginPath();g.arc(x+rnd()*3,top*.2+row*top*.22,2.6,0,Math.PI*2);g.fill();}
 g.fillStyle='#0b0820';g.fillRect(0,top,W,bh);const n=Math.max(3,Math.round(W/170)),pw=W/n;g.font=`bold ${bh*.5}px Arial`;g.textAlign='center';g.textBaseline='middle';
-for(let i=0;i<n;i++){g.strokeStyle='#7d5cff55';g.strokeRect(i*pw+2,top+2,pw-4,bh-4);g.fillStyle=i%2?'#ff4d8d':'#b49bff';g.shadowColor=g.fillStyle;g.shadowBlur=8;g.fillText(i%2?'DRAG · SWING · SPIN':'SPIN LAB',i*pw+pw/2,top+bh/2);g.shadowBlur=0;}
+for(let i=0;i<n;i++){g.strokeStyle='#7d5cff55';g.strokeRect(i*pw+2,top+2,pw-4,bh-4);g.fillStyle=i%2?'#ff4d8d':'#b49bff';g.shadowColor=g.fillStyle;g.shadowBlur=8;g.fillText(i%2?'DRAG · SWING · SPIN':'BEAMRPG',i*pw+pw/2,top+bh/2);g.shadowBlur=0;}
 arenaCache={w:W,h:H,c,v:view};return c;}
 // Camera focus: as the ball comes off my end of the table the view eases in on it, then back out after the hit.
 // Pointer input is mapped back through the same zoom in move(), so hit detection stays in unzoomed court space.
@@ -930,7 +930,7 @@ document.querySelectorAll('#char-pick button').forEach(b=>b.onclick=()=>showChar
 const ciSync=()=>{$('character').value=charType;markPending();previewSettings();};
 $('character').onchange=()=>showCharInfo($('character').value);$('char-info').addEventListener('close',ciSync);
 // Save & resume: score, mode and special gauge, stored after every point. The rally resumes from the next serve.
-function clearSave(){try{localStorage.removeItem('spinlab.save');}catch{}}
+function clearSave(){try{localStorage.removeItem('beamrpg.game.save');}catch{}}
 function loadSave(){try{const v=JSON.parse(store.get('save'));return v&&Number.isInteger(v.you)&&Number.isInteger(v.cpu)&&['practice','match'].includes(v.mode)?v:null;}catch{return null;}}
 function setMode(m){mode=m;document.querySelectorAll('[data-mode]').forEach(c=>c.classList.toggle('active',c.dataset.mode===m));$('mode-label').textContent=document.querySelector(`[data-mode="${m}"]`).textContent;}
 const saved=loadSave();if(saved&&(saved.you||saved.cpu)){$('resume').firstChild.textContent=`이어하기 (${saved.you} : ${saved.cpu} · ${saved.mode==='match'?'11점 경기':saved.mode==='doubles'?'복식':saved.mode==='boss'?'보스전':'연습 랠리'}) `;$('resume').hidden=false;}
@@ -984,7 +984,7 @@ function revive(peer){if(peer&&!peer.destroyed&&peer.disconnected&&!document.hid
 document.addEventListener('visibilitychange',()=>{if(document.hidden)return;revive(net?net.peer:lobbyPeer);if(joinRetry&&!net){joinRetry=false;netJoin(true);}});
 async function netHost(code){if(net||!code&&!needNick())return;netStatus('준비 중…');try{await loadPeer();}catch{netStatus('온라인 기능을 불러오지 못했어요 (인터넷 확인)');return;}
 const fresh=!code;code=code||Array.from({length:4},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*32)]).join('');
-if(lobbyPeer)try{lobbyPeer.destroy();}catch{}const peer=new Peer('spinlab-'+code);lobbyPeer=peer;if(fresh)hostRetry=0;
+if(lobbyPeer)try{lobbyPeer.destroy();}catch{}const peer=new Peer('beamrpg-'+code);lobbyPeer=peer;if(fresh)hostRetry=0;
 peer.on('open',()=>{hostRetry=0;netStatus(`방 코드 ${code} · 매칭 대기 중… 빠른 매칭으로 누구나 들어오거나, 친구에게 코드를 보내세요`);roomOpen(code,peer);});
 peer.on('disconnected',()=>{if(lobbyPeer===peer&&!net)netStatus(`방 코드 ${code} · 다시 연결 중…`);setTimeout(()=>revive(peer),800);});
 peer.on('error',e=>{if(lobbyPeer!==peer)return;
@@ -1003,7 +1003,7 @@ const again=()=>{if(done)return;done=true;clearTimeout(timer);peer.destroy();if(
 if(left<=0){netStatus('방장이 1분 동안 돌아오지 않았어요. 코드를 확인하고 다시 참가하세요');return;}
 netStatus(`방장을 기다리는 중… ${left}초 (방장이 다른 앱에 있으면 돌아올 때 연결돼요)`);if(document.hidden)joinRetry=true;else setTimeout(()=>{if(seq===joinSeq)netJoin(true);},2000);},
 timer=setTimeout(again,12000);
-peer.on('open',()=>{const conn=peer.connect('spinlab-'+code,{reliable:true});conn.on('open',()=>{done=true;clearTimeout(timer);netOpen('guest',peer,conn);});});
+peer.on('open',()=>{const conn=peer.connect('beamrpg-'+code,{reliable:true});conn.on('open',()=>{done=true;clearTimeout(timer);netOpen('guest',peer,conn);});});
 peer.on('error',e=>{if(net||done)return;if(e.type==='peer-unavailable'||NET_TRANSIENT.includes(e.type))again();else{done=true;clearTimeout(timer);peer.destroy();netStatus('연결 오류: '+e.type);}});}
 // Public matchmaking: a waiting host lists its room in rooms/{uid} (heartbeat every 20 s); 빠른 매칭 joins the freshest
 // room that isn't mine, or opens one and waits. Rooms quiet for over a minute are treated as gone.
@@ -1021,9 +1021,9 @@ $('net-host').onclick=()=>netHost();$('net-join').onclick=()=>netJoin();$('net-c
 // ===== Ranking. Local top 10 always; a shared board on Firebase Firestore once FIREBASE_CONFIG is filled in.
 // Firestore rules (in the README) only allow reading and creating well-formed records, never editing or deleting.
 // ponytail: scores come from the browser, so they can be faked; rules cap the values and that is all.
-const FIREBASE_CONFIG={apiKey:"AIzaSyAWdG1ybx321oEc6PeYy7elnGsBOafpEbQ",authDomain:"spin-lab-ea7df.firebaseapp.com",
-  projectId:"spin-lab-ea7df",storageBucket:"spin-lab-ea7df.firebasestorage.app",messagingSenderId:"632748801549",
-  appId:"1:632748801549:web:3556b7ea3acdaba1c31f44"};   // public web config; access is guarded by firestore.rules
+// BeamRPG has its own Firebase project (never SPIN LAB's). null = local-only: no login, no cloud reads or writes.
+// To connect it, paste the web app config of the BeamRPG project here: {apiKey:'…',authDomain:'….firebaseapp.com',projectId:'…',appId:'…'}
+const FIREBASE_CONFIG=null;   // public web config; access is guarded by firestore.rules
 const LEVEL_NO={b7:1,b6:2,b5:3,b4:4,b3:5,b2:6,b1:7,pro:8,boss:9},LEVEL_NAME={b7:'7부',b6:'6부',b5:'5부',b4:'4부',b3:'3부',b2:'2부',b1:'1부',pro:'선수부',boss:'마왕전'};
 let rankDb=null,rankFs=null,rankApp=null,rankUid=null,board='pvp',pendingRank=null;
 // A copy served from this computer (localhost) is a test build: it never touches the shared ranking database.
@@ -1094,8 +1094,8 @@ for(const k of SETUP_KEYS)if(typeof d[k]==='string'&&[...$(k).options].some(o=>o
 async function saveCloudSetup(){if(!googleUser)return;try{const db=await remote();if(!db)return;const d={at:rankFs.serverTimestamp()};for(const k of SETUP_KEYS)d[k]=$(k).value;await rankFs.setDoc(rankFs.doc(db,'settings',googleUser.uid),d);}catch{}}
 // Naver login (네이버): Firebase has no Naver provider, so a small Cloudflare Worker (naver-worker.js) swaps the Naver
 // authorization code for a Firebase custom token. Only the public client id is here; the secret stays in the worker.
-// Naver login paused: worker:'' hides the button. Turn it back on with worker:'https://spinlab-naver.dchkimppi.workers.dev'
-const NAVER={clientId:'UMAizd5RXHoZm_Bcd1CZ',worker:''};
+// Naver login paused: worker:'' hides the button. BeamRPG needs its own Naver app and worker before turning this on
+const NAVER={clientId:'',worker:''};
 function naverLogin(){if(!NAVER.worker)return;const st=Array.from(crypto.getRandomValues(new Uint8Array(12)),b=>b.toString(16).padStart(2,'0')).join('');sessionStorage.setItem('naverState',st);
 location.href='https://nid.naver.com/oauth2.0/authorize?'+new URLSearchParams({response_type:'code',client_id:NAVER.clientId,redirect_uri:location.origin+location.pathname.replace(/index\.html$/,''),state:st});}
 async function naverReturn(){const q=new URLSearchParams(location.search),code=q.get('code'),st=q.get('state');if(!code||!st||!NAVER.worker)return false;

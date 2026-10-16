@@ -1,4 +1,4 @@
-// SPIN LAB - Naver login bridge (Cloudflare Worker, free plan).
+// BeamRPG - Naver login bridge (deploy as its own worker, not SPIN LAB's) (Cloudflare Worker, free plan).
 // The game sends the Naver authorization code here; this worker swaps it for the Naver user id (with the client secret,
 // which never reaches the browser) and returns a Firebase custom token signed with the service-account key.
 // Secrets live only in Cloudflare (Settings -> Variables and Secrets):

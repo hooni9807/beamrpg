@@ -123,6 +123,22 @@ Lv.1 기술은 포핸드 드라이브·쾌속 쇼트·회전 커트·철벽 준�
 - 일반 전투: 기술·가방·상태·도망 메뉴를 클릭/터치하거나 `Tab`·`Enter`로 선택합니다. `Esc`는 기술 메뉴로 돌아가며 전투를 종료하지 않습니다.
 - 보스·훈련 경기: 공의 타이밍 링이 맞는 순간 드래그해 스윙합니다. 탭/클릭은 쇼트 또는 블록, `Space`는 일시정지입니다.
 
+## 저장과 Firebase
+
+BeamRPG는 SPIN LAB과 **완전히 별개의 프로그램**입니다. 탁구 엔진 코드는 SPIN LAB에서 가져왔지만, 저장소·Firebase·온라인 방은 공유하지 않습니다.
+
+- 지금은 Firebase에 연결하지 않습니다(`index.html`의 `FIREBASE_CONFIG=null`). 로그인 없이 플레이하고, 모든 기록은 그 기기의 브라우저에만 저장됩니다.
+- 기기 저장 키: RPG 진행 `beamrpg.v3`, 경기 설정·기록 `beamrpg.game.*` (SPIN LAB의 `spinlab.*`와 섞이지 않음)
+- 온라인 방 ID 접두어: `beamrpg-` (SPIN LAB 방과 매칭되지 않음)
+
+### BeamRPG 전용 Firebase 연결하기
+
+1. [Firebase 콘솔](https://console.firebase.google.com/)에서 **새 프로젝트**를 만듭니다. SPIN LAB 프로젝트(`spin-lab-ea7df`)는 쓰지 않습니다.
+2. 웹 앱을 추가하고 나온 설정값을 `index.html`의 `FIREBASE_CONFIG`에 넣습니다.
+3. Authentication에서 Google 로그인을 켜고, 승인된 도메인에 `hooni9807.github.io`를 추가합니다.
+4. Firestore를 만들고 이 저장소의 [`firestore.rules`](firestore.rules)를 배포합니다.
+5. 네이버 로그인을 쓰려면 BeamRPG용 네이버 앱과 [`naver-worker.js`](naver-worker.js) 워커를 따로 만들어 `NAVER` 설정에 넣습니다.
+
 ## 로컬 실행
 
 별도 설치가 필요 없습니다. `index.html`을 브라우저에서 열면 됩니다.
