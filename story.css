@@ -17,9 +17,14 @@
 .story-bottom{max-width:790px;margin:22px auto 0;border-top:1px solid #c5d9bc26;padding-top:18px;display:flex;align-items:center;justify-content:space-between;gap:18px}
 .story-progress{display:flex;align-items:center;gap:15px;font-size:10px;letter-spacing:.1em;color:#d4dbc5}.story-progress small{font-size:10px;letter-spacing:0;color:#91a6a5}.story-dots{display:flex;gap:5px}.story-dots i{width:6px;height:6px;border-radius:50%;background:#d2dcb63d;transition:background .2s,width .2s}.story-dots i.current{width:25px;border-radius:5px;background:#e7ca8c}
 .story-controls{display:flex;gap:8px;flex-shrink:0;align-items:center}
+.story-controls [hidden],#rpg-modal #story-skip[hidden]{display:none!important}
 #rpg-modal #story-back{width:38px;height:40px;background:#ffffff08;border:1px solid #e2e4bd26;color:#c1d2c6;border-radius:6px}
 #rpg-modal #story-next{display:flex;align-items:center;justify-content:center;gap:25px;min-height:42px;padding:12px 19px;background:#e9d4a2;border:1px solid #f6e5b9;border-radius:6px;color:#283c36;font-size:12px;font-weight:800;box-shadow:0 5px 22px #020e1440}
 #rpg-modal #story-next:hover{background:#fff1ce;transform:translateY(-1px)}
+#rpg-modal #story-keep,#rpg-modal #story-shake{min-height:42px;padding:10px 15px;border-radius:6px;font-size:12px;font-weight:800;white-space:nowrap}
+#rpg-modal #story-keep{background:#ffffff10;border:1px solid #e2e4bd73;color:#f2e9d0}
+#rpg-modal #story-shake{background:#e9d4a2;border:1px solid #f6e5b9;color:#283c36}
+#rpg-modal #story-keep:hover{background:#ffffff25}#rpg-modal #story-shake:hover{background:#fff1ce}
 .story-letter{position:absolute;z-index:1;top:24%;right:14%;width:230px;padding:25px 22px 23px;display:flex;flex-direction:column;gap:8px;align-items:center;transform:rotate(5deg);background:linear-gradient(145deg,#f5e7bd,#e1cda0);border:7px solid #f1deb5;box-shadow:0 15px 55px #162b2066,inset 0 0 0 1px #ae95645c;color:#6b5a3c;text-align:center;pointer-events:none;animation:letter-arrive .8s ease-out both}
 .story-letter small{font-size:11px;letter-spacing:.13em}.story-letter strong{font-size:22px!important;color:#4a4f3c!important;letter-spacing:-.05em}.story-letter>span:not(.story-letter-mark){font-size:11px;line-height:1.6}.story-letter i{font-style:normal;font-size:9px;border-top:1px solid #ac95694d;padding-top:12px;margin-top:4px;line-height:1.5}.story-letter-mark{display:grid;place-items:center;border-radius:50%;width:34px;height:34px;background:#9d5b4b;box-shadow:inset 0 0 0 3px #bd7e61;color:#f9de9d;font-family:Georgia,serif;font-size:19px;margin-bottom:5px}
 .story-scene:not([data-scene="0"]) .story-letter{display:none}
@@ -29,6 +34,7 @@
  .story-top{padding:20px max(20px,env(safe-area-inset-right)) 16px max(20px,env(safe-area-inset-left));gap:12px}.story-brand span{font-size:12px}.story-brand small{font-size:8px}#rpg-modal #story-skip{padding:9px 12px;font-size:11px;gap:12px}
  .story-dialogue{padding:28px max(22px,env(safe-area-inset-right)) max(23px,env(safe-area-inset-bottom)) max(22px,env(safe-area-inset-left))}.story-copy #story-chapter{font-size:9px;margin-bottom:10px}#rpg-modal #story-title{font-size:28px;margin-bottom:14px}#rpg-modal #story-dialogue{font-size:13px;line-height:1.85;min-height:73px}#rpg-modal .story-speaker{font-size:11px;margin-bottom:5px}
  .story-bottom{margin-top:20px;padding-top:17px;gap:12px}.story-progress{gap:10px;font-size:9px}.story-progress small{display:none}.story-dots{gap:4px}.story-dots i{width:5px;height:5px}.story-dots i.current{width:15px}#rpg-modal #story-next{font-size:11px;padding:11px 12px;gap:13px;min-height:40px}#rpg-modal #story-back{width:30px;height:38px}.story-controls{gap:5px}
+ #rpg-modal[data-mode="six"] .story-bottom{flex-wrap:wrap}#rpg-modal[data-mode="six"] .story-controls{margin-left:auto}#rpg-modal #story-keep,#rpg-modal #story-shake{min-height:38px;padding:9px 10px;font-size:11px}
  .story-letter{width:173px;top:20%;right:8%;padding:15px 13px;gap:5px;border-width:5px}.story-letter strong{font-size:19px!important}.story-letter i{font-size:8px;padding-top:9px}.story-letter-mark{width:29px;height:29px;font-size:17px}.story-letter small,.story-letter>span:not(.story-letter-mark){font-size:9px}
 }
 @media(max-height:560px){

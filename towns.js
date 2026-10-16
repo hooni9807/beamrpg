@@ -3,7 +3,7 @@
   const screen=$('rpg-screen'), modal=$('rpg-modal'), key='beamrpg.v3';
   const zones=[
     {id:'seven',name:'7부 마을',level:1,diff:'b7',bossDiff:'b6',boss:'아재범',face:'ajae',bossType:'normal',coachType:'fighting',color:'#88b86b',ground:'#709260',road:'#dfc99d',theme:'meadow',home:'희범의 집',park:'새싹 공원',gym:'동네 탁구장',xp:70,rivals:[['동네 고수 민수','jersey'],['수비 장인 준호','sleepy'],['서브 괴물 지훈','leesin']]},
-    {id:'six',name:'6부 마을',level:3,diff:'b6',bossDiff:'b5',boss:'꿀잠범',face:'sleepy',bossType:'ice',coachType:'electric',color:'#d8b365',ground:'#a59765',road:'#eddbb4',theme:'autumn',home:'햇살 여관',park:'낮잠 정원',gym:'해질녘 탁구장',xp:90,rivals:[['새벽 연습생','plain'],['끈질긴 수비수','ajae'],['리듬의 달인','jersey']]},
+    {id:'six',name:'6부 마을',level:3,diff:'b6',bossDiff:'b5',boss:'꿀잠범',face:'sleepy',bossType:'ice',bossRacket:'shake',bossRubber:'longPips',coachType:'electric',color:'#d8b365',ground:'#a59765',road:'#eddbb4',theme:'autumn',home:'햇살 여관',park:'낮잠 정원',gym:'해질녘 탁구장',xp:90,rivals:[['새벽 연습생','plain'],['끈질긴 수비수','ajae'],['리듬의 달인','jersey']]},
     {id:'five',name:'5부 마을',level:5,diff:'b5',bossDiff:'b4',boss:'리신범',face:'leesin',bossType:'fire',coachType:'ground',color:'#cf8665',ground:'#b18a69',road:'#ecd0a7',theme:'desert',home:'불꽃 숙소',park:'붉은 바위 공원',gym:'드라이브 도장',xp:110,rivals:[['속공 신예','leesin'],['회전 연구가','percival'],['카운터 장인','drunk']]},
     {id:'four',name:'4부 마을',level:7,diff:'b4',bossDiff:'b3',boss:'퍼시벌',face:'percival',bossType:'psychic',coachType:'ghost',color:'#a78ac9',ground:'#7c8199',road:'#d4cadf',theme:'moon',home:'달빛 여관',park:'회전 정원',gym:'퍼시벌 체육관',xp:140,rivals:[['왼손 라이벌','percival'],['커트 마스터','sleepy'],['변칙 승부사','drunk']]},
     {id:'three',name:'3부 마을',level:9,diff:'b3',bossDiff:'b2',boss:'휴고범',face:'jersey',bossType:'water',coachType:'flying',color:'#75adc9',ground:'#70999a',road:'#cfddd7',theme:'harbor',home:'선수 합숙소',park:'해안 공원',gym:'휴고범 경기장',xp:170,rivals:[['백핸드 에이스','jersey'],['랠리 전문가','leesin'],['전국대회 유망주','plain']]},
@@ -19,13 +19,13 @@
     park:{name:'산책의 리듬',short:'민첩형',turn:'스피드 +25% · 급소 +10%p',rally:'PERFECT 폭 +20% · 게이지 획득 +20%',copy:'공원의 바람을 맞으며 몸을 가볍게 풉니다.'},
     clinic:{name:'회복 보호막',short:'방어형',turn:'방어·특수방어 +25%',rally:'회전 실수 확률 −20% · PERFECT 폭 +10%',copy:'치유 코치가 자세를 바로잡아 단단하게 만듭니다.'}
   };
-  const milestones=[[2,'라켓 시그니처'],[4,'스틸 카운터'],[7,'치키타 스파이럴'],[10,'메테오 스매시'],[13,'제니스 오버드라이브']];
+  const milestones=[[2,null,null],[4,'counter','stepAround'],[7,'chiquita','spinServe'],[10,'meteor','flashShort'],[13,'zenith','penholdFinal']];
   const facilityNames={shop:'라켓 공방',forge:'탁구채 강화소',cafe:'랠리 카페',training:'트레이닝 센터',clinic:'치유 센터',hall:'리그 기념관'};
   const read=k=>{try{const v=JSON.parse(localStorage.getItem(k));return v&&typeof v==='object'&&!Array.isArray(v)?v:{};}catch{return {};}};
   const saved=read(key), legacy=Object.keys(saved).length?saved:read('beamrpg.v2');
   const integer=(n,fallback=0)=>Number.isFinite(n)&&n>=0?Math.floor(n):fallback;
   const s={...legacy,level:Math.max(1,integer(legacy.level,1)),xp:integer(legacy.xp),stats:Object.fromEntries(Object.keys(statText).map(k=>[k,integer(legacy.stats?.[k])])),wins:Object.fromEntries(zones.filter(z=>legacy.wins?.[z.id]===true).map(z=>[z.id,true])),pendingUpgrades:integer(legacy.pendingUpgrades),specialTurn:integer(legacy.specialTurn),coins:integer(legacy.coins,120),meal:Math.min(3,integer(legacy.meal)),trained:Object.fromEntries(zones.filter(z=>legacy.trained?.[z.id]===true).map(z=>[z.id,true]))};
-  s.racket=Object.hasOwn(RACKETS,legacy.racket)?legacy.racket:'basic';
+  s.racket=Object.hasOwn(RACKETS,legacy.racket)?legacy.racket:'cpen';
   const elementTypes=Object.keys(BeamCombat.TYPES);s.elementType=elementTypes.includes(legacy.elementType)?legacy.elementType:elementTypes[Math.floor(Math.random()*elementTypes.length)];
   s.owned=[...new Set(['basic',s.racket,...(Array.isArray(legacy.owned)?legacy.owned.filter(k=>Object.hasOwn(RACKETS,k)):[])])];
   s.equipment=BeamEquipment.normalize(legacy.equipment,s.racket,s.owned);s.racket=s.equipment.equipped.racket;
@@ -39,7 +39,7 @@
   s.place=['world','town','interior','park'].includes(legacy.place)&&open(zones.find(z=>z.id===s.zone))?legacy.place:'interior';
   s.facility=['home','shop','forge','cafe','training','clinic','hall','gym','park'].includes(legacy.facility)?legacy.facility:'home';
   s.positions=legacy.mapVersion===2&&legacy.positions&&typeof legacy.positions==='object'?legacy.positions:{};
-  s.mapVersion=2;s.introSeen=legacy.introSeen===true;delete s.worldPos;delete s.townPos;delete s.pos;
+  s.mapVersion=2;s.introSeen=legacy.introSeen===true;s.sixChoiceSeen=legacy.sixChoiceSeen===true;delete s.worldPos;delete s.townPos;delete s.pos;
   const zone=()=>zones.find(z=>z.id===s.zone),need=()=>100+(s.level-1)*40;
   s.restBuff=restBuffs[legacy.restBuff?.id]?{id:legacy.restBuff.id,uses:Math.max(1,Math.min(3,integer(legacy.restBuff.uses,3)))}:legacy.rested?{id:'home',uses:1}:null;
   s.combatBuff=restBuffs[legacy.combatBuff]?legacy.combatBuff:null;delete s.rested;
@@ -51,7 +51,9 @@
   if(s.combat){s.combat.captureBlocked=!BeamCollection.canCapture(s.collection,s.combat.enemy.species);recordCombat(s.combat);}
   function recordCombat(b){const v=BeamCombat.extractVitals(b),fighter=s.collection.monsters.find(m=>m.id===b.hero.id);s.captureDiscs=b.captureDiscs;s.vitals.potions=v.potions;if(fighter)fighter.vitals={hp:v.hp,pp:v.pp};else s.vitals=v;}
   let battleUI=null;
-  const unlocks=()=>milestones.filter(([lv])=>s.level>=lv).map(([,name])=>name);
+  const isPenhold=()=>s.racket==='cpen'||s.racket==='jpen';
+  const milestoneName=([,shake,penhold])=>BeamCombat.MOVES[shake?(isPenhold()?penhold:shake):RACKETS[s.racket].special]?.name||'라켓 시그니처';
+  const unlocks=()=>milestones.filter(([lv])=>s.level>=lv).map(milestoneName);
   window.beamRpgMilestones=()=>({level:s.level,unlocks:unlocks()});
   let scene,sceneId,player,map,ctx,mini,grid,cols,rows,path=[],target=null,last=0,grace=480,travelled=0,rolls=0,bushId=null,facing=1,direction='down',walking=false,latched=null,lastSave=0;
   let resettingJourney=false;
@@ -128,10 +130,21 @@
     show({title:'의뢰인 나래',body:`<p><strong>${z.name} 순찰 의뢰</strong> · 일반 몬스터 ${target}마리와 대결해 승리해 주세요.</p><p>${q.claimed?'의뢰 완료! 다음 마을에서도 나래를 찾아 주세요.':q.accepted?`진행 ${Math.min(q.kills,target)} / ${target} · 보상 ${z.xp} XP와 ${reward} G`:`수락하면 이 마을에서 거둔 승리부터 기록됩니다. 보상 ${z.xp} XP와 ${reward} G`}</p>`},q.claimed?undefined:`<button id="quest-action" ${q.accepted&&q.kills<target?'disabled':''}>${q.accepted?'보상 받기':'의뢰 수락'}</button><button id="town-close" class="secondary">돌아가기</button>`);
     modal.querySelector('#quest-action')?.addEventListener('click',()=>{if(!q.accepted)q.accepted=true;else if(q.kills>=target&&!q.claimed){q.claimed=true;s.coins+=reward;gainXp(z.xp);}save();render();if(s.pendingUpgrades)upgrade();else quest();});
   }
-  function showStats(){const p=heroProfile(),b=s.restBuff&&restBuffs[s.restBuff.id];show({title:'희범의 성장 기록',body:`<p>HP ${s.vitals.hp} / ${p.maxHp} · 회복약 ${s.vitals.potions}개 · ${BeamCombat.TYPES[p.type].name} 타입</p><p>턴제 기술: ${p.moves.map(id=>`${BeamCombat.MOVES[id].name} (PP ${s.vitals.pp[id]}/${BeamCombat.MOVES[id].pp})`).join(' · ')}</p><p>휴식 버프: ${b?`<strong>${b.name}</strong> · ${b.short} · 앞으로 ${s.restBuff.uses}전투 · 일반 전투 ${b.turn} · 보스·훈련 ${b.rally}`:'없음 · 집·공원·치유 센터에서 선택'}</p><p>배운 기술: ${unlocks().join(' · ')||'Lv.2에 첫 필살기를 배웁니다.'}</p><div class="stat-grid">${Object.entries(statText).map(([k,[n,fx]])=>`<div class="stat-item"><b>${n} +${s.stats[k]}</b><small>${fx}</small></div>`).join('')}</div><p>${milestones.map(([lv,n])=>`Lv.${lv} ${n}`).join(' · ')}</p><p>식사 보너스 ${s.meal}승 남음</p>`});}
+  function showStats(){const p=heroProfile(),b=s.restBuff&&restBuffs[s.restBuff.id];show({title:'희범의 성장 기록',body:`<p>HP ${s.vitals.hp} / ${p.maxHp} · 회복약 ${s.vitals.potions}개 · ${BeamCombat.TYPES[p.type].name} 타입</p><p>턴제 기술: ${p.moves.map(id=>`${BeamCombat.MOVES[id].name} (PP ${s.vitals.pp[id]}/${BeamCombat.MOVES[id].pp})`).join(' · ')}</p><p>휴식 버프: ${b?`<strong>${b.name}</strong> · ${b.short} · 앞으로 ${s.restBuff.uses}전투 · 일반 전투 ${b.turn} · 보스·훈련 ${b.rally}`:'없음 · 집·공원·치유 센터에서 선택'}</p><p>배운 기술: ${unlocks().join(' · ')||'Lv.2에 첫 필살기를 배웁니다.'}</p><div class="stat-grid">${Object.entries(statText).map(([k,[n,fx]])=>`<div class="stat-item"><b>${n} +${s.stats[k]}</b><small>${fx}</small></div>`).join('')}</div><p>${milestones.map(m=>`Lv.${m[0]} ${milestoneName(m)}`).join(' · ')}</p><p>식사 보너스 ${s.meal}승 남음</p>`});}
   function guide(){show({title:'희범의 새로운 동네',body:'<p>지도나 오른쪽 목적지를 누르면 희범이 건물과 물을 피해 걸어갑니다. 방향키·WASD·화면 버튼으로 직접 움직일 수도 있어요.</p><p>건물의 문에 닿으면 내부로 들어갑니다. 내부 안내 위치에 닿거나 가까이서 E를 누르면 시설을 이용합니다. 출구로 걸으면 원래 마을로 돌아옵니다.</p><p>광장과 시설 주변은 안전합니다. 마을 외곽에서는 몬스터나 라이벌과 턴제 전투를 합니다. 부쉬에 들어가면 95% 확률로 상대를 만납니다. 상대 HP를 먼저 0으로 만들면 승리합니다. 집과 공원에서는 대결이 일어나지 않습니다.</p><p>전투의 아이템 메뉴에서 스핀 디스크를 던져 야생 상대를 포획할 수 있습니다. HP가 낮을수록, 상대 레벨이 출전 캐릭터보다 낮을수록 성공률이 오릅니다. 실패하면 상대가 행동합니다. 시작 디스크는 5개이며 마을 상점에서 35 G에 살 수 있습니다.</p><p>포획한 동료와 희범은 경험치·HP·PP가 각각 따로 저장됩니다. 주머니에서 출전 캐릭터와 보유 아이템을 확인하세요. 같은 종·성급 3마리는 자동으로 합쳐져 2성부터 최대 5성까지 강해집니다. 집·숙소·치유 센터에서 모두 회복할 수 있습니다.</p><p>희범과 상대는 DP의 17개 타입 중 하나를 가집니다. 기술마다 타입이 있으며 기술 버튼은 2배 피해면 노란 테두리, 반감 피해면 빨간 테두리로 표시됩니다. 같은 타입 기술은 1.5배입니다. 회복약 사용도 한 턴이고 도망에 실패하면 상대가 공격합니다.</p><p>마을 상점에서 장비를 사고 강화소에서 강화하세요. 주머니에서 부위별로 착용할 수 있습니다. 일반 상대를 이기면 낮은 확률로 장비를 얻고, 보스를 이기면 마을 장비를 반드시 얻습니다. 의뢰인 나래에게 마을 퀘스트를 받을 수도 있어요. 높은 레벨 몬스터를 이기면 경험치를 더 받습니다.</p><p>체육관 보스와 코치 훈련은 기존 탁구 스윙 경기입니다. 게이지가 차면 배운 기술 중 하나가 무작위로 발동합니다. 체육관 안에서 보스에게 도전하세요. 승리하면 경험치·골드를 얻고 다음 마을이 열립니다. 진행은 이 브라우저에 자동 저장됩니다.</p>'},'<button id="story-replay">스토리 다시 보기</button><button id="town-close" class="secondary">계속 걷기</button>');$('story-replay').onclick=playIntro;}
   function playIntro(){
-    stop();BeamStory.play({modal,screen,zones,onFinish:()=>{s.introSeen=true;save();close();if(s.pendingUpgrades)upgrade();}});
+    stop();BeamStory.play({modal,screen,zones,onFinish:()=>{s.introSeen=true;save();close();if(s.zone==='six'&&s.place!=='world'&&s.wins.seven&&!s.sixChoiceSeen)playSixStory();else if(s.pendingUpgrades)upgrade();}});
+  }
+  function playSixStory(){
+    if(s.sixChoiceSeen||s.zone!=='six'||!s.wins.seven)return;
+    stop();BeamStory.playSix({modal,screen,zones,onChoice:choice=>{
+      const racket=choice==='shake'?'shake':'cpen';
+      s.equipment.inventory[racket]=Math.max(1,s.equipment.inventory[racket]||0);
+      if(!s.owned.includes(racket))s.owned.push(racket);
+      BeamEquipment.equip(s,racket);s.sixChoiceSeen=true;
+      setRacket(s.racket);s.vitals=BeamCombat.normalizeVitals(s.vitals,heroProfile());save();render();close();
+      if(s.pendingUpgrades)upgrade();
+    }});
   }
   function resetJourney(){
     show({title:'처음부터 다시 키우기',body:'<p>레벨, 포획 동료, 스핀 디스크, 장비, 골드, 퀘스트, 보스 기록과 진행 중인 전투를 모두 지우고 희범의 집에서 새 여정을 시작합니다.</p><p><strong>이 작업은 되돌릴 수 없습니다.</strong></p>'},'<button id="town-reset-confirm">정말 처음부터 시작</button><button id="town-close" class="secondary">돌아가기</button>');
@@ -141,7 +154,7 @@
     latched=p.id;stop();
     if(p.action==='zone'){
       const z=zones.find(z=>z.id===p.value);if(!open(z)){const prev=zones[zones.indexOf(z)-1];show({title:'아직 닫힌 마을',body:`<p>${prev.name}의 ${prev.boss}를 이기면 ${z.name}에 들어갈 수 있습니다.</p>`});return;}
-      s.zone=z.id;s.place='town';grace=480;travelled=rolls=0;buildScene(null,true);
+      s.zone=z.id;s.place='town';grace=480;travelled=rolls=0;buildScene(null,true);if(z.id==='six')playSixStory();
     }else if(p.action==='facility'){
       s.facility=p.value;s.place=p.value==='park'?'park':'interior';buildScene(null,true);
     }else if(p.action==='return'){
@@ -158,8 +171,8 @@
   function service(facility){
     const z=zone(),done='<button id="town-close" class="secondary">둘러보기</button>';
     if(facility==='gym'){
-      show({title:z.gym,body:`<p>이번 마을의 보스 <strong>${z.boss}</strong>가 기다립니다. · <strong>${BeamCombat.TYPES[z.bossType].name} 타입</strong></p><p>권장 Lv.${z.level} · 승리 보상 ${z.xp*2} XP · ${120+zones.indexOf(z)*20} G</p><p>${s.wins[z.id]?'이미 이긴 보스에게 다시 도전할 수 있습니다.':'보스를 이기면 다음 마을로 가는 길이 열립니다.'}</p>`},'<button id="facility-action">보스에게 도전</button>'+done);
-      $('facility-action').onclick=()=>battle({name:z.boss,face:z.face,boss:true,type:z.bossType});
+      show({title:z.gym,body:`<p>이번 마을의 보스 <strong>${z.boss}</strong>가 기다립니다. · <strong>${BeamCombat.TYPES[z.bossType].name} 타입</strong>${z.bossRubber?' · 쉐이크핸드 · 백면 롱핌플':''}</p><p>권장 Lv.${z.level} · 승리 보상 ${z.xp*2} XP · ${120+zones.indexOf(z)*20} G</p><p>${s.wins[z.id]?'이미 이긴 보스에게 다시 도전할 수 있습니다.':'보스를 이기면 다음 마을로 가는 길이 열립니다.'}</p>`},'<button id="facility-action">보스에게 도전</button>'+done);
+      $('facility-action').onclick=()=>battle({name:z.boss,face:z.face,boss:true,type:z.bossType,racket:z.bossRacket,rubber:z.bossRubber});
     }else if(facility==='shop'){
       const catalog=BeamEquipment.catalog(z.id);
       show({title:'마을 장비 상점',body:`<p>${z.name} 판매 장비 · 가진 골드 ${s.coins} G. 구입한 장비는 바로 착용하며, 다른 장비는 위쪽 주머니에서 바꿀 수 있어요.</p><div class="shop-grid">${catalog.map(item=>{const owned=!!s.equipment.inventory[item.id],equipped=s.equipment.equipped[item.slot]===item.id;return `<article class="shop-item ${equipped?'equipped':''}"><b>${item.name}</b><small>${BeamEquipment.SLOTS[item.slot]} · ${gearStats(item,s.equipment.upgrades[item.id]||0)}</small>${item.slot==='racket'?`<small>Lv.2 기술 · ${SPECIALS[RACKETS[item.id].special].name}</small>`:''}<button data-item="${item.id}" ${item.slot==='racket'?`data-racket="${item.id}"`:''} ${equipped||(!owned&&s.coins<item.price)?'disabled':''}>${equipped?'착용 중':owned?'착용하기':item.price+' G · 구입·착용'}</button></article>`;}).join('')}</div>`},done);
@@ -215,7 +228,7 @@
     show({title:b.outcome==='win'?'승리!':b.outcome==='captured'&&caught?.monster?'포획 성공!':b.outcome==='captured'?'주머니에 공간이 없습니다':b.outcome==='lose'?'치유 센터에서 회복했습니다':'무사히 돌아왔습니다',body:`<p>${htmlText(b.enemy.name)}과의 대결</p><p>${b.outcome==='win'?`경험치 +${gain} · 골드 +${gold} G${b.enemy.level>b.hero.level?' · 상위 레벨 보너스!':''}${drop?` · ${drop.name} 획득!`:''}${fighter?` · ${htmlText(fighter.name)} 성장`:''}`:b.outcome==='captured'?caught?.monster?`${htmlText(b.enemy.name)}을 주머니에 넣었습니다.${caught.merged?` 같은 캐릭터 3마리가 합쳐져 ${caught.monster.star}성이 되었습니다!`:''} 주머니에서 출전 캐릭터로 선택할 수 있습니다.`:'포획한 캐릭터를 저장할 공간이 없습니다.':b.outcome==='lose'?`${htmlText(b.hero.name)}의 HP가 0이 되어 치유 센터로 돌아왔습니다. HP·PP를 모두 회복했고, 경험치와 골드는 잃지 않았습니다.`:'남은 HP와 PP는 유지됩니다. 집이나 치유 센터에서 회복하세요.'}</p><p>${htmlText(b.hero.name)} HP ${b.outcome==='lose'?b.hero.maxHp:b.hero.hp} / ${b.hero.maxHp}</p>${s.pendingUpgrades?`<p>Lv. ${s.level} · 강화 ${s.pendingUpgrades}개를 고를 수 있습니다.</p>`:''}`},s.pendingUpgrades?'<button id="town-upgrade">강화 고르기</button>':undefined);
     modal.querySelector('#town-upgrade')?.addEventListener('click',upgrade);
   }
-  function specialType(baseType){const b=rpgOn();if(!b)return baseType;if(b.activeSpecial)return b.activeSpecial;const learned=[baseType,...(s.level>=4?['counter']:[]),...(s.level>=7?['chiquita']:[]),...(s.level>=10?['meteor']:[]),...(s.level>=13?['zenith']:[])];b.activeSpecial=learned[Math.floor(Math.random()*learned.length)];save();return b.activeSpecial;}
+  function specialType(baseType){const b=rpgOn();if(!b)return baseType;if(b.activeSpecial)return b.activeSpecial;const learned=[baseType,...milestones.slice(1).filter(([lv])=>s.level>=lv).map(([,shake,penhold])=>isPenhold()?penhold:shake)];b.activeSpecial=learned[Math.floor(Math.random()*learned.length)];save();return b.activeSpecial;}
   function battle(rival){
     if(rpgOn()||battleUI)return;stop();const z=zone(),restBuff=takeRestBuff(),rivalType=BeamCombat.TYPES[rival.type]?rival.type:'normal';
     window.beamRpgV2={active:true,zone:z,boss:rival.boss,rival,rivalType,stats:s.stats,level:s.level,restBuff,specialType};
@@ -271,5 +284,5 @@
     requestAnimationFrame(tick);
   }
   BeamCloud.attach({key,get:()=>s});
-  buildScene();screen.hidden=false;if(s.combat)normalBattle();else if(!s.introSeen)playIntro();else if(s.pendingUpgrades)upgrade();requestAnimationFrame(tick);
+  buildScene();screen.hidden=false;if(s.combat)normalBattle();else if(!s.introSeen)playIntro();else if(s.zone==='six'&&s.place!=='world'&&s.wins.seven&&!s.sixChoiceSeen)playSixStory();else if(s.pendingUpgrades)upgrade();requestAnimationFrame(tick);
 })();

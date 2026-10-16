@@ -87,20 +87,20 @@ b5:{base:.82,serve:2.4,speed:2.35,mix:[.61,.95],aim:.88},b4:{base:.87,serve:2.5,
 b3:{base:.91,serve:2.7,speed:2.85,mix:[.59,.88],aim:1},b2:{base:.94,serve:2.9,speed:3.15,mix:[.58,.85],aim:1.05},
 b1:{base:.96,serve:3.1,speed:3.45,mix:[.56,.82],aim:1.1},pro:{base:.975,serve:3.3,speed:3.8,mix:[.52,.76],aim:1.2},
 boss:{base:.98,serve:3.4,speed:3.7,mix:[.5,.74],aim:1.25}};   // 보스전 only
-function aiChance(b,difficulty,practice){const base=(LEVELS[difficulty]||LEVELS.b4).base+(b.chance?.1:0);const attack=spinMiss(b)+Math.max(0,Math.abs(b.vy||0)-FAST_REF)*.04+(b.power?.15:0)+(b.kill?.6:({crescent:.48,counter:.46,chiquita:.42,meteor:.55,lightning:.45,thunder:.5,phantom:.45,zenith:.62})[b.type]??(b.type==='smash'?.24:b.type==='chop'?.18:0));return clamp(base+(practice?.1:0)-attack-Math.abs(b.x)*.1-Math.min(Math.abs(b.side||0),1.2)*.03,.1,.985);}
+function aiChance(b,difficulty,practice){const base=(LEVELS[difficulty]||LEVELS.b4).base+(b.chance?.1:0);const attack=spinMiss(b)+Math.max(0,Math.abs(b.vy||0)-FAST_REF)*.04+(b.power?.15:0)+(b.kill?.6:({crescent:.48,counter:.46,chiquita:.42,meteor:.55,lightning:.45,thunder:.5,phantom:.45,zenith:.62,stepAround:.46,spinServe:.42,flashShort:.55,penholdFinal:.58})[b.type]??(b.type==='smash'?.24:b.type==='chop'?.18:0));return clamp(base+(practice?.1:0)-attack-Math.abs(b.x)*.1-Math.min(Math.abs(b.side||0),1.2)*.03,.1,.985);}
 const CRESCENT_SIDE=18;   // side spin of the 초승달 드라이브 (bigger = wider curve)
 function shot(vx,vy,height,x,y,practice,gesture={},forcedType,boost={}){
 const type=forcedType||classify(vx,vy,gesture),speed=Math.hypot(vx,vy),power=clamp(speed/1500,0,1);
 // chop (defender): slow, high floating arc that drops deep - the 붕 뜬 defensive cut
-let forward=type==='zenith'?7:type==='meteor'?6.6:type==='crescent'?3.6:type==='counter'?5.1:type==='block'?2.4:type==='lightning'?5.6:type==='thunder'?6.2:type==='phantom'?1.8:type==='chop'?2.2:type==='short'?2:type==='smash'?4.7:type==='chiquita'?5:type==='loop'?2.35+power*.65:type==='back'?3+power*.9:2.5+power*1.2;
+let forward=type==='penholdFinal'?7.4:type==='zenith'?7:type==='meteor'||type==='flashShort'?6.6:type==='crescent'?3.6:type==='counter'||type==='stepAround'?5.1:type==='block'?2.4:type==='lightning'?5.6:type==='thunder'?6.2:type==='phantom'?1.8:type==='chop'?2.2:type==='short'?2:type==='smash'?4.7:type==='chiquita'||type==='spinServe'?5:type==='loop'?2.35+power*.65:type==='back'?3+power*.9:2.5+power*1.2;
 forward*=boost[type]||1;
-const spin=type==='zenith'?3.4:type==='meteor'?.2:type==='crescent'?1.6:type==='counter'?.8:type==='block'?.2:type==='phantom'?-2.6:type==='lightning'?.3:type==='thunder'?0:type==='chop'?-1.8:type==='cut'?-1:type==='loop'?2.2:type==='back'?1.3:type==='drive'?1:type==='chiquita'?2.4:type==='side'?.35:0;
+const spin=type==='penholdFinal'?2.8:type==='zenith'?3.4:type==='meteor'||type==='flashShort'?.2:type==='crescent'?1.6:type==='counter'||type==='stepAround'?.8:type==='block'?.2:type==='phantom'?-2.6:type==='lightning'?.3:type==='thunder'?0:type==='chop'?-1.8:type==='cut'?-1:type==='loop'?2.2:type==='back'?1.3:type==='drive'?1:type==='chiquita'||type==='spinServe'?2.4:type==='side'?.35:0;
 const dirX=gesture.course!=null?clamp(gesture.course*COURSE_GAIN,-1,1):speed?vx/speed:0,corner=Math.abs(dirX)>.3?Math.sign(dirX)*.5:null;
-const side=type==='side'?Math.sign(vx)*1.2:type==='zenith'?Math.sign(corner??(x>=0?-1:1))*12:type==='chiquita'?Math.sign(corner??(x>=0?-1:1))*5:type==='crescent'?Math.sign(corner??(x>=0?-1:1))*CRESCENT_SIDE:0,   // crescent: big curve into the corner
-target=type==='short'?1.85:type==='chop'?2.5:type==='block'?2:type==='crescent'?2.5:type==='phantom'?1.75:type==='thunder'||type==='meteor'||type==='zenith'?2.5:2.3,gravity=6+spin*.55,netDistance=1.37-y;
+const side=type==='side'?Math.sign(vx)*1.2:type==='penholdFinal'?Math.sign(corner??(x>=0?-1:1))*8:type==='zenith'?Math.sign(corner??(x>=0?-1:1))*12:type==='chiquita'||type==='spinServe'?Math.sign(corner??(x>=0?-1:1))*5:type==='crescent'?Math.sign(corner??(x>=0?-1:1))*CRESCENT_SIDE:0,   // crescent: big curve into the corner
+target=type==='short'?1.85:type==='chop'?2.5:type==='block'?2:type==='crescent'?2.5:type==='phantom'?1.75:type==='thunder'||type==='meteor'||type==='zenith'||type==='flashShort'||type==='penholdFinal'?2.5:2.3,gravity=6+spin*.55,netDistance=1.37-y;
 // shortcut: arcade landing calibration, replace with measured contact physics for a simulator.
 if(netDistance>0&&target>1.37){const fraction=netDistance/(target-y),needed=.22-height*(1-fraction);if(needed>0)forward=Math.min(forward,Math.sqrt(.5*gravity*netDistance*(target-1.37)/needed));}
-const flight=(target-y)/forward,targetX=type==='zenith'||type==='crescent'?(corner?Math.sign(corner)*.58:x>=0?-.58:.58):type==='chiquita'||type==='thunder'||type==='meteor'?corner??(x>=0?-.5:.5):type==='lightning'||type==='counter'?corner??(x>=0?.5:-.5):clamp(x*(gesture.course!=null?.12:.3)+dirX*(practice?.55:.7),-.62,.62); // horizontal part of the swing sets the course
+const flight=(target-y)/forward,targetX=type==='zenith'||type==='penholdFinal'||type==='crescent'?(corner?Math.sign(corner)*.58:x>=0?-.58:.58):type==='chiquita'||type==='spinServe'||type==='thunder'||type==='meteor'||type==='flashShort'?corner??(x>=0?-.5:.5):type==='lightning'||type==='counter'||type==='stepAround'?corner??(x>=0?.5:-.5):clamp(x*(gesture.course!=null?.12:.3)+dirX*(practice?.55:.7),-.62,.62); // horizontal part of the swing sets the course
 return {type,speed,vx:(targetX-x)/flight-.15*side*flight,vy:forward,vz:(.5*gravity*flight*flight-height)/flight,spin,side};
 }
 // ponytail: brute-force search over launch angles, fine for one call per serve.
@@ -128,7 +128,7 @@ function miss(s,y,z,kind){const g=6+s.spin*.55;if(kind==='net'){const t=(1.37-y)
 const vy=Math.max(s.vy,3.2),T=(3.5-y)/vy;return {...s,vy,vz:(.5*g*T*T-z)/T,miss:kind};}
 // Incoming / outgoing shot families and the matchup table.
 function incoming(b){const t=b.type;if(['cut','chop','phantom'].includes(t))return 'cut';if(['smash','thunder'].includes(t))return 'smash';if(t==='side')return 'spin';
-if(['loop','drive','back','counter','chiquita','meteor','lightning','crescent','zenith'].includes(t))return 'drive';if(t==='serve')return Math.abs(b.side||0)>.3?'spin':b.spin<-.2?'cut':b.spin>.2?'drive':null;return null;}
+if(['loop','drive','back','counter','chiquita','meteor','lightning','crescent','zenith','stepAround','spinServe','flashShort','penholdFinal'].includes(t))return 'drive';if(t==='serve')return Math.abs(b.side||0)>.3?'spin':b.spin<-.2?'cut':b.spin>.2?'drive':null;return null;}
 function family(t){return ['cut','chop','phantom'].includes(t)?'cut':['smash','thunder'].includes(t)?'smash':t==='short'||t==='block'?t:'drive';}
 function judge(inc,resp,perfect,defender){if(!inc)return 'ok';
 if(inc==='cut')return resp==='cut'||resp==='drive'?'ok':'net';
@@ -150,8 +150,8 @@ root.PingPhysics={EQUIP,back,OFF_T,DEEP_M,DEEP_STEP,spinMiss,perfectSpan,STROKE_
 </script><script>
 'use strict';
 const $=id=>document.getElementById(id),canvas=$('court'),ctx=canvas.getContext('2d'),P=PingPhysics;
-let googleUser=null,deep=0,deepS=0,pops=[],net=null,difficulty='b4',matchBest=0,lastReason='',W=900,H=465,mode='match',playing=false,paused=false,ball=null,wait=0,you=0,cpu=0,rally=0,best=0,last=0,time=0,down=false,trail=[],fx=[],sound=false,audio=null,paddle={x:450,y:380,vx:0,vy:0},samples=[],lastHit=-10,lastAIHit=-10,toastUntil=0,gesture=null,activePointer=null,lastTap=null,smashUntil=-1,charge=0,touchInput=false,swingMemory=null,racketType='basic',playerSide=1;
-const names={loop:['LOOP DRIVE','루프 드라이브 · 높은 전진 회전'],back:['BACK DRIVE','백드라이브 · 빠른 전진 회전'],counter:['STEEL COUNTER','필살기 · 스틸 카운터'],chiquita:['CHIQUITA','필살기 · 치키타 스파이럴'],meteor:['METEOR SMASH','필살기 · 메테오 스매시'],lightning:['LIGHTNING','필살기 · 번개 속공'],thunder:['THUNDER','필살기 · 천둥 스매시'],phantom:['PHANTOM','필살기 · 유령 커트'],crescent:['CRESCENT','필살기 · 초승달 드라이브'],zenith:['ZENITH','필살기 · 제니스 오버드라이브'],drive:['DRIVE','드라이브 · 전진 회전'],cut:['CUT','커트 · 후진 회전'],chop:['CHOP','수비 커트 · 강한 후진 회전'],short:['SHORT','쇼트 · 짧은 밀어치기'],block:['BLOCK','디펜스 쇼트 · 각도를 숙여 막기'],smash:['SMASH','스매시 · 강한 공격'],side:['SIDE SPIN','사이드스핀 · 휘어지는 궤적'],serve:['SERVE','서브']};
+let googleUser=null,deep=0,deepS=0,pops=[],net=null,difficulty='b4',matchBest=0,lastReason='',W=900,H=465,mode='match',playing=false,paused=false,ball=null,wait=0,you=0,cpu=0,rally=0,best=0,last=0,time=0,down=false,trail=[],fx=[],sound=false,audio=null,paddle={x:450,y:380,vx:0,vy:0},samples=[],lastHit=-10,lastAIHit=-10,toastUntil=0,gesture=null,activePointer=null,lastTap=null,smashUntil=-1,charge=0,touchInput=false,swingMemory=null,racketType='cpen',playerSide=1;
+const names={loop:['LOOP DRIVE','루프 드라이브 · 높은 전진 회전'],back:['BACK DRIVE','백드라이브 · 빠른 전진 회전'],counter:['STEEL COUNTER','필살기 · 스틸 카운터'],chiquita:['CHIQUITA','필살기 · 치키타 스파이럴'],meteor:['METEOR SMASH','필살기 · 메테오 스매시'],lightning:['LIGHTNING','필살기 · 번개 속공'],thunder:['THUNDER','필살기 · 천둥 스매시'],phantom:['PHANTOM','필살기 · 유령 커트'],crescent:['CRESCENT','필살기 · 초승달 드라이브'],zenith:['ZENITH','필살기 · 제니스 오버드라이브'],stepAround:['STEP AROUND','필살기 · 돌아서 포핸드'],spinServe:['SPIN SERVE','필살기 · 손목 스핀 서브'],flashShort:['FLASH SHORT','필살기 · 속사포 쇼트'],penholdFinal:['PENHOLD STORM','필살기 · 펜홀더 태풍'],drive:['DRIVE','드라이브 · 전진 회전'],cut:['CUT','커트 · 후진 회전'],chop:['CHOP','수비 커트 · 강한 후진 회전'],short:['SHORT','쇼트 · 짧은 밀어치기'],block:['BLOCK','디펜스 쇼트 · 각도를 숙여 막기'],smash:['SMASH','스매시 · 강한 공격'],side:['SIDE SPIN','사이드스핀 · 휘어지는 궤적'],serve:['SERVE','서브']};
 // w/h: blade half-size, hw/hl: handle width/length, reach: hit radius, power: swing speed multiplier
 const RACKETS={
 // Starter racket: plain blade + plain rubber, no skill or boost; special unlocks at Lv.2.
@@ -160,9 +160,10 @@ w:24.5,h:24.5,hw:10,hl:30,grip:'#c9c3b6',gripHi:'#e9e5dc',ply:'#5a554a55',wood:'
 // Shakehand = ALC carbon blade, Viscaria look: 157x150 mm near-round head, flared FL handle, 5 wood + 2 arylate-carbon plies
 shake:{name:'쉐이크핸드',special:'crescent',skill:'백핸드 드라이브: 백핸드 쪽 드라이브 계열 속도 ×1.25',
 w:24.5,h:24.5,hw:10,hl:30,grip:'#c9c3b6',gripHi:'#e9e5dc',ply:'#5a554a55',wood:'#e9d4a8',flare:true,lens:'#3b3b3b',reach:1,power:1},
-cpen:{name:'중국식 펜홀더',special:'lightning',skill:'빠른 쇼트: 쇼트 속도 ×1.5',boost:{short:1.5},w:24,h:26,hw:8,hl:15,grip:'#9c7a4c',reach:.95,power:1.08},
-jpen:{name:'일본식 펜홀더',special:'thunder',skill:'포핸드 강타: 포핸드 드라이브 속도 ×1.25',w:19,h:28,hw:11,hl:19,grip:'#c9a46b',square:true,reach:.9,power:1.18},
+cpen:{name:'중국식 펜홀더',special:'lightning',skill:'빠른 쇼트 ×1.5 · 보스전 쇼트 ×1.35, 백은 쇼트만',boost:{short:1.5},w:24,h:26,hw:8,hl:15,grip:'#9c7a4c',reach:.95,power:1.08},
+jpen:{name:'일본식 펜홀더',special:'thunder',skill:'포핸드 드라이브 속도 ×1.25 · 보스전 쇼트 ×1.35, 백은 쇼트만',w:19,h:28,hw:11,hl:19,grip:'#c9a46b',square:true,reach:.9,power:1.18},
 defense:{name:'수비수 라켓',pips:true,special:'phantom',perfect:.65,skill:'수비 특화: 스윙은 강한 커트(CHOP) · 드라이브 · 스매시는 PERFECT 커트로만 방어 (PERFECT 범위 65%) · 뜬 공(찬스볼)은 스윙하면 자동 스매시 · 탭 쇼트 · 백핸드 롱핌플',w:27,h:28.5,hw:10,hl:30,grip:'#b58c58',gripHi:'#e2c08a',tape:'#7a1f1f',reach:1.2,power:.85}};
+RACKETS.longPipsShake={...RACKETS.shake,pips:true}; // 6부 관장의 쉐이크핸드 백면 롱핌플 표시용.
 const BLACK='#1b1b1b',RED='#c8312f';
 // Character looks. 'jersey' is drawn from the user's photo: short tousled dark hair, black square glasses,
 // navy jersey with green / lime vertical stripes and a lime V collar, black shorts, black watch on the left wrist.
@@ -221,6 +222,10 @@ const SPECIALS={
 counter:{name:'스틸 카운터',en:'STEEL COUNTER',rgb:'104,231,213',glow:'#68e7d5',desc:'상대보다 빠르게 빈 곳으로 파고드는 카운터',coach:'스틸 카운터! 상대의 타이밍보다 먼저 코스를 찌릅니다.'},
 chiquita:{name:'치키타',en:'CHIQUITA',rgb:'255,162,50',glow:'#ffa83c',desc:'바나나처럼 휘어 들어가는 강한 백드라이브 (전진 회전 + 옆회전)',coach:'치키타! 백핸드로 공 옆을 감아 올려 바나나처럼 휘어 코너에 꽂힙니다.'},
 meteor:{name:'메테오 스매시',en:'METEOR SMASH',rgb:'255,116,79',glow:'#ff744f',desc:'별똥별처럼 코트 끝을 강타하는 강한 스매시',coach:'메테오 스매시! 높게 튄 공을 코트 끝으로 내리꽂습니다.'},
+stepAround:{name:'돌아서 포핸드',en:'STEP AROUND',rgb:'255,169,88',glow:'#ffa958',desc:'백쪽에서 빠르게 돌아서 포핸드로 찌르는 공격',coach:'발을 돌려 백쪽 공을 포핸드로 받아냅니다.'},
+spinServe:{name:'손목 스핀 서브',en:'SPIN SERVE',rgb:'119,220,247',glow:'#77dcf7',desc:'손목을 비틀어 회전과 코스를 바꾸는 펜홀더 서브',coach:'손목 스핀 서브! 코너로 크게 휘어 들어갑니다.'},
+flashShort:{name:'속사포 쇼트',en:'FLASH SHORT',rgb:'255,224,102',glow:'#ffe066',desc:'네트 앞에서 짧고 빠르게 밀어 넣는 연속 쇼트',coach:'속사포 쇼트! 낮게 밀어 순식간에 코트를 가릅니다.'},
+penholdFinal:{name:'펜홀더 태풍',en:'PENHOLD STORM',rgb:'161,237,149',glow:'#a1ed95',desc:'발놀림과 손목 회전을 합친 최종 필살기',coach:'펜홀더 태풍! 코스를 비틀어 상대 빈틈을 찌릅니다.'},
 lightning:{name:'번개 속공',en:'LIGHTNING',rgb:'111,216,255',glow:'#6fd8ff',desc:'네트를 낮게 스치며 같은 쪽 코너로 꽂히는 초고속 직선',coach:'번개 속공! 낮고 빠르게 깔려 상대가 반응할 틈이 없습니다.'},
 thunder:{name:'천둥 스매시',en:'THUNDER',rgb:'255,224,102',glow:'#ffe066',desc:'가장 빠른 일격, 상대 코트 끝 구석을 강타',coach:'천둥 스매시! 가장 빠르고 묵직한 한 방이 코트 끝을 때립니다.'},
 crescent:{name:'초승달 드라이브',en:'CRESCENT',rgb:'255,60,200',glow:'#ff4fd8',desc:'강한 옆회전으로 바깥쪽으로 빠지는 듯하다가 크게 휘어 반대쪽 코너로 꽂히는 드라이브',coach:'초승달 드라이브! 바깥으로 빠지는 듯하다 크게 휘어 반대쪽 코너에 꽂힙니다.'},
@@ -442,7 +447,7 @@ HUGO_STROKES.crescent=HUGO_STROKES.chiquita=HUGO_STROKES.loop;HUGO_STROKES.light
 const LEE_STROKES={loop:[[40,44,1.25,.8,.9],[44,8,.75,.65,.3],[8,-56,-.4,.25,-.95]],drive:[[40,10,1,.6,.7],[44,-2,.55,.5,.2],[14,-36,-.2,.35,-.7]],
 back:[[-8,16,-.8,.6,-.3],[24,-4,.08,.5,0],[50,-40,.7,.3,.5]]};LEE_STROKES.crescent=LEE_STROKES.chiquita=LEE_STROKES.loop;LEE_STROKES.lightning=LEE_STROKES.counter=LEE_STROKES.drive;LEE_STROKES.meteor=LEE_STROKES.smash;
 const STROKE_SETS={hugo:HUGO_STROKES,lee:LEE_STROKES};
-STROKES.crescent=STROKES.loop;STROKES.lightning=STROKES.counter=STROKES.drive;STROKES.thunder=STROKES.meteor=STROKES.smash;STROKES.phantom=STROKES.chop;
+STROKES.crescent=STROKES.zenith=STROKES.penholdFinal=STROKES.loop;STROKES.lightning=STROKES.counter=STROKES.stepAround=STROKES.drive;STROKES.thunder=STROKES.meteor=STROKES.smash;STROKES.phantom=STROKES.chop;STROKES.spinServe=STROKES.chiquita;STROKES.flashShort=STROKES.short;
 const lerp=(a,b,t)=>a+(b-a)*t,ease=t=>1-(1-t)*(1-t);
 // since = seconds after contact. prep (0..1, while the finger is still drawing) walks backswing -> just before contact.
 function strokePose(type,since,side,s,shoulder,target,angle,crouch,look={},amp=1,dirX=0,prep=null,T=1){
@@ -466,7 +471,7 @@ chop:'수비 커트 · ① 한 발 물러나 몸을 틀고 라켓을 머리 옆�
 smash:'스매시 · ① 높은 공에 라켓을 어깨 뒤로 크게 ② 높은 타점에서 몸 전체로 내려치기 ③ 몸 앞을 가로질러 마무리',
 side:'사이드스핀 · ① 라켓을 몸 바깥쪽으로 빼기 ② 공 옆을 옆으로 쓸기 ③ 몸 앞을 가로질러 마무리',
 chiquita:'치키타 · ① 손목을 안쪽으로 감아 라켓 끝을 아래로 ② 공 옆을 감아 올리며 손목을 펴기 ③ 바깥 위로 높게 마무리'};
-GUIDE.crescent=GUIDE.loop;GUIDE.lightning=GUIDE.counter=GUIDE.drive;GUIDE.thunder=GUIDE.meteor=GUIDE.smash;GUIDE.phantom=GUIDE.chop;
+GUIDE.crescent=GUIDE.zenith=GUIDE.penholdFinal=GUIDE.loop;GUIDE.lightning=GUIDE.counter=GUIDE.stepAround=GUIDE.drive;GUIDE.thunder=GUIDE.meteor=GUIDE.smash;GUIDE.phantom=GUIDE.chop;GUIDE.spinServe=GUIDE.chiquita;GUIDE.flashShort=GUIDE.short;
 // Footwork, from coaching guides (right-hander, mirrored by direction on screen):
 //  one-step  - short move: only the foot on the moving side steps out
 //  shuffle   - medium move: the far foot closes in first, then the near foot steps out; feet never cross
@@ -624,7 +629,7 @@ const y=Math.max(fz*.7+4,H*.09),txt='상대 '+k.label;ctx.strokeText(txt,W/2,y);
 ctx.font=`bold ${Math.max(11,Math.round(fz*.42))}px Arial`;ctx.lineWidth=4;ctx.strokeText(KIND_HINT[kind]||'',W/2,y+fz*.85);ctx.fillStyle='#ffffff';ctx.fillText(KIND_HINT[kind]||'',W/2,y+fz*.85);ctx.restore();}
 function courtHud(){shotBanner();const eb=$('exit-btn');if(eb.hidden===playing)eb.hidden=!playing;const tb=$('toss-btn'),tossNow=playing&&!paused&&!!ball&&ball.held&&ball.owner==='you'&&!ball.tossed;if(tb.hidden===tossNow)tb.hidden=!tossNow;if(!playing)return;ctx.save();ctx.font='bold 11px Arial';ctx.textBaseline='middle';
 const info=`${net?'온라인 1:1':LEVEL_NAME[aiDif()]||''}  |  랠리 ${rally}  |  최고 ${best}`,w=ctx.measureText(info).width+20;ctx.fillStyle='#0b0820c8';ctx.beginPath();ctx.roundRect(8,8,w,24,12);ctx.fill();ctx.fillStyle='#ece6ff';ctx.fillText(info,18,20.5);
-const legend='드래그 ↑ 드라이브 · ↓ 커트 · 탭 쇼트 · 뜬 공에 스윙 = 스매시';ctx.font='bold 10px Arial';const lw=ctx.measureText(legend).width+20;if(lw<W-150){ctx.fillStyle='#0b0820b0';ctx.beginPath();ctx.roundRect(W/2-lw/2,H-26,lw,20,10);ctx.fill();ctx.fillStyle='#d9ccffd0';ctx.textAlign='center';ctx.fillText(legend,W/2,H-15.5);}
+const legend=rpgOn()?.boss&&['cpen','jpen'].includes(racketType)?'펜홀더 백: 쇼트만 · 속도 ×1.35 | 포핸드: 드라이브·커트':'드래그 ↑ 드라이브 · ↓ 커트 · 탭 쇼트 · 뜬 공에 스윙 = 스매시';ctx.font='bold 10px Arial';const lw=ctx.measureText(legend).width+20;if(lw<W-150){ctx.fillStyle='#0b0820b0';ctx.beginPath();ctx.roundRect(W/2-lw/2,H-26,lw,20,10);ctx.fill();ctx.fillStyle='#d9ccffd0';ctx.textAlign='center';ctx.fillText(legend,W/2,H-15.5);}
 ctx.restore();}
 // VIEW_BACK: the whole camera sits further back, leaving floor all round the table to move about on
 const VIEW_BACK=1,FS_ZOOM=.72,REST_Y=.74;
@@ -673,7 +678,7 @@ const opponent=project(net?P.clamp(-net.opp.x,-.9,.9):ball?P.clamp(ball.x,-1,1):
 F.stanceK=1+Math.abs(F.lean||0)*.6;stepBody(F,opponent.x-aiSide*34*aiScale,rdt,ball&&ball.owner==='you'?.55:.25,aiScale);
 F.depth=lerp(F.depth||0,ball&&ball.owner==='you'&&!ball.held?P.clamp((ball.y-1.9)/.9,0,1):.2,Math.min(1,rdt*5));   // backs off as a deep ball comes
 const foePrep=!net&&ball&&ball.owner==='you'&&!ball.held&&ball.y>1.37&&time-lastAIHit>.65?P.clamp((ball.y-1.37)/1.43,0,1)*.35:null;
-person(F,foeFeet.y-foeLeg,{x:F.x+aiSide*34*aiScale,y:opponent.y},aiSide*.35,net?LOOKS[net.opp.ch]||LOOKS.ai:LOOKS[FL],aiScale,net?net.opp.rk:'shake',aiSide*((net?LOOKS[net.opp.ch]:LOOKS[FL])?.lefty?-1:1)<0?BLACK:RED,aiSide,foePrep!=null?'drive':net?net.opp.shot:aiShot,net?time-net.opp.hitT:time-lastAIHit,foePrep);
+person(F,foeFeet.y-foeLeg,{x:F.x+aiSide*34*aiScale,y:opponent.y},aiSide*.35,net?LOOKS[net.opp.ch]||LOOKS.ai:LOOKS[FL],aiScale,net?net.opp.rk:rpgOn()?.rival.rubber==='longPips'?'longPipsShake':'shake',aiSide*((net?LOOKS[net.opp.ch]:LOOKS[FL])?.lefty?-1:1)<0?BLACK:RED,aiSide,foePrep!=null?'drive':net?net.opp.shot:aiShot,net?time-net.opp.hitT:time-lastAIHit,foePrep);
 drawTable();
 if(ball&&!(ball.held&&!ball.tossed)){const shadow=project(ball.x,ball.y);ctx.beginPath();ctx.ellipse(shadow.x,shadow.y,9*shadow.scale,3*shadow.scale,0,0,Math.PI*2);ctx.fillStyle='#00000070';ctx.fill();const ghost=ball.shadow&&ball.owner==='ai'&&ball.y>.35&&ball.y<2.3;ctx.globalAlpha=ghost?0:1;const sp=SPECIALS[ball.type],kindNow=shotKind(ball);trail.forEach((p,i)=>{const q=project(p.x,p.y,p.z);ctx.beginPath();ctx.arc(q.x,q.y,(sp?6:kindNow==='smash'||kindNow==='kill'?5.5:3.5)*q.scale,0,Math.PI*2);ctx.fillStyle=sp?`rgba(${sp.rgb},${i/trail.length*.8})`:`rgba(${KIND[kindNow].rgb},${i/trail.length*.7})`;ctx.fill();});const p=project(ball.x,ball.y,ball.z);ctx.beginPath();ctx.arc(p.x,p.y,7*p.scale,0,Math.PI*2);ctx.fillStyle=gear.ball.color;ctx.shadowBlur=sp?24:14;ctx.shadowColor=sp?sp.glow:'#ffffffb0';ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle='#ddaa6850';ctx.stroke();line({x:p.x-2,y:p.y-2},{x:p.x+2,y:p.y-4},'#ffffff',2);
 ctx.globalAlpha=1;if(!ghost&&!ball.held&&Math.abs(ball.spin||0)>.2){const a=time*16*Math.sign(ball.spin),rr=6.5*p.scale;ctx.save();ctx.strokeStyle=`rgb(${KIND[kindNow].rgb})`;ctx.lineWidth=2.2;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(p.x-Math.cos(a)*rr,p.y-Math.sin(a)*rr);ctx.lineTo(p.x+Math.cos(a)*rr,p.y+Math.sin(a)*rr);ctx.stroke();ctx.restore();}   // spin line
@@ -737,10 +742,13 @@ if(motion){const dx=motion.x-motion.fromX,dy=motion.y-motion.fromY,t=P.clamp(((p
 if(distance>Math.max(touchInput?64:52,W*.075)*R.reach*(ball.kill?.75:1)||(!smash&&!motion&&!tap))return;   // a kill smash is harder to reach
 const quality=state==='perfect'?(distance<Math.max(touchInput?42:28,W*.04)*R.reach*(R.perfect||1)?'PERFECT':'GREAT'):state==='late'?'LATE':'GOOD';
 if(motion&&motion.side)playerSide=motion.side==='right'?1:-1;else updateSide();
-const special=charge===100,specialType=special?(window.beamRpgV2?.specialType?.(R.special)||R.special):null;if(special&&specialType==='chiquita')playerSide=-fhDir();
-const boost=racketType==='jpen'&&playerSide*fhDir()>0?{loop:1.25,drive:1.25,side:1.25}:racketType==='shake'&&playerSide*fhDir()<0?{loop:1.25,drive:1.25,back:1.25}:R.boost;
-const still=tap&&!smash;let shot=P.shot(still||!motion?0:motion.vx*R.power,smash?-1450:still?-200:motion.vy*R.power,ball.z,ball.x,ball.y,mode==='practice',motion?{above:motion.above,course:motion.course!=null?motion.course:smash?motion.dx/Math.max(Math.abs(motion.rise||0),40):null,dir:motion.dir,below:motion.below,side:motion.side,rise:motion.rise,drop:motion.drop,dx:motion.dx}:{},special?specialType:smash&&(racketType!=='defense'||ball.chance)?'smash':tap||(racketType==='defense'?'chop':smash?'smash':undefined),boost);
-const inc=P.incoming(ball),resp=P.family(shot.type),verdict=special?'ok':P.judge(inc,resp,quality==='PERFECT',racketType==='defense');   // specials always get through
+const penBoss=!!rpgOn()?.boss&&(racketType==='cpen'||racketType==='jpen'),penBack=penBoss&&playerSide*fhDir()<0;
+if(penBack)smash=false; // 희범의 전통식 펜홀더 백핸드는 보스전에서 쇼트만 친다.
+const special=charge===100&&!penBack,specialType=special?(window.beamRpgV2?.specialType?.(R.special)||R.special):null;if(special&&specialType==='chiquita')playerSide=-fhDir();
+const usualBoost=racketType==='jpen'&&playerSide*fhDir()>0?{loop:1.25,drive:1.25,side:1.25}:racketType==='shake'&&playerSide*fhDir()<0?{loop:1.25,drive:1.25,back:1.25}:R.boost;
+const boost=penBoss?{...usualBoost,short:1.35}:usualBoost;
+const still=penBack||tap&&!smash;let shot=P.shot(still||!motion?0:motion.vx*R.power,smash?-1450:still?-200:motion.vy*R.power,ball.z,ball.x,ball.y,mode==='practice',motion?{above:motion.above,course:motion.course!=null?motion.course:smash?motion.dx/Math.max(Math.abs(motion.rise||0),40):null,dir:motion.dir,below:motion.below,side:motion.side,rise:motion.rise,drop:motion.drop,dx:motion.dx}:{},penBack?'short':special?specialType:smash&&(racketType!=='defense'||ball.chance)?'smash':tap||(racketType==='defense'?'chop':smash?'smash':undefined),boost);
+const inc=P.incoming(ball),resp=P.family(shot.type),verdict=special?'ok':P.judge(inc,penBack&&inc==='drive'?'block':resp,quality==='PERFECT',racketType==='defense');   // specials always get through
 if(verdict!=='ok')shot=P.miss(shot,ball.y,ball.z,verdict);
 let flair='';
 if(verdict==='ok'&&!special){const base=TIMING_SUCCESS[quality]??1,roll=Math.random(),shield=rpgOn()?.restBuff==='clinic'?1.2:1;if(roll>Math.min(1,base*(1-P.spinMiss(ball)*Math.max(0,1-(rpgOn()?.stats.footwork||0)*.1))*shield)){shot=P.miss(shot,ball.y,ball.z,Math.random()<.5?'net':'over');flair=roll>base?'timing':'spin';}}   // timing: PERFECT 100%, GOOD 95%, LATE 90% go in
@@ -786,11 +794,12 @@ else if(ball.z<=0&&ball.vz<0&&!(ball.bounces===1&&(ball.y<0||ball.y>2.74))){if(M
 if(deep)ball.vz=Math.max(ball.vz,g*((ball.owner==='ai'?ball.y+P.back(ball):3.04-ball.y+P.DEEP_M*deep)/Math.max(Math.abs(ball.vy),.5))/2);}beep(270);}   // the table grips and bleeds off side spin
 // The AI takes the ball past its end line - or over the table when a short / backspin ball would otherwise bounce twice.
 if(!net&&ball.owner==='you'&&ball.bounces===1&&(ball.y>2.8+P.DEEP_M*deep||!deep&&ball.y>1.6&&ball.vz<0&&ball.z<.12)&&!ball.aiAttempt){ball.aiAttempt=true;const dif=aiDif();const chance=P.aiChance(ball,dif,mode==='practice')*(ball.type==='serve'&&!ball.mateServe&&LOOKS[charType].serveEdge?1-LOOKS[charType].serveEdge:1)*(1-handEdge(LOOKS[charType],LOOKS[aiChar]));const aiT=LOOKS[aiChar].trait,aiFore=ball.x<0?1:-1;   // AI faces us: balls on our left are its forehand
-if(Math.abs(ball.x)<.87&&ball.z<(ball.chance?1.5:.8+.6*deep)&&Math.random()<chance*(aiT&&aiFore===aiT.weak?1-TRAIT_ERR:1)*(LOOKS[aiChar].drunk?1-DRUNK_MISS:1)*(1-SLEEP_K*(me.mood||0))*(1+SLEEP_K*(foe.mood||0))){const wasChance=!!ball.chance;const L=P.LEVELS[dif]||P.LEVELS.b4,speed=L.speed*(1+handEdge(LOOKS[aiChar],LOOKS[charType]))*(1+SLEEP_K*(foe.mood||0)),mix=mode==='practice'?P.LEVELS.b7.mix:L.mix,r=Math.random(),kind=wasChance&&Math.random()<.85?'smash':P.incoming(ball)==='drive'&&Math.random()<AI_BLOCK?'block':r<mix[0]?'drive':r<mix[1]?'cut':'smash';
-const myType=ball.type;Object.assign(ball,P.aiReturn(kind,ball.x,ball.y,ball.z,speed,(Math.random()-.5)*(mode==='practice'?.5:L.aim)),{bounces:0,owner:'ai',chance:kind==='block',kill:wasChance&&kind==='smash'&&ball.z>=.25,power:false,shadow:false,skill:null});
+if(Math.abs(ball.x)<.87&&ball.z<(ball.chance?1.5:.8+.6*deep)&&Math.random()<chance*(aiT&&aiFore===aiT.weak?1-TRAIT_ERR:1)*(LOOKS[aiChar].drunk?1-DRUNK_MISS:1)*(1-SLEEP_K*(me.mood||0))*(1+SLEEP_K*(foe.mood||0))){const wasChance=!!ball.chance;const L=P.LEVELS[dif]||P.LEVELS.b4,speed=L.speed*(1+handEdge(LOOKS[aiChar],LOOKS[charType]))*(1+SLEEP_K*(foe.mood||0)),mix=mode==='practice'?P.LEVELS.b7.mix:L.mix,r=Math.random(),pipsBack=rpgOn()?.rival.rubber==='longPips'&&aiFore<0,kind=pipsBack?(P.incoming(ball)==='drive'?'cut':'block'):wasChance&&Math.random()<.85?'smash':P.incoming(ball)==='drive'&&Math.random()<AI_BLOCK?'block':r<mix[0]?'drive':r<mix[1]?'cut':'smash';
+const myType=ball.type,spinIn=ball.spin||0;Object.assign(ball,P.aiReturn(kind,ball.x,ball.y,ball.z,speed*(pipsBack?.78:1),(Math.random()-.5)*(mode==='practice'?.5:L.aim)),{bounces:0,owner:'ai',chance:kind==='block',kill:wasChance&&kind==='smash'&&ball.z>=.25,power:false,shadow:false,skill:null});
+if(pipsBack){ball.spin=spinIn>0?-.8:spinIn<0?.2:0;ball.type=kind==='cut'?'chop':'block';}
 deepen(P.family(myType)==='drive'&&kind==='drive');
 const aiPower=aiT&&aiFore===aiT.strong&&!ball.kill&&kind!=='block'&&Math.random()<TRAIT_POWER;if(aiPower)Object.assign(ball,P.power(ball,ball.y,ball.z,TRAIT_MULT));
-if(LOOKS[aiChar].drunk&&!ball.kill&&Math.random()<DRUNK_POWER/(1-DRUNK_MISS)){Object.assign(ball,P.power(ball,ball.y,ball.z,DRUNK_MULT));ball.spin*=DRUNK_MULT;toast('AI 만취범 괴력! 💥',1.2);}if(LOOKS[aiChar].boss)bossSkill(kind);if(mode==='doubles'){aiHitter=foeTurn;foeTurn^=1;}lastAIHit=time;aiShot={drive:'loop',cut:'cut',side:'side',smash:'smash',block:'block'}[ball.type];rally++;best=Math.max(best,rally);updateScore();beep(390);if(ball.skill)toast(ball.skill,1.5);else if(kind==='block')toast('상대가 막았어요! 뜬 공 · 스매시 찬스 ⚡',1.4);else if(ball.kill)toast('상대가 찬스볼을 강타! ⚡ PERFECT 쇼트로만 막을 수 있어요',1.4);else if(ball.power)toast(`AI ${LOOKS[aiChar].nick} ${SIDE_NAME[aiFore]} 강타! 💥`,1.2);}}
+if(LOOKS[aiChar].drunk&&!ball.kill&&Math.random()<DRUNK_POWER/(1-DRUNK_MISS)){Object.assign(ball,P.power(ball,ball.y,ball.z,DRUNK_MULT));ball.spin*=DRUNK_MULT;toast('AI 만취범 괴력! 💥',1.2);}if(LOOKS[aiChar].boss)bossSkill(kind);if(mode==='doubles'){aiHitter=foeTurn;foeTurn^=1;}lastAIHit=time;aiShot={drive:'loop',cut:'cut',chop:'cut',side:'side',smash:'smash',block:'block'}[ball.type];rally++;best=Math.max(best,rally);updateScore();beep(390);if(ball.skill)toast(ball.skill,1.5);else if(pipsBack)toast('꿀잠범의 롱핌플 백핸드! 느린 회전 반전',1.4);else if(kind==='block')toast('상대가 막았어요! 뜬 공 · 스매시 찬스 ⚡',1.4);else if(ball.kill)toast('상대가 찬스볼을 강타! ⚡ PERFECT 쇼트로만 막을 수 있어요',1.4);else if(ball.power)toast(`AI ${LOOKS[aiChar].nick} ${SIDE_NAME[aiFore]} 강타! 💥`,1.2);}}
 const remote=net&&ball.owner==='you'&&ball.bounces===1&&ball.y>2.74;if(remote)ball.passT??=time; // the far player's swing is still on the wire: give it time to arrive
 if((!remote||time-ball.passT>.45)&&(ball.y<-1.1-P.back(ball)||ball.y>(net?4.1:3.25+P.DEEP_M*deep)||Math.abs(ball.x)>1.2||ball.z<-.65)){point(ball.owner==='you'&&ball.bounces===1||ball.owner==='ai'&&ball.bounces===0,ball.bounces===1?'공을 놓쳤어요':'아웃');return;}trail.push({x:ball.x,y:ball.y,z:ball.z});if(trail.length>(SPECIALS[ball.type]?28:14))trail.shift();}
 function move(e){
@@ -848,7 +857,7 @@ function pendingSettings(){return $('character').value!==charType||$('racket').v
 function markPending(){const p=pendingSettings();$('apply-settings').disabled=!p;$('pending-note').hidden=!p;}
 // Setup before a game: 1) racket (+ blade and rubber for the shakehand) 2) difficulty, then play. Built from the
 // sidebar's own option lists and written back into them, so both stay in sync.
-const su={racket:'shake',blade:'ply',rubber:'control',diff:'b4'};
+const su={racket:'cpen',blade:'ply',rubber:'control',diff:'b4'};
 function suOpts(box,sel,key,onPick){box.textContent='';for(const o of $(sel).options){const [t,...rest]=o.text.split(' · '),b=document.createElement('button');b.type='button';b.dataset.v=o.value;b.textContent=t;if(rest.length){const sm=document.createElement('small');sm.textContent=rest.join(' · ');b.append(sm);}b.setAttribute('aria-pressed',o.value===su[key]);b.onclick=()=>{su[key]=o.value;box.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));onPick&&onPick();};box.append(b);}}
 function suRefresh(){$('su-gear').hidden=su.racket!=='shake';$('su-note').textContent=racketNote(su.racket,su.blade,su.rubber).replace(/^\s*·\s*/,'');}
 function suStep(n){$('su-p0').hidden=n!==0;$('su-steps').hidden=n===0;$('su-p1').hidden=n!==1;$('su-p2').hidden=n!==2;$('su-s1').classList.toggle('on',n===1);$('su-s2').classList.toggle('on',n===2);}
@@ -907,7 +916,7 @@ function renderCharPick(){document.querySelectorAll('#char-pick button').forEach
 function setCharacter(v){if(!LOOKS[v]||v==='ai')v='jersey';charType=v;$('character').value=v;renderCharPick();drawFace($('you-face'),LOOKS[v]);drawFace($('char-face'),LOOKS[v]);$('char-name').textContent=LOOKS[v].nick||LOOKS[v].name;$('you-name').textContent=LOOKS[v].nick||'YOU';store.set('character',v);const lh=!!LOOKS[v].lefty;document.querySelector('.court-label.left').textContent=lh?'◀ 포핸드':'◀ 백핸드';document.querySelector('.court-label.right').textContent=lh?'백핸드 ▶':'포핸드 ▶';}
 setCharacter(store.get('character')||'jersey');$('cpu-name').textContent='AI '+LOOKS[aiChar].nick;
 if(BLADES[store.get('blade')])bladeType=store.get('blade');if(RUBBERS[store.get('rubber')])rubberType=store.get('rubber');
-$('blade').value=bladeType;$('rubber').value=rubberType;setRacket(store.get('racket')||'basic');best=+store.get('best')||0;updateScore();
+$('blade').value=bladeType;$('rubber').value=rubberType;setRacket(store.get('racket')||'cpen');best=+store.get('best')||0;updateScore();
 $('apply-settings').onclick=applySettings;markPending();
 // Character card: what each character can do, shown before picking one
 const CHAR_INFO={

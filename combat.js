@@ -22,12 +22,18 @@
     chiquita:{name:'치키타 스파이럴',type:'grass',category:'special',power:85,accuracy:95,pp:10,slow:.4,description:'40% 확률로 상대 스피드 1단계 감소.'},
     meteor:{name:'메테오 스매시',type:'rock',category:'physical',power:108,accuracy:88,pp:8,description:'별똥별처럼 꽂히는 강한 스매시.'},
     zenith:{name:'제니스 오버드라이브',type:'dragon',category:'special',power:120,accuracy:90,pp:5,description:'희범의 모든 힘을 담은 최종 필살기.'},
+    stepAround:{name:'돌아서 포핸드',type:'fighting',category:'physical',power:78,accuracy:95,pp:12,description:'백쪽에서 빠르게 돌아서 포핸드로 공격한다.'},
+    spinServe:{name:'손목 스핀 서브',type:'psychic',category:'special',power:65,accuracy:100,pp:10,slow:.7,description:'손목 회전으로 70% 확률로 상대 스피드를 낮춘다.'},
+    flashShort:{name:'속사포 쇼트',type:'electric',category:'physical',power:92,accuracy:100,pp:8,description:'네트 앞에서 빠른 쇼트를 연속으로 찌른다.'},
+    penholdFinal:{name:'펜홀더 태풍',type:'dragon',category:'physical',power:115,accuracy:95,pp:5,description:'포핸드 발놀림과 손목 회전을 합친 최종 기술.'},
     struggle:{name:'최후의 발악',type:'normal',category:'physical',power:50,accuracy:100,pp:0,description:'PP가 모두 없을 때 사용. 최대 HP의 1/4 반동.'}
   };
   for(const [id,m] of Object.entries(MOVES))m.id=id;
   const finite=(n,min,max,fallback)=>Number.isFinite(n)?Math.max(min,Math.min(max,Math.floor(n))):fallback;
   const stage=n=>n>=0?(2+n)/2:2/(2-n);
   const special={basic:'crescent',shake:'crescent',cpen:'lightning',jpen:'thunder',defense:'phantom'};
+  const laterMoves=racket=>racket==='cpen'||racket==='jpen'?['stepAround','spinServe','flashShort','penholdFinal']:['counter','chiquita','meteor','zenith'];
+  function learnedMoves(lv,racket,legacy=false){const later=legacy?['counter','chiquita','meteor','zenith']:laterMoves(racket);return ['drive','quick','cut','guard',...(lv>=2?[special[racket]||'crescent']:[]),...(lv>=4?[later[0]]:[]),...(lv>=7?[later[1]]:[]),...(lv>=10?[later[2]]:[]),...(lv>=13?[later[3]]:[])];}
   function profile({level=1,stats={},racket='basic',buff=null,elementType='normal',equipment={}}={}){
     const lv=finite(level,1,999,1),point=k=>finite(stats[k],0,999,0),bonus=k=>finite(equipment[k],0,999,0),
       boost=id=>buff===id?1.15:1,swift=buff==='park'?1.25:1,guard=buff==='clinic'?1.25:1;
@@ -37,7 +43,7 @@
       spAttack:Math.round((20+lv*5)*(1+point('spin')*.05)*boost('home'))+bonus('spAttack'),
       spDefense:Math.round((18+lv*4)*(1+point('focus')*.05)*guard)+bonus('spDefense'),
       speed:Math.round((18+lv*3)*(1+point('footwork')*.05)*swift)+bonus('speed'),crit:Math.min(.5,1/24+point('crit')*.05+(buff==='park'?.1:0)+(Number.isFinite(equipment.crit)?Math.max(0,equipment.crit):0)),
-      moves:['drive','quick','cut','guard',...(lv>=2?[special[racket]||'crescent']:[]),...(lv>=4?['counter']:[]),...(lv>=7?['chiquita']:[]),...(lv>=10?['meteor']:[]),...(lv>=13?['zenith']:[])]};
+      moves:learnedMoves(lv,racket)};
   }
   function normalizeVitals(v={},p){
     if(!v||typeof v!=='object')v={};
@@ -132,7 +138,11 @@
     if(!Object.hasOwn(TYPES,raw.enemy?.type))return null;const b=create({...config,...(raw.version<3?{fighterProfile:null}:{}),enemyIndex:raw.enemyIndex,enemyType:raw.enemy.type});
     for(const key of ['hero','enemy']){
       const src=raw[key],dst=b[key];if(!src||!Number.isInteger(src.hp)||src.hp<0||src.hp>dst.maxHp)return null;
-      if(src.level!==dst.level||src.type!==dst.type||!Array.isArray(src.moves)||src.moves.join()!==dst.moves.join())return null;
+      if(src.level!==dst.level||src.type!==dst.type||!Array.isArray(src.moves))return null;
+      if(src.moves.join()!==dst.moves.join()){
+        if(key!=='hero'||config.fighterProfile||src.moves.join()!==learnedMoves(dst.level,config.racket,true).join())return null;
+        dst.moves=[...src.moves]; // Resume a pre-penholder-save fight with its original PP and moves.
+      }
       if(raw.version===3&&(src.name!==dst.name||src.kind!==dst.kind||src.species!==dst.species||(key==='hero'&&(src.id!==dst.id||src.star!==dst.star))))return null;
       dst.hp=src.hp;
       for(const id of Object.keys(dst.pp))dst.pp[id]=finite(src.pp?.[id],0,MOVES[id].pp,0);
