@@ -116,6 +116,30 @@ const root=path.resolve(__dirname,'..'),origin='https://beamrpg.test';
     await reload({...await state(),place:'town',zone:'one',pendingUpgrades:0});await page.screenshot({path:'/tmp/beamrpg-one-new.png'});
     await page.setViewportSize({width:390,height:844});await tick(100);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.screenshot({path:'/tmp/beamrpg-mobile-new.png'});
     assert.equal(await page.evaluate(()=>window.__townTest.scene.bushes.every(b=>b.encounterChance>=.9)),true);await page.evaluate(()=>{const t=window.__townTest,b=t.scene.bushes[0];t.encounter(500);Object.assign(t.player,{x:b.x+b.w/2,y:b.y+b.h/2});Math.random=()=>.94;t.encounter(1);});assert.equal(await page.locator('.beam-combat').count(),1,'entering a bush triggers its 95% encounter roll');
+    await reload({...await state(),combat:null,place:'town',zone:'seven',level:1,xp:0,stats:{},captureDiscs:5,collection:{monsters:[],activeId:null,nextId:1}});
+    for(let i=1;i<=3;i++){
+      await page.evaluate(()=>{Math.random=()=>.2;window.__townTest.normalBattle();});
+      assert.equal((await state()).combat.enemy.species,'0:0');
+      await page.locator('[data-menu="bag"]').click();assert.match(await page.locator('.battle-bag').innerText(),/스핀 디스크/);if(i===1)await page.screenshot({path:'/tmp/beamrpg-capture-mobile.png'});
+      await page.evaluate(()=>Math.random=()=>0);await page.getByRole('button',{name:'스핀 디스크 사용'}).click();await tick(1000);
+      assert.equal((await state()).combat.outcome,'captured');
+      if(i===1){const caughtBattle=(await state()).combat;await page.reload();await tick(80);assert.deepEqual((await state()).combat,caughtBattle,'capture result survives reload');}
+      await page.getByRole('button',{name:'마을로 돌아가기',exact:true}).click();
+      const caught=await state();assert.equal(caught.captureDiscs,5-i);assert.equal(caught.collection.monsters.length,i===3?1:i);assert.equal(caught.collection.monsters[0].species,'0:0');
+      if(i===3)assert.equal(caught.collection.monsters[0].star,2,'three copies fuse into two stars');
+      await page.locator('#town-close').click();
+    }
+    const preDiscShop=await state();await visit('facility','shop');await visit('service','shop');await page.locator('#buy-disc').click();
+    assert.equal((await state()).captureDiscs,3,'shop replenishes capture discs');assert.equal((await state()).coins,preDiscShop.coins-35);await page.locator('#town-close').click();await visit('return');
+    await page.locator('#town-gear').click();const ally=(await state()).collection.monsters[0];assert.match(await page.locator('#rpg-modal').innerText(),/새싹 퐁글이.*2성/);await page.screenshot({path:'/tmp/beamrpg-pocket-mobile.png'});
+    await page.locator(`[data-fighter="${ally.id}"]`).click();assert.equal((await state()).collection.activeId,ally.id);await page.locator('#town-close').click();
+    await page.evaluate(()=>{Math.random=()=>.2;window.__townTest.normalBattle();const b=window.__townTest.combat;b.enemy.hp=1;Math.random=()=>.9;});
+    assert.equal((await state()).combat.hero.id,ally.id);await page.locator('[data-move="drive"]').click();await tick(1000);
+    assert.equal((await state()).combat.outcome,'win');await page.getByRole('button',{name:'마을로 돌아가기',exact:true}).click();
+    const allyReward=await state();assert.equal(allyReward.xp,0,'Heebeom does not receive an ally victory reward');assert.equal(allyReward.collection.monsters[0].xp,70,'active ally receives its own experience');await page.locator('#town-close').click();
+    await page.locator('#town-gear').click();await page.locator(`[data-release="${ally.id}"]`).click();assert.match(await page.locator('#town-dialog-title').innerText(),/놓아주기/);await page.locator('#town-close').click();
+    assert.equal((await state()).collection.monsters.length,1,'release requires confirmation');await page.locator('#town-gear').click();await page.locator(`[data-release="${ally.id}"]`).click();await page.locator('#release-confirm').click();
+    assert.equal((await state()).collection.monsters.length,0);assert.equal((await state()).collection.activeId,null,'releasing the active ally returns Heebeom to battle');await page.locator('#town-close').click();
     await reload({...await state(),combat:null,place:'interior',facility:'home'});await page.locator('#town-reset').click();assert.match(await page.locator('#town-dialog-title').innerText(),/처음부터 다시 키우기/);await page.locator('#town-reset-confirm').click();await page.waitForLoadState('domcontentloaded');await page.locator('.story-scene').waitFor();const resetState=await state();assert.equal(resetState.level,1);assert.equal(resetState.xp,0);assert.equal(resetState.coins,120);assert.equal(resetState.zone,'seven');assert.equal(resetState.place,'interior');assert.equal(resetState.facility,'home');assert.equal(resetState.combat,null,'reset clears an unfinished fight');assert.equal(await page.evaluate(()=>localStorage.getItem('beamrpg.v2')),null,'reset clears the legacy fallback too');
     assert.deepEqual(errors,[]);console.log('PASS: intro, saved position, turn battle/resume/rewards/defeat/healing, mobile and boss rally flow.');
   }finally{await browser.close();}

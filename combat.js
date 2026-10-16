@@ -31,7 +31,7 @@
   function profile({level=1,stats={},racket='basic',buff=null,elementType='normal',equipment={}}={}){
     const lv=finite(level,1,999,1),point=k=>finite(stats[k],0,999,0),bonus=k=>finite(equipment[k],0,999,0),
       boost=id=>buff===id?1.15:1,swift=buff==='park'?1.25:1,guard=buff==='clinic'?1.25:1;
-    return {name:'희범',kind:'hero',level:lv,type:TYPES[elementType]?elementType:'normal',maxHp:56+lv*8+bonus('hp'),
+    return {name:'희범',kind:'hero',level:lv,type:Object.hasOwn(TYPES,elementType)?elementType:'normal',maxHp:56+lv*8+bonus('hp'),
       attack:Math.round((20+lv*5)*(1+point('power')*.05)*boost('home'))+bonus('attack'),
       defense:Math.round((16+lv*4)*(1+point('control')*.05)*guard)+bonus('defense'),
       spAttack:Math.round((20+lv*5)*(1+point('spin')*.05)*boost('home'))+bonus('spAttack'),
@@ -45,24 +45,38 @@
   }
   function heal(v,p){const n=normalizeVitals(v,p);n.hp=p.maxHp;for(const id of Object.keys(n.pp))n.pp[id]=MOVES[id].pp;return n;}
   const prefixes=['새싹','단풍','사막','달빛','파도','운하','왕관','별빛'];
-  function enemyProfile(zoneIndex,zoneLevel,index,elementType){
-    const lv=finite(zoneLevel,1,999,1)+(index===2?1:0),kinds=['ball','slime','hedgehog'],types=Object.keys(TYPES),type=TYPES[elementType]?elementType:types[Math.floor(Math.random()*types.length)];
-    return {name:prefixes[zoneIndex]+' '+['퐁글이','빙글젤리','가시커트'][index],kind:kinds[index],level:lv,type,maxHp:30+lv*7,
+  function enemyProfile(zoneIndex,zoneLevel,index,elementType,rivals=[]){
+    const lv=finite(zoneLevel,1,999,1)+(index===2||index>=3?1:0),types=Object.keys(TYPES),type=Object.hasOwn(TYPES,elementType)?elementType:types[Math.floor(Math.random()*types.length)],rival=rivals[index-3];
+    return {name:index<3?prefixes[zoneIndex]+' '+['퐁글이','빙글젤리','가시커트'][index]:String(rival?.[0]||'도전자').slice(0,60),
+      kind:index<3?['ball','slime','hedgehog'][index]:'rival',look:index>=3?String(rival?.[1]||'plain').slice(0,32):undefined,face:index>=3?String(rival?.[1]||'plain').slice(0,32):undefined,species:`${zoneIndex}:${index}`,level:lv,type,maxHp:30+lv*7,
       attack:16+lv*4,defense:14+lv*4,spAttack:16+lv*4,spDefense:14+lv*4,speed:14+lv*3+(index===2?6:0),crit:1/24,
-      moves:index===0?['drive','quick','guard',lv>=3?'thunder':'cut']:index===1?['cut','guard','drive',lv>=3?'crescent':'quick']:['quick','cut','drive',lv>=3?'phantom':'guard']};
+      moves:index===0?['drive','quick','guard',lv>=3?'thunder':'cut']:index===1?['cut','guard','drive',lv>=3?'crescent':'quick']:index===2?['quick','cut','drive',lv>=3?'phantom':'guard']:['drive','quick','cut',lv>=3?'crescent':'guard']};
   }
   function actor(p,v){return {...p,hp:v?.hp??p.maxHp,pp:v?.pp?{...v.pp}:Object.fromEntries(p.moves.map(id=>[id,MOVES[id].pp])),stages:{defense:0,spDefense:0,speed:0}};}
+  function fighterProfile(config){
+    const f=config.fighterProfile;if(!f||typeof f!=='object')return profile(config);
+    if(!['ball','slime','hedgehog','rival'].includes(f.kind)||typeof f.species!=='string'||!/^\d+:[0-5]$/.test(f.species)||!Object.hasOwn(TYPES,f.type)||!Array.isArray(f.moves)||!f.moves.length||f.moves.some(id=>!Object.hasOwn(MOVES,id)||id==='struggle'))return profile(config);
+    return {id:f.id,name:String(f.name||'동료').slice(0,60),kind:f.kind,species:f.species,look:typeof f.look==='string'?f.look.slice(0,32):undefined,face:typeof (f.face||f.look)==='string'?(f.face||f.look).slice(0,32):undefined,star:finite(f.star,1,5,1),level:finite(f.level,1,999,1),type:f.type,
+      maxHp:finite(f.maxHp,1,100000,1),attack:finite(f.attack,1,100000,1),defense:finite(f.defense,1,100000,1),spAttack:finite(f.spAttack,1,100000,1),spDefense:finite(f.spDefense,1,100000,1),speed:finite(f.speed,1,100000,1),
+      crit:Number.isFinite(f.crit)?Math.max(0,Math.min(.75,f.crit)):1/24,moves:[...f.moves]};
+  }
   function create(config){
-    const p=profile(config),v=normalizeVitals(config.vitals,p),zoneIndex=finite(config.zoneIndex,0,7,0),zoneLevel=finite(config.zoneLevel,1,999,1),enemyIndex=finite(config.enemyIndex,0,2,Math.floor(Math.random()*3));
-    const enemy=actor(enemyProfile(zoneIndex,zoneLevel,enemyIndex,config.enemyType));
-    return {version:2,zoneIndex,zoneLevel,enemyIndex,hero:actor(p,v),enemy,turn:1,side:'hero',outcome:null,log:[`${enemy.name}이 나타났다! 희범은 무엇을 할까?`],potions:v.potions,escapeAttempts:0};
+    const p=fighterProfile(config),v=normalizeVitals(config.fighterProfile?config.fighterVitals:config.vitals,p),zoneIndex=finite(config.zoneIndex,0,7,0),zoneLevel=finite(config.zoneLevel,1,999,1),rivals=Array.isArray(config.rivals)?config.rivals.slice(0,3):[],roll=Math.random(),humanShare=rivals.length>0?0.18:0;
+    const wildIndex=roll<humanShare?3+Math.floor(roll/humanShare*rivals.length):Math.floor((roll-humanShare)/(1-humanShare)*3);
+    const enemyIndex=finite(config.enemyIndex,0,2+rivals.length,wildIndex);
+    const enemy=actor(enemyProfile(zoneIndex,zoneLevel,enemyIndex,config.enemyType,rivals));
+    return {version:3,zoneIndex,zoneLevel,enemyIndex,hero:actor(p,v),enemy,turn:1,side:'hero',outcome:null,log:[`${enemy.name}이 나타났다! ${p.name}은 무엇을 할까?`],potions:finite(config.vitals?.potions,0,99,v.potions),captureDiscs:finite(config.captureDiscs,0,999,0),escapeAttempts:0};
   }
   function extractVitals(b){return {hp:b.hero.hp,pp:{...b.hero.pp},potions:b.potions};}
-  function effectiveness(moveType,targetType){if(!TYPES[moveType]||!TYPES[targetType])return 1;if(IMMUNE[moveType]?.includes(targetType))return 0;if(STRONG[moveType]?.includes(targetType))return 2;if(WEAK[moveType]?.includes(targetType))return .5;return 1;}
+  function captureChance(b){
+    if(!b||b.outcome||b.captureBlocked||!b.captureDiscs||b.enemy?.hp<=0||!b.enemy?.maxHp||!b.hero?.hp)return 0;
+    return Math.max(.05,Math.min(.9,.18+.55*(1-b.enemy.hp/b.enemy.maxHp)+.06*(b.hero.level-b.enemy.level)));
+  }
+  function effectiveness(moveType,targetType){if(!Object.hasOwn(TYPES,moveType)||!Object.hasOwn(TYPES,targetType))return 1;if(IMMUNE[moveType]?.includes(targetType))return 0;if(STRONG[moveType]?.includes(targetType))return 2;if(WEAK[moveType]?.includes(targetType))return .5;return 1;}
   function available(a){const ids=a.moves.filter(id=>a.pp[id]>0);return ids.length?ids:['struggle'];}
   function faint(b){
-    if(b.hero.hp<=0){b.outcome='lose';b.log.push('희범은 더 이상 싸울 수 없다… 치유 센터로 돌아가자.');}
-    else if(b.enemy.hp<=0){b.outcome='win';b.log.push(`${b.enemy.name}을 쓰러뜨렸다! 희범의 승리!`);}
+    if(b.hero.hp<=0){b.outcome='lose';b.log.push(`${b.hero.name}은 더 이상 싸울 수 없다… 치유 센터로 돌아가자.`);}
+    else if(b.enemy.hp<=0){b.outcome='win';b.log.push(`${b.enemy.name}을 쓰러뜨렸다! ${b.hero.name}의 승리!`);}
     return !!b.outcome;
   }
   function attack(b,a,d,id,rng){
@@ -93,10 +107,15 @@
     const moves=available(b.hero);
     if(action.type==='move'&&!moves.includes(action.move))return b;
     if(action.type==='potion'&&(b.potions<=0||b.hero.hp>=b.hero.maxHp))return b;
-    if(!['move','potion','run'].includes(action.type))return b;
+    if(action.type==='capture'&&(b.captureBlocked||!b.captureDiscs))return b;
+    if(!['move','potion','run','capture'].includes(action.type))return b;
     b.log=[];
     if(action.type==='potion'){
-      b.potions--;const restored=Math.min(40,b.hero.maxHp-b.hero.hp);b.hero.hp+=restored;b.log.push(`회복약을 사용했다! 희범의 HP ${restored} 회복.`);
+      b.potions--;const restored=Math.min(40,b.hero.maxHp-b.hero.hp);b.hero.hp+=restored;b.log.push(`회복약을 사용했다! ${b.hero.name}의 HP ${restored} 회복.`);
+    }else if(action.type==='capture'){
+      const chance=captureChance(b);b.captureDiscs--;
+      if(rng()<chance){b.outcome='captured';b.log.push(`${b.enemy.name}을 포획했다!`);return b;}
+      b.log.push(`${b.enemy.name}이 포획 도구에서 빠져나왔다!`);
     }else if(action.type==='run'){
       b.escapeAttempts++;const chance=Math.min(1,.45+.25*(b.hero.speed*stage(b.hero.stages.speed)/(b.enemy.speed*stage(b.enemy.stages.speed)))+.15*(b.escapeAttempts-1));
       if(rng()<chance){b.outcome='escaped';b.log.push('무사히 도망쳤다! 남은 HP와 PP는 그대로 유지된다.');return b;}
@@ -107,24 +126,27 @@
     b.side='enemy';return b;
   }
   function restore(raw,config){
-    if(!raw||![1,2].includes(raw.version)||raw.zoneIndex!==config.zoneIndex||raw.zoneLevel!==config.zoneLevel||![0,1,2].includes(raw.enemyIndex))return null;
-    if(![null,'win','lose','escaped'].includes(raw.outcome)||!Number.isInteger(raw.turn)||raw.turn<1||raw.turn>100000)return null;
-    if(!TYPES[raw.enemy?.type])return null;const b=create({...config,enemyIndex:raw.enemyIndex,enemyType:raw.enemy.type});
+    const rivals=Array.isArray(config.rivals)?config.rivals.slice(0,3):[];
+    if(!raw||![1,2,3].includes(raw.version)||raw.zoneIndex!==config.zoneIndex||raw.zoneLevel!==config.zoneLevel||!Number.isInteger(raw.enemyIndex)||raw.enemyIndex<0||raw.enemyIndex>(raw.version<3?2:2+rivals.length))return null;
+    if(![null,'win','lose','escaped','captured'].includes(raw.outcome)||!Number.isInteger(raw.turn)||raw.turn<1||raw.turn>100000)return null;
+    if(!Object.hasOwn(TYPES,raw.enemy?.type))return null;const b=create({...config,...(raw.version<3?{fighterProfile:null}:{}),enemyIndex:raw.enemyIndex,enemyType:raw.enemy.type});
     for(const key of ['hero','enemy']){
       const src=raw[key],dst=b[key];if(!src||!Number.isInteger(src.hp)||src.hp<0||src.hp>dst.maxHp)return null;
       if(src.level!==dst.level||src.type!==dst.type||!Array.isArray(src.moves)||src.moves.join()!==dst.moves.join())return null;
+      if(raw.version===3&&(src.name!==dst.name||src.kind!==dst.kind||src.species!==dst.species||(key==='hero'&&(src.id!==dst.id||src.star!==dst.star))))return null;
       dst.hp=src.hp;
       for(const id of Object.keys(dst.pp))dst.pp[id]=finite(src.pp?.[id],0,MOVES[id].pp,0);
       for(const id of Object.keys(dst.stages))dst.stages[id]=finite(src.stages?.[id],-6,6,0);
     }
-    if((raw.outcome===null||raw.outcome==='escaped')&&(!b.hero.hp||!b.enemy.hp))return null;
+    if((raw.outcome===null||raw.outcome==='escaped'||raw.outcome==='captured')&&(!b.hero.hp||!b.enemy.hp))return null;
     if(raw.outcome==='win'&&(b.enemy.hp!==0||b.hero.hp===0))return null;
     if(raw.outcome==='lose'&&b.hero.hp!==0)return null;
-    if(raw.version===2&&!['hero','enemy'].includes(raw.side))return null;
-    b.turn=raw.turn;b.side=raw.version===2?raw.side:'hero';b.outcome=raw.outcome;b.potions=finite(raw.potions,0,99,0);b.escapeAttempts=finite(raw.escapeAttempts,0,100000,0);
+    if(raw.version>=2&&!['hero','enemy'].includes(raw.side))return null;
+    if(raw.version<3&&raw.outcome==='captured')return null;
+    b.turn=raw.turn;b.side=raw.version>=2?raw.side:'hero';b.outcome=raw.outcome;b.potions=finite(raw.potions,0,99,0);b.captureDiscs=raw.version===3?finite(raw.captureDiscs,0,999,0):finite(config.captureDiscs,0,999,0);b.escapeAttempts=finite(raw.escapeAttempts,0,100000,0);
     b.log=Array.isArray(raw.log)?raw.log.filter(t=>typeof t==='string').slice(-12).map(t=>t.slice(0,200)):[];
     return b;
   }
-  const api={TYPES,MOVES,profile,normalizeVitals,heal,create,step,extractVitals,restore,effectiveness};
+  const api={TYPES,MOVES,profile,normalizeVitals,heal,create,step,extractVitals,restore,effectiveness,captureChance};
   if(typeof module==='object'&&module.exports)module.exports=api;else root.BeamCombat=api;
 })(typeof window==='undefined'?globalThis:window);
