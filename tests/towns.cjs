@@ -78,6 +78,7 @@ const root=path.resolve(__dirname,'..'),origin='https://beamrpg.test';
     await page.locator('[data-move="quick"]').click();await tick(650);
     const fighting=await state();assert(fighting.vitals.hp<64);assert.equal(fighting.vitals.pp.quick,19);
     assert.equal(fighting.restBuff.uses,2,'a rest buff lasts three battles and is used when combat starts');assert.equal(fighting.combatBuff,'park');assert.equal(fighting.combat.hero.speed,Math.round(21*1.25));
+    assert.match(fighting.elementType,/^(normal|fire|water|electric|grass|ice|fighting|poison|ground|flying|psychic|bug|rock|ghost|dragon|dark|steel)$/);assert.match(fighting.combat.enemy.type,/^(normal|fire|water|electric|grass|ice|fighting|poison|ground|flying|psychic|bug|rock|ghost|dragon|dark|steel)$/);
     await page.screenshot({path:'/tmp/beamrpg-turn-desktop.png'});
     await page.reload();await tick(80);assert.deepEqual((await state()).combat,fighting.combat,'battle survives reload');
     await page.keyboard.press('Escape');assert.equal(await page.locator('.beam-combat').count(),1,'Escape never bypasses an enemy turn');
@@ -96,7 +97,7 @@ const root=path.resolve(__dirname,'..'),origin='https://beamrpg.test';
     await visit('facility','clinic');await visit('service','clinic');await page.locator('#facility-action').click();
     assert.equal((await state()).vitals.hp,64);assert.equal((await state()).vitals.pp.quick,20);await page.locator('#town-close').click();await visit('return');
     // Fainting returns to the local healing center, without erasing progression.
-    await page.evaluate(()=>{window.__townTest.normalBattle();const b=window.__townTest.combat;b.hero.hp=1;b.hero.stages.speed=-6;Math.random=()=>.4;});
+    await page.evaluate(()=>{window.__townTest.normalBattle();const b=window.__townTest.combat;b.hero.hp=1;b.hero.stages.speed=-6;b.enemy.moves=['drive'];b.enemy.pp.drive=10;Math.random=()=>.4;});
     await page.locator('[data-move="drive"]').click();await tick(650);assert.equal((await state()).combat.outcome,'lose');
     await page.getByRole('button',{name:'치유 센터로 이동',exact:true}).click();
     assert.equal((await state()).facility,'clinic');assert.equal((await state()).place,'interior');assert.equal((await state()).vitals.hp,64);

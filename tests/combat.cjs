@@ -4,7 +4,8 @@ const config={level:1,stats:{},racket:'basic',zoneIndex:0,zoneLevel:1,enemyIndex
 const fresh=()=>C.create(config),move=(b,id,rng=()=>.5)=>C.step(b,{type:'move',move:id},rng);
 const b=fresh(),hp=b.hero.hp,enemyHp=b.enemy.hp;
 move(b,'drive',()=>.3);assert(b.hero.hp<hp&&b.enemy.hp<enemyHp);assert.equal(b.hero.pp.drive,24);assert.equal(b.turn,2);
-assert.equal(C.effectiveness('power','spin'),2);assert.equal(C.effectiveness('spin','power'),.5);
+assert.equal(C.effectiveness('fire','grass'),2);assert.equal(C.effectiveness('grass','fire'),.5);assert.equal(C.effectiveness('fighting','ghost'),0);assert.equal(C.effectiveness('water','electric'),1);
+const typed=C.create({...config,elementType:'fire',enemyType:'grass'});assert.equal(typed.hero.type,'fire');assert.equal(typed.enemy.type,'grass');
 // Priority overrides speed, and a fainted opponent cannot retaliate.
 const first=fresh();first.hero.speed=1;first.enemy.speed=999;first.enemy.hp=1;first.enemy.moves=['drive'];
 move(first,'quick');assert.equal(first.outcome,'win');assert.equal(first.hero.hp,first.hero.maxHp);
@@ -27,6 +28,7 @@ assert.equal(C.restore({...b,enemyIndex:19},config),null);
 assert.equal(C.restore({...b,hero:{...b.hero,hp:-1}},config),null);
 assert.equal(C.restore({...b,outcome:'win'},config),null);
 assert.equal(C.restore({...b,hero:{...b.hero,moves:['<script>']}},config),null);
+assert.equal(C.restore({...b,enemy:{...b.enemy,type:'made-up'}},config),null);
 assert.equal(C.profile({...config,level:1}).moves.length,4);
 assert.equal(C.profile({...config,level:2}).moves.length,5);
 assert.equal(C.profile({...config,level:4}).moves.length,6);
