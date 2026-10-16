@@ -20,7 +20,13 @@ assert.equal(E.upgrade(state,'seedUniform').level,1);
 assert.equal(E.stats(state.equipment).hp,15);
 assert.equal(E.stats(state.equipment).defense,3);
 assert.equal(E.equip(state,'jpen'),null,'items must be owned to equip');
-assert.equal(E.buy(state,'jpen','seven').id,'jpen');
+const beforeRacket=JSON.stringify(state);
+for(const zone of ['seven','six','five','four','three','two','one','camp']){
+  assert(E.catalog(zone).every(item=>item.slot!=='racket'));
+  for(const id of ['basic','shake','cpen','jpen','defense'])assert.equal(E.buy(state,id,zone),null);
+}
+assert.equal(JSON.stringify(state),beforeRacket,'racket purchase attempts never spend gold');
+state.equipment.inventory.jpen=1;state.owned.push('jpen');
 assert.equal(E.equip(state,'jpen').id,'jpen');
 assert.equal(state.racket,'jpen');
 assert(state.owned.includes('jpen'));

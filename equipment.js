@@ -40,7 +40,7 @@
     for(const [id,n] of Object.entries(saved.upgrades||{}))if(valid(id)&&inventory[id]&&level(n))upgrades[id]=level(n);
     return {inventory,equipped,upgrades};
   }
-  const catalog=zoneId=>Object.values(ITEMS).filter(item=>item.slot==='racket'||item.zone===zoneId);
+  const catalog=zoneId=>Object.values(ITEMS).filter(item=>item.slot!=='racket'&&item.zone===zoneId);
   const owned=(state,id)=>valid(id)&&count(state?.equipment?.inventory?.[id])>0;
   function stats(equipment){
     const total={hp:0,attack:0,defense:0,spAttack:0,spDefense:0,speed:0,crit:0};
@@ -56,7 +56,6 @@
   function buy(state,id,zoneId){
     const item=ITEMS[id];if(!valid(id)||!catalog(zoneId).includes(item)||owned(state,id)||!Number.isFinite(state?.coins)||state.coins<item.price)return null;
     state.coins-=item.price;state.equipment.inventory[id]=1;
-    if(item.slot==='racket'&&Array.isArray(state.owned)&&!state.owned.includes(id))state.owned.push(id);
     return item;
   }
   function equip(state,id){
@@ -76,7 +75,7 @@
   }
   function drop(state,zoneId,boss=false,rng=Math.random){
     if(!boss&&rng()>=.08)return null;
-    const pool=catalog(zoneId).filter(item=>item.price>0&&(!boss||item.zone===zoneId));if(!pool.length)return null;
+    const pool=Object.values(ITEMS).filter(item=>(item.slot==='racket'||item.zone===zoneId)&&item.price>0&&(!boss||item.zone===zoneId));if(!pool.length)return null;
     const item=pool[Math.min(pool.length-1,Math.max(0,Math.floor(rng()*pool.length)))];
     state.equipment.inventory[item.id]=count(state.equipment.inventory[item.id])+1;
     if(item.slot==='racket'&&Array.isArray(state.owned)&&!state.owned.includes(item.id))state.owned.push(item.id);

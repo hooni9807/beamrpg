@@ -35,13 +35,24 @@ const capture=C.create({...config,captureDiscs:2}),fullChance=C.captureChance(ca
 capture.enemy.hp=1;assert(C.captureChance(capture)>fullChance);capture.enemy.hp=wildHp;
 assert(C.captureChance(C.create({...config,level:8,captureDiscs:1}))>fullChance);
 assert(C.captureChance(C.create({...config,zoneLevel:8,captureDiscs:1}))<fullChance);
-C.step(capture,{type:'capture'},()=>.99);assert.equal(capture.captureDiscs,1);assert.equal(capture.side,'enemy');assert.equal(capture.enemy.hp,wildHp);
+C.step(capture,{type:'capture'},()=>.99);assert.equal(capture.captureTools.spin,1);assert.equal(capture.side,'enemy');assert.equal(capture.enemy.hp,wildHp);
 C.step(capture,{type:'enemy'},()=>.5);C.step(capture,{type:'capture'},()=>0);
-assert.equal(capture.outcome,'captured');assert.equal(capture.captureDiscs,0);assert(capture.enemy.hp>0);
+assert.equal(capture.outcome,'captured');assert.equal(capture.captureTools.spin,0);assert(capture.enemy.hp>0);
 assert.deepEqual(C.restore(JSON.parse(JSON.stringify(capture)),{...config,captureDiscs:2}),capture);
 const noDisc=C.create(config),beforeCapture=JSON.stringify(noDisc);C.step(noDisc,{type:'capture'});assert.equal(JSON.stringify(noDisc),beforeCapture);
 const blocked=C.create({...config,captureDiscs:2});blocked.captureBlocked=true;const beforeBlocked=JSON.stringify(blocked);
 assert.equal(C.captureChance(blocked),0);C.step(blocked,{type:'capture'},()=>0);assert.equal(JSON.stringify(blocked),beforeBlocked);
+assert.deepEqual(C.normalizeCaptureTools(undefined,7),{spin:7,pulse:0,prism:0,nova:0});
+assert.deepEqual(C.normalizeCaptureTools({spin:0,pulse:105,prism:-1,nova:'4'},7),{spin:0,pulse:99,prism:0,nova:0});
+const legacyCapture={...JSON.parse(JSON.stringify(capture)),captureDiscs:0};delete legacyCapture.captureTools;
+assert.equal(C.restore(legacyCapture,{...config,captureDiscs:5}).captureTools.spin,0,'spent legacy tools are not replenished');
+const stocked=C.create({...config,captureTools:{spin:2,pulse:2,prism:2,nova:2}}),tiers=Object.values(C.CAPTURE_TOOLS);
+for(let i=1;i<tiers.length;i++){assert(tiers[i].price>tiers[i-1].price);assert(C.captureChance(stocked,tiers[i].id)>C.captureChance(stocked,tiers[i-1].id));}
+const stockBefore=JSON.stringify(stocked);for(const tool of ['invalid','toString',null]){C.step(stocked,{type:'capture',tool});assert.equal(JSON.stringify(stocked),stockBefore);}
+C.step(stocked,{type:'capture',tool:'prism'},()=>.99);assert.deepEqual(stocked.captureTools,{spin:2,pulse:2,prism:1,nova:2});assert.equal(stocked.side,'enemy');
+assert.deepEqual(C.restore(JSON.parse(JSON.stringify(stocked)),config).captureTools,stocked.captureTools);
+C.step(stocked,{type:'enemy'},()=>.5);stocked.enemy.hp=1;stocked.hero.level=999;assert.equal(C.captureChance(stocked,'nova'),.95);
+C.step(stocked,{type:'capture',tool:'nova'},()=>.94);assert.equal(stocked.outcome,'captured');assert.equal(stocked.captureTools.nova,1);assert.match(stocked.log.join(' '),/노바 디스크/);
 const rivals=[['동네 고수 민수','jersey'],['수비 장인 준호','sleepy'],['서브 괴물 지훈','leesin']];
 const rival=C.create({...config,rivals,enemyIndex:3,captureDiscs:1});
 assert.equal(rival.enemy.name,'동네 고수 민수');assert.equal(rival.enemy.kind,'rival');assert.equal(rival.enemy.face,'jersey');assert.equal(rival.enemy.species,'0:3');

@@ -29,7 +29,18 @@
     struggle:{name:'최후의 발악',type:'normal',category:'physical',power:50,accuracy:100,pp:0,description:'PP가 모두 없을 때 사용. 최대 HP의 1/4 반동.'}
   };
   for(const [id,m] of Object.entries(MOVES))m.id=id;
+  const CAPTURE_TOOLS={
+    spin:{name:'스핀 디스크',grade:'기본',price:35,multiplier:1,color:'#38d6bd',description:'회전 고리로 상대를 감싸는 기본 포획 도구.'},
+    pulse:{name:'펄스 디스크',grade:'고급',price:90,multiplier:1.4,color:'#58a6ff',description:'푸른 파동이 퍼지며 포획 확률을 1.4배 높인다.'},
+    prism:{name:'프리즘 디스크',grade:'희귀',price:180,multiplier:1.8,color:'#b785ff',description:'보랏빛 결정으로 포획 확률을 1.8배 높인다.'},
+    nova:{name:'노바 디스크',grade:'특급',price:360,multiplier:2.3,color:'#ffd46a',description:'황금 별빛이 모여 포획 확률을 2.3배 높인다.'}
+  };
+  for(const [id,tool] of Object.entries(CAPTURE_TOOLS))tool.id=id;
   const finite=(n,min,max,fallback)=>Number.isFinite(n)?Math.max(min,Math.min(max,Math.floor(n))):fallback;
+  function normalizeCaptureTools(raw,legacyDiscs=0){
+    const stock=raw==null?{spin:legacyDiscs}:typeof raw==='object'&&!Array.isArray(raw)?raw:{};
+    return Object.fromEntries(Object.keys(CAPTURE_TOOLS).map(id=>[id,finite(Object.hasOwn(stock,id)?stock[id]:0,0,99,0)]));
+  }
   const stage=n=>n>=0?(2+n)/2:2/(2-n);
   const special={basic:'crescent',shake:'crescent',cpen:'lightning',jpen:'thunder',defense:'phantom'};
   const laterMoves=racket=>racket==='cpen'||racket==='jpen'?['stepAround','spinServe','flashShort','penholdFinal']:['counter','chiquita','meteor','zenith'];
@@ -71,12 +82,13 @@
     const wildIndex=roll<humanShare?3+Math.floor(roll/humanShare*rivals.length):Math.floor((roll-humanShare)/(1-humanShare)*3);
     const enemyIndex=finite(config.enemyIndex,0,2+rivals.length,wildIndex);
     const enemy=actor(enemyProfile(zoneIndex,zoneLevel,enemyIndex,config.enemyType,rivals));
-    return {version:3,zoneIndex,zoneLevel,enemyIndex,hero:actor(p,v),enemy,turn:1,side:'hero',outcome:null,log:[`${enemy.name}이 나타났다! ${p.name}은 무엇을 할까?`],potions:finite(config.vitals?.potions,0,99,v.potions),captureDiscs:finite(config.captureDiscs,0,999,0),escapeAttempts:0};
+    return {version:3,zoneIndex,zoneLevel,enemyIndex,hero:actor(p,v),enemy,turn:1,side:'hero',outcome:null,log:[`${enemy.name}이 나타났다! ${p.name}은 무엇을 할까?`],potions:finite(config.vitals?.potions,0,99,v.potions),captureTools:normalizeCaptureTools(config.captureTools,config.captureDiscs),escapeAttempts:0};
   }
   function extractVitals(b){return {hp:b.hero.hp,pp:{...b.hero.pp},potions:b.potions};}
-  function captureChance(b){
-    if(!b||b.outcome||b.captureBlocked||!b.captureDiscs||b.enemy?.hp<=0||!b.enemy?.maxHp||!b.hero?.hp)return 0;
-    return Math.max(.05,Math.min(.9,.18+.55*(1-b.enemy.hp/b.enemy.maxHp)+.06*(b.hero.level-b.enemy.level)));
+  function captureChance(b,toolId='spin'){
+    if(!b||!Object.hasOwn(CAPTURE_TOOLS,toolId)||b.outcome||b.captureBlocked||!(b.captureTools?.[toolId]>0)||b.enemy?.hp<=0||!b.enemy?.maxHp||!b.hero?.hp)return 0;
+    const base=Math.max(.05,Math.min(.9,.18+.55*(1-b.enemy.hp/b.enemy.maxHp)+.06*(b.hero.level-b.enemy.level)));
+    return Math.min(.95,base*CAPTURE_TOOLS[toolId].multiplier);
   }
   function effectiveness(moveType,targetType){if(!Object.hasOwn(TYPES,moveType)||!Object.hasOwn(TYPES,targetType))return 1;if(IMMUNE[moveType]?.includes(targetType))return 0;if(STRONG[moveType]?.includes(targetType))return 2;if(WEAK[moveType]?.includes(targetType))return .5;return 1;}
   function available(a){const ids=a.moves.filter(id=>a.pp[id]>0);return ids.length?ids:['struggle'];}
@@ -113,13 +125,14 @@
     const moves=available(b.hero);
     if(action.type==='move'&&!moves.includes(action.move))return b;
     if(action.type==='potion'&&(b.potions<=0||b.hero.hp>=b.hero.maxHp))return b;
-    if(action.type==='capture'&&(b.captureBlocked||!b.captureDiscs))return b;
+    const captureTool=action.tool===undefined?'spin':action.tool;
+    if(action.type==='capture'&&!captureChance(b,captureTool))return b;
     if(!['move','potion','run','capture'].includes(action.type))return b;
     b.log=[];
     if(action.type==='potion'){
       b.potions--;const restored=Math.min(40,b.hero.maxHp-b.hero.hp);b.hero.hp+=restored;b.log.push(`회복약을 사용했다! ${b.hero.name}의 HP ${restored} 회복.`);
     }else if(action.type==='capture'){
-      const chance=captureChance(b);b.captureDiscs--;
+      const chance=captureChance(b,captureTool);b.captureTools[captureTool]--;b.log.push(`${CAPTURE_TOOLS[captureTool].name}를 던졌다!`);
       if(rng()<chance){b.outcome='captured';b.log.push(`${b.enemy.name}을 포획했다!`);return b;}
       b.log.push(`${b.enemy.name}이 포획 도구에서 빠져나왔다!`);
     }else if(action.type==='run'){
@@ -153,10 +166,10 @@
     if(raw.outcome==='lose'&&b.hero.hp!==0)return null;
     if(raw.version>=2&&!['hero','enemy'].includes(raw.side))return null;
     if(raw.version<3&&raw.outcome==='captured')return null;
-    b.turn=raw.turn;b.side=raw.version>=2?raw.side:'hero';b.outcome=raw.outcome;b.potions=finite(raw.potions,0,99,0);b.captureDiscs=raw.version===3?finite(raw.captureDiscs,0,999,0):finite(config.captureDiscs,0,999,0);b.escapeAttempts=finite(raw.escapeAttempts,0,100000,0);
+    b.turn=raw.turn;b.side=raw.version>=2?raw.side:'hero';b.outcome=raw.outcome;b.potions=finite(raw.potions,0,99,0);b.captureTools=raw.version===3?normalizeCaptureTools(raw.captureTools,raw.captureDiscs):normalizeCaptureTools(config.captureTools,config.captureDiscs);b.escapeAttempts=finite(raw.escapeAttempts,0,100000,0);
     b.log=Array.isArray(raw.log)?raw.log.filter(t=>typeof t==='string').slice(-12).map(t=>t.slice(0,200)):[];
     return b;
   }
-  const api={TYPES,MOVES,profile,normalizeVitals,heal,create,step,extractVitals,restore,effectiveness,captureChance};
+  const api={TYPES,MOVES,CAPTURE_TOOLS,profile,normalizeVitals,normalizeCaptureTools,heal,create,step,extractVitals,restore,effectiveness,captureChance};
   if(typeof module==='object'&&module.exports)module.exports=api;else root.BeamCombat=api;
 })(typeof window==='undefined'?globalThis:window);
