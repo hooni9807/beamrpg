@@ -1,88 +1,14 @@
 rules_version = '2';
-// BeamRPG (own Firebase project, separate from SPIN LAB) ranking: anyone may read the boards; only signed-in players (Google, or Naver via the custom-token worker) add a
-// well-formed record; nobody may edit or delete. Guest (anonymous) accounts are not accepted.
+// BeamRPG (project beamrpg-e22ac). Only cloud saves: saves/{uid} holds one player's RPG progress (see cloud.js).
 service cloud.firestore {
   match /databases/{database}/documents {
-    function valid(maxValue) {
-      let d = request.resource.data;
-      return request.auth != null && request.auth.token.firebase.sign_in_provider in ['google.com', 'custom']
-        && d.keys().hasOnly(['name', 'value', 'level', 'character', 'racket', 'detail', 'at'])
-        && d.keys().hasAll(['name', 'value', 'level', 'character', 'racket', 'detail', 'at'])
-        && d.name is string && d.name.size() >= 1 && d.name.size() <= 12
-        && d.value is int && d.value >= 1 && d.value <= maxValue
-        && d.level is string && d.level.size() <= 10
-        && d.character is string && d.character.size() <= 10
-        && d.racket is string && d.racket.size() <= 10
-        && d.detail is string && d.detail.size() <= 20
-        && d.at == request.time;
-    }
-    match /rally/{id} {
-      allow read: if true;
-      allow create: if valid(300);
-    }
-    match /wins/{id} {
-      allow read: if true;
-      allow create: if valid(100);
-    }
-    // 보스 클리어: point gap x100 + that match's best rally (max 99)
-    match /boss/{id} {
-      allow read: if true;
-      allow create: if valid(1199);
-    }
-
-    // PvP rating. Google-signed-in players only; each may only write its own doc, one result at a time,
-    // with the exact rating step: win +9+streak (10, 11, 12 ...), loss -9+streak (-10, -11, -12 ...).
-    function pvpShape(d) {
-      return d.keys().hasOnly(['name', 'rating', 'wins', 'losses', 'streak', 'at'])
-        && d.keys().hasAll(['name', 'rating', 'wins', 'losses', 'streak', 'at'])
-        && d.name is string && d.name.size() >= 1 && d.name.size() <= 12
-        && d.rating is int && d.wins is int && d.losses is int && d.streak is int
-        && d.at == request.time;
-    }
-    // Game setup per Google account (racket, blade, rubber, difficulty, character): only the owner reads or writes it.
-    match /settings/{uid} {
-      allow read: if request.auth != null && request.auth.uid == uid;
-      allow write: if request.auth != null && request.auth.uid == uid
-        && request.auth.token.firebase.sign_in_provider in ['google.com', 'custom']
-        && request.resource.data.keys().hasOnly(['racket', 'blade', 'rubber', 'difficulty', 'character', 'at'])
-        && request.resource.data.keys().hasAll(['racket', 'blade', 'rubber', 'difficulty', 'character', 'at'])
-        && request.resource.data.racket is string && request.resource.data.racket.size() <= 12
-        && request.resource.data.blade is string && request.resource.data.blade.size() <= 12
-        && request.resource.data.rubber is string && request.resource.data.rubber.size() <= 12
-        && request.resource.data.difficulty is string && request.resource.data.difficulty.size() <= 12
-        && request.resource.data.character is string && request.resource.data.character.size() <= 12
-        && request.resource.data.at == request.time;
-    }
-    // Public matchmaking: a waiting host lists its own room (4-letter PeerJS code); anyone may read the list.
-    match /rooms/{uid} {
-      allow read: if true;
+    match /saves/{uid} {
+      allow read, delete: if request.auth != null && request.auth.uid == uid;
       allow create, update: if request.auth != null && request.auth.uid == uid
-        && request.auth.token.firebase.sign_in_provider in ['google.com', 'custom']
-        && request.resource.data.keys().hasOnly(['code', 'name', 'rating', 'at'])
-        && request.resource.data.keys().hasAll(['code', 'name', 'rating', 'at'])
-        && request.resource.data.code is string && request.resource.data.code.matches('^[A-Z0-9]{4}$')
-        && request.resource.data.name is string && request.resource.data.name.size() >= 1 && request.resource.data.name.size() <= 12
-        && request.resource.data.rating is int
+        && request.resource.data.keys().hasOnly(['data', 'rev', 'level', 'at'])
+        && request.resource.data.data is string && request.resource.data.data.size() < 200000
+        && request.resource.data.rev is int && request.resource.data.level is int
         && request.resource.data.at == request.time;
-      allow delete: if request.auth != null && request.auth.uid == uid;
-    }
-    match /players/{uid} {
-      allow read: if true;
-      allow create: if request.auth != null && request.auth.uid == uid && request.auth.token.firebase.sign_in_provider in ['google.com', 'custom'] && pvpShape(request.resource.data)
-        && ((request.resource.data.wins == 1 && request.resource.data.losses == 0
-             && request.resource.data.streak == 1 && request.resource.data.rating == 1010)
-         || (request.resource.data.wins == 0 && request.resource.data.losses == 1
-             && request.resource.data.streak == -1 && request.resource.data.rating == 990));
-      allow update: if request.auth != null && request.auth.uid == uid && request.auth.token.firebase.sign_in_provider in ['google.com', 'custom'] && pvpShape(request.resource.data)
-        && request.time > resource.data.at + duration.value(90, 's')
-        && ((request.resource.data.wins == resource.data.wins + 1
-             && request.resource.data.losses == resource.data.losses
-             && request.resource.data.streak == (resource.data.streak > 0 ? resource.data.streak + 1 : 1)
-             && request.resource.data.rating == resource.data.rating + 9 + request.resource.data.streak)
-         || (request.resource.data.losses == resource.data.losses + 1
-             && request.resource.data.wins == resource.data.wins
-             && request.resource.data.streak == (resource.data.streak < 0 ? resource.data.streak - 1 : -1)
-             && request.resource.data.rating == resource.data.rating - 9 + request.resource.data.streak));
     }
   }
 }

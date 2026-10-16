@@ -127,27 +127,25 @@ Lv.1 기술은 포핸드 드라이브·쾌속 쇼트·회전 커트·철벽 준�
 
 BeamRPG는 SPIN LAB과 **완전히 별개의 프로그램**입니다. 탁구 엔진 코드는 SPIN LAB에서 가져왔지만, 저장소·Firebase·온라인 방은 공유하지 않습니다.
 
-- 지금은 Firebase에 연결하지 않습니다(`index.html`의 `FIREBASE_CONFIG=null`). 로그인 없이 플레이하고, 모든 기록은 그 기기의 브라우저에만 저장됩니다.
-- 기기 저장 키: RPG 진행 `beamrpg.v3`, 경기 설정·기록 `beamrpg.game.*` (SPIN LAB의 `spinlab.*`와 섞이지 않음)
+- 기본은 기기 저장입니다. RPG 진행 `beamrpg.v3`, 경기 설정·기록 `beamrpg.game.*` (SPIN LAB의 `spinlab.*`와 섞이지 않음)
+- **클라우드 저장(선택)**: 지도 화면의 **☁ Google 로그인**을 누르면 RPG 진행(레벨·경험치·스탯·위치·HP·코인·라켓 등)을 BeamRPG 전용 Firebase에 저장해, 다른 기기에서 같은 계정으로 로그인하면 이어서 할 수 있습니다.
+  - 저장은 바뀐 뒤 8초 안에, 그리고 화면을 벗어날 때 올라갑니다. 로그인하면 계정에 저장된 더 최신 진행을 불러옵니다.
+  - 진행이 있는 기기에서 처음 로그인했는데 계정에도 진행이 있으면 어느 쪽을 쓸지 묻습니다.
+  - 로그인한 적 없는 기기는 Firebase를 아예 불러오지 않습니다.
+- 탁구 엔진에 남아 있는 예전 SPIN LAB 온라인 기능(랭킹·PvP·설정 동기화)은 꺼져 있습니다(`index.html`의 `FIREBASE_CONFIG=null`).
 - 온라인 방 ID 접두어: `beamrpg-` (SPIN LAB 방과 매칭되지 않음)
 
 ### BeamRPG 전용 Firebase 프로젝트
 
-- 프로젝트: `beamrpg` (ID `beamrpg-e22ac`), 웹 앱 `beamrpg-web` 등록 완료. 애널리틱스·Gemini는 끔.
-- 아직 게임 코드에는 연결하지 않았습니다. 무엇을 저장할지 정한 뒤 아래 값을 `FIREBASE_CONFIG`에 넣습니다.
+| 항목 | 값 |
+| --- | --- |
+| 프로젝트 | `beamrpg` (ID `beamrpg-e22ac`), 웹 앱 `beamrpg-web` · 애널리틱스·Gemini 끔 |
+| 인증 | Google 로그인 · 승인된 도메인 `hooni9807.github.io`, `localhost` |
+| Firestore | 서울(`asia-northeast3`) · 문서 `saves/{uid}` = `{data, rev, level, at}` |
+| 보안 규칙 | [`firestore.rules`](firestore.rules) · 본인 `saves/{uid}`만 읽기·쓰기, 그 외 전부 차단 |
+| 코드 | [`cloud.js`](cloud.js) (설정값 포함) |
 
-```js
-{apiKey:"AIzaSyBTIUSAXRfNM3WEjSam6q3CUcSY09viwMQ",authDomain:"beamrpg-e22ac.firebaseapp.com",projectId:"beamrpg-e22ac",
- storageBucket:"beamrpg-e22ac.firebasestorage.app",messagingSenderId:"1025506288091",appId:"1:1025506288091:web:081430f5ce9d721840c7fe"}
-```
-
-### BeamRPG 전용 Firebase 연결하기
-
-1. ~~새 프로젝트 만들기~~ 완료 (`beamrpg-e22ac`). SPIN LAB 프로젝트(`spin-lab-ea7df`)는 쓰지 않습니다.
-2. 위 설정값을 `index.html`의 `FIREBASE_CONFIG`에 넣습니다.
-3. Authentication에서 Google 로그인을 켜고, 승인된 도메인에 `hooni9807.github.io`를 추가합니다.
-4. Firestore를 만들고 이 저장소의 [`firestore.rules`](firestore.rules)를 배포합니다.
-5. 네이버 로그인을 쓰려면 BeamRPG용 네이버 앱과 [`naver-worker.js`](naver-worker.js) 워커를 따로 만들어 `NAVER` 설정에 넣습니다.
+규칙을 바꾸면 Firebase 콘솔 → Firestore → 규칙에 `firestore.rules` 내용을 붙여 넣고 게시합니다. 네이버 로그인을 쓰려면 BeamRPG용 네이버 앱과 [`naver-worker.js`](naver-worker.js) 워커를 따로 만들어야 합니다.
 
 ## 로컬 실행
 
