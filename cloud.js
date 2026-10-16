@@ -16,13 +16,14 @@
   const ref=()=>lib.fs.doc(lib.db,'saves',user.uid);
   // First sign-in on a device with real progress asks which journey to keep; after that the newer cloud revision wins.
   async function sync(){
-    const snap=await lib.fs.getDoc(ref()),s=hooks.get();
-    if(snap.exists()){
+    const snap=await lib.fs.getDoc(ref()),s=hooks.get(),resetting=(()=>{try{return sessionStorage.getItem('beamrpg.reset')==='1';}catch{return false;}})();
+    if(snap.exists()&&!resetting){
       const c=snap.data(),linked=s.cloud?.uid===user.uid,fresh=s.level===1&&!s.xp&&!Object.keys(s.wins||{}).length;
       const take=linked?c.rev>(s.cloud.rev||0):c.rev&&(fresh||confirm(`이 기기 진행(Lv.${s.level})과 Google 계정에 저장된 진행(Lv.${c.level})이 달라요.\n\n확인: 계정 진행 불러오기\n취소: 이 기기 진행으로 계정 덮어쓰기`));
       if(take){const data=JSON.parse(c.data);data.cloud={uid:user.uid,rev:c.rev};localStorage.setItem(hooks.key,JSON.stringify(data));location.reload();return;}
     }
     await push();
+    if(resetting)try{sessionStorage.removeItem('beamrpg.reset');}catch{}
   }
   async function push(){
     clearTimeout(timer);timer=null;if(!user)return;
