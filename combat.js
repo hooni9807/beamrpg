@@ -11,7 +11,9 @@
     lightning:{name:'번개 속공',type:'speed',category:'physical',power:60,accuracy:100,pp:10,priority:1,description:'선공으로 꽂아 넣는 라켓 필살기.'},
     thunder:{name:'천둥 스매시',type:'power',category:'physical',power:95,accuracy:85,pp:10,description:'명중률은 낮지만 위력이 높은 한 방.'},
     phantom:{name:'유령 커트',type:'spin',category:'special',power:60,accuracy:100,pp:10,slow:1,description:'상대 스피드를 1단계 낮추는 필살기.'},
+    counter:{name:'스틸 카운터',type:'speed',category:'physical',power:72,accuracy:100,pp:12,priority:1,description:'상대보다 먼저 파고드는 강력한 카운터.'},
     chiquita:{name:'치키타 스파이럴',type:'spin',category:'special',power:85,accuracy:95,pp:10,slow:.4,description:'40% 확률로 상대 스피드 1단계 감소.'},
+    meteor:{name:'메테오 스매시',type:'power',category:'physical',power:108,accuracy:88,pp:8,description:'별똥별처럼 꽂히는 강한 스매시.'},
     zenith:{name:'제니스 오버드라이브',type:'power',category:'special',power:120,accuracy:90,pp:5,description:'희범의 모든 힘을 담은 최종 필살기.'},
     struggle:{name:'최후의 발악',type:'power',category:'physical',power:50,accuracy:100,pp:0,description:'PP가 모두 없을 때 사용. 최대 HP의 1/4 반동.'}
   };
@@ -21,15 +23,15 @@
   const special={basic:'crescent',shake:'crescent',cpen:'lightning',jpen:'thunder',defense:'phantom'};
   const typeFor={basic:'power',shake:'spin',cpen:'speed',jpen:'power',defense:'spin'};
   function profile({level=1,stats={},racket='basic',buff=null}={}){
-    const lv=finite(level,1,999,1),point=k=>finite(stats[k],0,999,0),champ=lv>=10?1.1:1,
+    const lv=finite(level,1,999,1),point=k=>finite(stats[k],0,999,0),
       boost=id=>buff===id?1.15:1,swift=buff==='park'?1.25:1,guard=buff==='clinic'?1.25:1;
     return {name:'희범',kind:'hero',level:lv,type:typeFor[racket]||'power',maxHp:56+lv*8,
-      attack:Math.round((20+lv*5)*(1+point('power')*.05)*champ*boost('home')),
-      defense:Math.round((16+lv*4)*(1+point('control')*.05)*(lv>=4?1.15:1)*guard),
-      spAttack:Math.round((20+lv*5)*(1+point('spin')*.05)*champ*boost('home')),
-      spDefense:Math.round((18+lv*4)*(1+point('focus')*.05)*(lv>=4?1.15:1)*guard),
+      attack:Math.round((20+lv*5)*(1+point('power')*.05)*boost('home')),
+      defense:Math.round((16+lv*4)*(1+point('control')*.05)*guard),
+      spAttack:Math.round((20+lv*5)*(1+point('spin')*.05)*boost('home')),
+      spDefense:Math.round((18+lv*4)*(1+point('focus')*.05)*guard),
       speed:Math.round((18+lv*3)*(1+point('footwork')*.05)*swift),crit:Math.min(.5,1/24+point('crit')*.05+(buff==='park'?.1:0)),
-      moves:['drive',lv>=13?'zenith':'quick',lv>=7?'chiquita':'cut',lv>=2?(special[racket]||'crescent'):'guard']};
+      moves:['drive','quick','cut','guard',...(lv>=2?[special[racket]||'crescent']:[]),...(lv>=4?['counter']:[]),...(lv>=7?['chiquita']:[]),...(lv>=10?['meteor']:[]),...(lv>=13?['zenith']:[])]};
   }
   function normalizeVitals(v={},p){
     if(!v||typeof v!=='object')v={};

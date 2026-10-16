@@ -105,6 +105,8 @@ const root=path.resolve(__dirname,'..'),origin='https://beamrpg.test';
     assert.equal((await state()).level,13);assert.equal((await state()).xp,33);assert.equal((await state()).legacyCamp,true);
     await visit('facility','shop');await visit('service','shop');await page.locator('[data-racket="cpen"]').click();assert.equal((await state()).coins,350);assert.equal(await page.evaluate(()=>racketType),'cpen');await page.locator('#town-close').click();
     await visit('return');await visit('facility','gym');await visit('service','gym');await page.locator('#facility-action').click();await tick(50);assert.equal(await page.evaluate(()=>playing),true);assert.equal(await page.evaluate(()=>window.beamRpgV2.rival.name),'만취범');
+    const bossMoves=await page.evaluate(()=>{const b=window.beamRpgV2;return [0,.21,.41,.61,.99].map(n=>{b.activeSpecial=null;Math.random=()=>n;return b.specialType('crescent');});});
+    assert.deepEqual(bossMoves,['crescent','counter','chiquita','meteor','zenith'],'boss specials randomly select from all learned active skills');
     await page.evaluate(()=>{you=11;cpu=0;playing=false;});await tick(50);assert.equal((await state()).wins.two,true);assert.match(await page.locator('#rpg-modal').innerText(),/1부 마을이 열렸습니다/);
     await reload({...await state(),place:'town',zone:'one',pendingUpgrades:0});await page.screenshot({path:'/tmp/beamrpg-one-new.png'});
     await page.setViewportSize({width:390,height:844});await tick(100);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.screenshot({path:'/tmp/beamrpg-mobile-new.png'});

@@ -17,7 +17,7 @@
     park:{name:'산책의 리듬',short:'민첩형',turn:'스피드 +25% · 급소 +10%p',rally:'PERFECT 폭 +20% · 게이지 획득 +20%',copy:'공원의 바람을 맞으며 몸을 가볍게 풉니다.'},
     clinic:{name:'회복 보호막',short:'방어형',turn:'방어·특수방어 +25%',rally:'회전 실수 확률 −20% · PERFECT 폭 +10%',copy:'치유 코치가 자세를 바로잡아 단단하게 만듭니다.'}
   };
-  const milestones=[[2,'라켓 필살기'],[4,'고요한 호흡'],[7,'치키타 스파이럴'],[10,'챔피언 심장'],[13,'제니스 오버드라이브']];
+  const milestones=[[2,'라켓 시그니처'],[4,'스틸 카운터'],[7,'치키타 스파이럴'],[10,'메테오 스매시'],[13,'제니스 오버드라이브']];
   const facilityNames={shop:'라켓 공방',cafe:'랠리 카페',training:'트레이닝 센터',clinic:'치유 센터',hall:'리그 기념관'};
   const prices={basic:0,shake:120,cpen:150,jpen:200,defense:180};
   const read=k=>{try{const v=JSON.parse(localStorage.getItem(k));return v&&typeof v==='object'&&!Array.isArray(v)?v:{};}catch{return {};}};
@@ -175,12 +175,12 @@
     show({title:b.outcome==='win'?'승리!':b.outcome==='lose'?'치유 센터에서 회복했습니다':'무사히 돌아왔습니다',body:`<p>${b.enemy.name}과의 대결</p><p>${b.outcome==='win'?`경험치 +${gain} · 골드 +${gold} G`:b.outcome==='lose'?'희범의 HP가 0이 되어 치유 센터로 돌아왔습니다. HP·PP를 모두 회복했고, 경험치와 골드는 잃지 않았습니다.':'남은 HP와 PP는 유지됩니다. 집이나 치유 센터에서 회복하세요.'}</p><p>HP ${s.vitals.hp} / ${heroProfile().maxHp}</p>${s.pendingUpgrades?`<p>Lv. ${s.level} · 강화 ${s.pendingUpgrades}개를 고를 수 있습니다.</p>`:''}`},s.pendingUpgrades?'<button id="town-upgrade">강화 고르기</button>':undefined);
     modal.querySelector('#town-upgrade')?.addEventListener('click',upgrade);
   }
-  function specialType(baseType){const b=rpgOn();if(!b)return baseType;if(b.activeSpecial)return b.activeSpecial;const turn=s.specialTurn++;b.activeSpecial=s.level>=13&&turn%3===2?'zenith':s.level>=7&&turn%2?'chiquita':baseType;save();return b.activeSpecial;}
+  function specialType(baseType){const b=rpgOn();if(!b)return baseType;if(b.activeSpecial)return b.activeSpecial;const learned=[baseType,...(s.level>=4?['counter']:[]),...(s.level>=7?['chiquita']:[]),...(s.level>=10?['meteor']:[]),...(s.level>=13?['zenith']:[])];b.activeSpecial=learned[Math.floor(Math.random()*learned.length)];save();return b.activeSpecial;}
   function battle(rival){
     if(rpgOn()||battleUI)return;stop();const z=zone(),restBuff=takeRestBuff();
     window.beamRpgV2={active:true,zone:z,boss:rival.boss,rival,stats:s.stats,level:s.level,restBuff,specialType};
     setCharacter('heebeom');setRacket(s.racket);$('difficulty').value=rival.training?'b7':rival.boss?(z.id==='camp'?'pro':z.bossDiff):z.diff;applySettings();setMode(rival.boss&&z.id==='camp'?'boss':'match');
-    modal.hidden=true;screen.hidden=true;document.body.classList.add('rpg-battle');resize();begin();P.EQUIP.len*=(1+s.stats.control*.03)*(s.level>=4?1.15:1)*(restBuff==='park'?1.2:restBuff==='clinic'?1.1:1);save();toast(`${z.name} · ${rival.name}${rival.boss?' 보스':' 등장'}!${restBuff?' · '+restBuffs[restBuff].name+' 적용':''}`,3);
+    modal.hidden=true;screen.hidden=true;document.body.classList.add('rpg-battle');resize();begin();P.EQUIP.len*=(1+s.stats.control*.03)*(restBuff==='park'?1.2:restBuff==='clinic'?1.1:1);save();toast(`${z.name} · ${rival.name}${rival.boss?' 보스':' 등장'}!${restBuff?' · '+restBuffs[restBuff].name+' 적용':''}`,3);
   }
   function backToTown(){
     stop();playing=paused=false;lockPage(false);release();clearSave();$('overlay').classList.add('hidden');$('pause').disabled=true;
