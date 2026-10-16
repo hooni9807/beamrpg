@@ -11,8 +11,8 @@
     one:   {grass:'#a6ab86', dark:'#657457', leaf:'#6b8860', light:'#a5b67d', roof:'#6b7892', trim:'#f0d49a', water:'#6babb8', flower:'#f7da8a'},
     camp:  {grass:'#8ca38f', dark:'#526d62', leaf:'#486e68', light:'#8da88c', roof:'#725879', trim:'#e5c6a1', water:'#719cae', flower:'#e8aec2'}
   };
-  const facilityNames = {home:'희범의 집', shop:'라켓 공방', cafe:'랠리 카페', training:'트레이닝 센터', clinic:'치유 센터', hall:'리그 기념관', gym:'리그 체육관', park:'마을 공원'};
-  const serviceNames = {home:'침대에서 푹 쉬기', shop:'라켓 살펴보기', cafe:'샌드위치 주문하기', training:'훈련 시작하기', clinic:'HP·PP 회복하기', hall:'리그 기록 보기', gym:'보스에게 도전', park:'공원에서 쉬어가기'};
+  const facilityNames = {home:'희범의 집', shop:'라켓 공방', forge:'탁구채 강화소', cafe:'랠리 카페', training:'트레이닝 센터', clinic:'치유 센터', hall:'리그 기념관', gym:'리그 체육관', park:'마을 공원'};
+  const serviceNames = {home:'침대에서 푹 쉬기', shop:'라켓 살펴보기', forge:'장비 강화하기', cafe:'샌드위치 주문하기', training:'훈련 시작하기', clinic:'HP·PP 회복하기', hall:'리그 기록 보기', gym:'보스에게 도전', park:'공원에서 쉬어가기'};
   const rect = (c,x,y,w,h,color) => {c.fillStyle=color;c.fillRect(x,y,w,h);};
   const ellipse = (c,x,y,rx,ry,color) => {c.fillStyle=color;c.beginPath();c.ellipse(x,y,rx,ry,0,0,TAU);c.fill();};
   function poly(c,points,color) {c.fillStyle=color;c.beginPath();points.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.closePath();c.fill();}
@@ -35,6 +35,7 @@
     obstacle(scene,x-14*size,y-18*size,28*size,25*size);
   }
   function flowerbed(scene,x,y,w,h,color) {scene.beds.push({x,y,w,h,color});}
+  function bush(scene,x,y,w,h) {scene.bushes.push({x,y,w,h,encounterChance:.95});}
   function bench(scene,x,y,rotation=0) {object(scene,'bench',x,y,96,48,{rotation});obstacle(scene,x+8,y+12,80,28);}
   function lamp(scene,x,y) {object(scene,'lamp',x-16,y-108,32,108);}
   function building(scene,facility,x,y,w,h,labelText,extra={}) {
@@ -83,6 +84,7 @@
     building(scene,'home',192,224,256,224,z.home||'희범의 집');
     building(scene,'shop',672,224,256,224,'라켓 공방');
     building(scene,'cafe',1312,224,256,224,'랠리 카페');
+    building(scene,'forge',1600,224,160,224,'탁구채 강화소');
     building(scene,'clinic',1792,224,256,224,'치유 센터');
     building(scene,'training',160,832,320,224,'트레이닝 센터');
     building(scene,'hall',656,832,288,224,'리그 기념관');
@@ -91,6 +93,9 @@
     road(scene,1872,1056,96,96,'brick');portal(scene,'park',z.park||'마을 공원','facility','park',1920,1120);
     object(scene,'fountain',1056,576,128,128);obstacle(scene,1056,576,128,128);
     scene.water.push({x:1078,y:603,w:84,h:68,fountain:true});
+    object(scene,'questNpc',1094,882,52,78,{label:'의뢰인 나래'});
+    portal(scene,'quest','의뢰인 나래 · 마을 의뢰','quest',z.id,1120,1008);
+    for(const [x,y,w,h] of [[464,640,208,80],[1568,640,208,80],[688,1224,208,80],[1344,1224,208,80]])bush(scene,x,y,w,h);
     flowerbed(scene,912,464,128,48,scene.palette.flower);flowerbed(scene,1200,464,128,48,scene.palette.flower);
     bench(scene,912,704);bench(scene,1232,704);
     portal(scene,'return','마을 귀환','return',null,1120,1472);
@@ -100,7 +105,7 @@
       flowerbed(scene,x-144,656,128,48,scene.palette.flower);flowerbed(scene,x+16,656,128,48,'#f2e0ae');
       bench(scene,x-48,1312);
     }
-    for(const [x,y,s] of [[528,384,1.2],[592,752,1],[1104,304,.95],[1704,352,1.15],[2080,752,1],[192,752,1.1],[528,1008,1],[608,1376,1.1],[1632,1376,1.15],[2080,1360,1],[144,1408,1.25]]) tree(scene,x,y,s,z.level%3);
+    for(const [x,y,s] of [[528,384,1.2],[592,752,1],[1104,304,.95],[1752,1360,1.15],[2080,752,1],[192,752,1.1],[528,1008,1],[608,1376,1.1],[1632,1376,1.15],[2080,1360,1],[144,1408,1.25]]) tree(scene,x,y,s,z.level%3);
     scene.decor.push({type:'picnic',x:320,y:1440},{type:'picnic',x:1872,y:1440});
     object(scene,'sign',1320,1312,160,88,{label:z.name,sub:'휴식 · 훈련 · 다음 승부'});
     if(z.id==='two') {
@@ -129,11 +134,11 @@
       furniture(scene,'sofa',160,512,192,80);furniture(scene,'cabinet',448,192,160,80,{trophy:true});
       object(scene,'rug',384,416,224,144,{color:'#b37764',flat:true});service={x:352,y:352};
       object(scene,'plant',848,576,48,72);object(scene,'wallArt',416,80,192,96,{label:'HEEBEOM',sub:'오늘도 한 걸음'});
-    } else if(facility==='shop') {
+    } else if(facility==='shop'||facility==='forge') {
       furniture(scene,'counter',288,224,448,96,{shop:true});
       furniture(scene,'racketRack',128,400,128,160);furniture(scene,'racketRack',768,400,128,160);
       furniture(scene,'shelf',128,128,192,64,{balls:true});furniture(scene,'shelf',704,128,192,64,{balls:true});
-      object(scene,'rug',352,432,320,128,{color:'#718d83',flat:true});object(scene,'wallArt',416,80,192,96,{label:'RACKET LAB',sub:'나에게 맞는 한 자루'});
+      object(scene,'rug',352,432,320,128,{color:'#718d83',flat:true});object(scene,'wallArt',416,80,192,96,{label:facility==='forge'?'UPGRADE LAB':'RACKET LAB',sub:facility==='forge'?'한 번 더 단단하게':'나에게 맞는 한 자루'});
     } else if(facility==='cafe') {
       furniture(scene,'counter',640,224,256,96,{coffee:true});
       furniture(scene,'table',160,288,144,96,{coffee:true});furniture(scene,'table',160,480,144,96,{coffee:true});furniture(scene,'table',416,416,144,96,{coffee:true});
@@ -182,7 +187,7 @@
   }
   function createScene({kind,zone,zones=[],isOpen=()=>true,facility='home'}) {
     const z=zone||zones[0]||{id:'seven',name:'7부 마을',level:1,boss:'아재범'};
-    const scene={kind,zone:z,palette:themes[z.id]||themes.seven,portals:[],obstacles:[],objects:[],roads:[],plazas:[],water:[],bridges:[],beds:[],decor:[]};
+    const scene={kind,zone:z,palette:themes[z.id]||themes.seven,portals:[],obstacles:[],objects:[],roads:[],plazas:[],water:[],bridges:[],beds:[],bushes:[],decor:[]};
     if(kind==='world')makeWorld(scene,zones,isOpen);else if(kind==='park')makePark(scene,z);else if(kind==='interior')makeInterior(scene,z,facility);else makeTown(scene,z);
     return scene;
   }
@@ -237,6 +242,16 @@
       ellipse(c,px,py+3,7,5,p.leaf);for(let i=0;i<4;i++)ellipse(c,px+Math.cos(i*TAU/4)*3,py+Math.sin(i*TAU/4)*3,3,3,b.color||p.flower);ellipse(c,px,py,2,2,'#f8e6a3');
     }
   }
+  function drawBush(c,b,p) {
+    round(c,b.x-5,b.y-5,b.w+10,b.h+10,14,'#315640');round(c,b.x,b.y,b.w,b.h,11,'#467651');
+    const r=seeded(b.x+b.y);
+    for(let y=b.y+13;y<b.y+b.h-4;y+=19)for(let x=b.x+12;x<b.x+b.w-4;x+=21) {
+      const xx=x+r()*8,yy=y+r()*6;
+      ellipse(c,xx,yy+3,13,7,p.dark);ellipse(c,xx-3,yy-3,10,7,p.leaf);
+      line(c,xx,yy,xx-4,yy-9,p.light,2);line(c,xx,yy,xx+5,yy-8,p.light,2);
+    }
+    label(c,'야생 부쉬',b.x+b.w/2,b.y-20,'#eef9d6',13);
+  }
   function drawInteriorFloor(c,scene) {
     const f=scene.facility,clinic=f==='clinic',sports=f==='gym'||f==='training';
     rect(c,0,0,1024,768,'#253939');round(c,48,48,928,688,20,'#182b2b');rect(c,64,64,896,640,'#b8a17e');
@@ -257,7 +272,7 @@
     const canvas=document.createElement('canvas');canvas.width=scene.width;canvas.height=scene.height;const c=canvas.getContext('2d');
     if(scene.kind==='interior')drawInteriorFloor(c,scene);
     else {
-      drawGrass(c,scene);scene.roads.forEach(r=>drawPaving(c,r));scene.plazas.forEach(r=>drawPaving(c,r));
+      drawGrass(c,scene);scene.roads.forEach(r=>drawPaving(c,r));scene.plazas.forEach(r=>drawPaving(c,r));scene.bushes.forEach(b=>drawBush(c,b,scene.palette));
       scene.water.filter(w=>!w.fountain).forEach(w=>drawWater(c,w,scene.palette));scene.bridges.forEach(b=>drawBridge(c,b));scene.beds.forEach(b=>drawFlowerbed(c,b,scene.palette));
       scene.decor.forEach(d=>{
         if(d.type==='route') {text(c,d.label,d.x,d.y,18,'#5b6551');return;}
@@ -383,6 +398,15 @@
       ellipse(c,x+w/2,y+20,26,24,'#ffe9ac13');round(c,x+3,y+8,w-6,28,5,'#e6d2a1');rect(c,x+1,y+5,w-2,5,'#53665a');rect(c,x+5,y+35,w-10,5,'#53665a');rect(c,x+w/2-1,y+9,2,25,'#a19670');return;
     }
     if(o.type==='plant') {round(c,x+w*.2,y+h*.65,w*.6,h*.3,6,'#b18d69');ellipse(c,x+w*.5,y+h*.6,w*.45,h*.32,p.leaf);ellipse(c,x+w*.38,y+h*.4,w*.25,h*.24,p.light);return;}
+    if(o.type==='questNpc') {
+      ellipse(c,x+w/2,y+h-1,24,7,'#243d3650');
+      round(c,x+11,y+51,12,24,4,'#405b68');round(c,x+29,y+51,12,24,4,'#405b68');
+      round(c,x+7,y+28,38,36,9,'#b7775f');rect(c,x+14,y+33,24,4,'#ecd6a5');
+      ellipse(c,x+26,y+19,19,20,'#e8bb95');ellipse(c,x+26,y+5,21,12,'#2f3936');
+      ellipse(c,x+19,y+21,2,2,'#364942');ellipse(c,x+33,y+21,2,2,'#364942');line(c,x+22,y+29,x+30,y+29,'#9e7057',2);
+      round(c,x+35,y+35,16,22,3,'#d9c398');rect(c,x+38,y+40,10,2,'#738575');rect(c,x+38,y+45,8,2,'#738575');
+      label(c,o.label,x+w/2,y-15,'#fff0cb',13);return;
+    }
     if(o.type==='fountain') {
       ellipse(c,x+w/2+8,y+h/2+13,w*.6,h*.45,'#314d3f35');ellipse(c,x+w/2,y+h/2,w*.56,h*.48,'#a3af9b');ellipse(c,x+w/2,y+h/2-4,w*.49,h*.42,'#ddd7b9');ellipse(c,x+w/2,y+h/2-4,w*.4,h*.32,p.water);rect(c,x+w/2-12,y+h*.14,24,h*.47,'#b5c0a6');ellipse(c,x+w/2,y+h*.17,32,13,'#ddd8b6');ellipse(c,x+w/2,y+h*.14,25,9,'#86b8b2');return;
     }
@@ -413,14 +437,15 @@
     const pad=o.type==='building'?96:o.type==='gazebo'?64:32,canvas=document.createElement('canvas');canvas.width=Math.ceil(o.w+pad*2);canvas.height=Math.ceil(o.h+pad*2);const c=canvas.getContext('2d');
     c.translate(pad-o.x,pad-o.y);drawEntity(c,o,p);o.sprite=canvas;o.spriteX=o.x-pad;o.spriteY=o.y-pad;
   }
-  function drawPlayer(c,player,time,walking,facing,direction) {
+  function drawPlayer(c,player,time,walking,facing,direction,gear={}) {
     const x=Math.round(player.x),y=Math.round(player.y),phase=walking?time*12:0,swing=Math.sin(phase),bob=walking?Math.abs(Math.sin(phase))*2:Math.sin(time*2)*.5,back=direction==='up',side=direction==='left'||direction==='right';
     c.save();c.translate(x,y);ellipse(c,2,0,20,7,'#233f3650');c.translate(0,-bob);
-    const leg=(lx,dy)=>{round(c,lx,-21+dy,10,17,4,'#313d48');round(c,lx-1,-8+dy,13,7,3,'#ddd7bd');rect(c,lx,-7+dy,11,2,'#f3e6c4');};
+    const leg=(lx,dy)=>{round(c,lx,-21+dy,10,17,4,'#313d48');if(gear.tape)rect(c,lx,-16+dy,10,4,'#eae4ce');round(c,lx-1,-8+dy,13,7,3,gear.shoes?'#e4a461':'#ddd7bd');rect(c,lx,-7+dy,11,2,gear.shoes?'#ffe5af':'#f3e6c4');};
     if(side){leg(-9,swing*5);leg(1,-swing*5);}else{leg(-12,swing*5);leg(3,-swing*5);}
-    const arm=(ax,dy)=>{round(c,ax,-39+dy,8,19,4,'#d6ab86');round(c,ax-1,-42+dy,10,11,3,'#26343c');};
+    if(gear.spray){ellipse(c,-9,-2,6,2,'#c6f4dc');ellipse(c,9,-2,6,2,'#c6f4dc');}
+    const arm=(ax,dy)=>{round(c,ax,-39+dy,8,19,4,'#d6ab86');round(c,ax-1,-42+dy,10,11,3,gear.uniform?'#944b49':'#26343c');if(gear.wristband)round(c,ax,-25+dy,8,5,2,'#6bbdc0');if(gear.fingerGuard&&ax>0)rect(c,ax+1,-21+dy,6,3,'#f4e5c9');};
     arm(-23,swing*-4);arm(15,swing*4);
-    round(c,-18,-46,36,29,9,'#243440');rect(c,-13,-44,26,3,'#5c7887');rect(c,-16,-28,32,3,'#668c97');
+    round(c,-18,-46,36,29,9,gear.uniform?'#b35f59':'#243440');rect(c,-13,-44,26,3,gear.uniform?'#efc99a':'#5c7887');rect(c,-16,-28,32,3,gear.uniform?'#efc99a':'#668c97');
     if(back){text(c,'HB',0,-32,11,'#dfd7b4');}else {rect(c,-12,-39,6,4,'#d0bb8d');line(c,7,-41,13,-33,'#7fa5b2',2);}
     const hx=side?facing*2:0;
     ellipse(c,hx,-60,20,21,'#d6a984');ellipse(c,hx-1,-63,19,20,'#ecc49c');
@@ -428,6 +453,7 @@
     ellipse(c,hx,-74,22,14,'#27302e');
     for(const [dx,dy,rx,ry]of[[-19,-72,8,10],[-11,-80,10,8],[0,-82,11,8],[13,-79,10,9],[20,-70,6,11]])ellipse(c,hx+dx,dy,rx,ry,'#27302e');
     poly(c,[[hx-20,-76],[hx-24,-85],[hx-11,-81],[hx-7,-91],[hx+1,-82],[hx+11,-88],[hx+15,-79],[hx+23,-80],[hx+19,-70],[hx+10,-74],[hx+3,-68],[hx-4,-75],[hx-13,-69]],'#25302e');
+    if(gear.hairband)line(c,hx-18,-73,hx+18,-73,'#e8ac69',4);
     line(c,hx-12,-80,hx-4,-83,'#53605a',3);line(c,hx+4,-81,hx+10,-79,'#53605a',2);
     if(back) {ellipse(c,hx,-62,19,14,'#27302e');rect(c,hx-8,-48,16,3,'#b79273');}
     else {
@@ -437,10 +463,10 @@
       rect(c,hx-13+shift,-57,5,2,'#d89480aa');rect(c,hx+10+shift,-57,5,2,'#d89480aa');
     }
     const racketX=side?facing*26:27,racketY=-26+swing*4;
-    c.save();c.translate(racketX,racketY);c.rotate((side?facing:.5)*-.3);rect(c,-3,2,6,18,'#b6a077');ellipse(c,0,-7,11,14,'#ded5b2');ellipse(c,0,-8,8.5,11.5,back?'#466778':'#a96558');line(c,-3,-14,3,-12,'#edb39a55',2);c.restore();
+    c.save();c.translate(racketX,racketY);c.rotate((side?facing:.5)*-.3);rect(c,-3,2,6,18,'#b6a077');ellipse(c,0,-7,11,14,gear.racket?'#f2d37b':'#ded5b2');ellipse(c,0,-8,8.5,11.5,back?'#466778':'#a96558');line(c,-3,-14,3,-12,'#edb39a55',2);c.restore();
     c.restore();
   }
-  function draw(ctx,scene,{player,time=0,walking=false,facing=1,direction='down',path=[],target=null}) {
+  function draw(ctx,scene,{player,time=0,walking=false,facing=1,direction='down',path=[],target=null,gear={}}) {
     if(!scene.background) {
       scene.background=createBackground(scene);scene.objects.filter(o=>!o.flat).forEach(o=>cacheObject(o,scene.palette));
       scene.sorted=scene.objects.filter(o=>!o.flat).sort((a,b)=>(a.y+a.h)-(b.y+b.h));
@@ -460,10 +486,10 @@
     if(target) {ctx.save();ctx.strokeStyle='#fff3ce';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(target.x,target.y,12+Math.sin(time*5)*2,6,0,0,TAU);ctx.stroke();ctx.restore();}
     let drawn=false;
     for(const o of scene.sorted) {
-      if(!drawn&&o.y+o.h>player.y) {drawPlayer(ctx,player,time,walking,facing,direction);drawn=true;}
+      if(!drawn&&o.y+o.h>player.y) {drawPlayer(ctx,player,time,walking,facing,direction,gear);drawn=true;}
       ctx.drawImage(o.sprite,o.spriteX,o.spriteY);
     }
-    if(!drawn)drawPlayer(ctx,player,time,walking,facing,direction);
+    if(!drawn)drawPlayer(ctx,player,time,walking,facing,direction,gear);
     for(const w of scene.water.filter(w=>w.fountain)) {
       const x=w.x+w.w/2,y=w.y+w.h*.26;
       for(let i=0;i<5;i++){const a=(i-2)*.36,phase=(time*1.5+i*.2)%1,dx=Math.sin(a)*phase*38,dy=-Math.sin(phase*Math.PI)*33+phase*19;ellipse(ctx,x+dx,y+dy,1.8,2.8,'#e7f6e5b0');}

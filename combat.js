@@ -28,15 +28,15 @@
   const finite=(n,min,max,fallback)=>Number.isFinite(n)?Math.max(min,Math.min(max,Math.floor(n))):fallback;
   const stage=n=>n>=0?(2+n)/2:2/(2-n);
   const special={basic:'crescent',shake:'crescent',cpen:'lightning',jpen:'thunder',defense:'phantom'};
-  function profile({level=1,stats={},racket='basic',buff=null,elementType='normal'}={}){
-    const lv=finite(level,1,999,1),point=k=>finite(stats[k],0,999,0),
+  function profile({level=1,stats={},racket='basic',buff=null,elementType='normal',equipment={}}={}){
+    const lv=finite(level,1,999,1),point=k=>finite(stats[k],0,999,0),bonus=k=>finite(equipment[k],0,999,0),
       boost=id=>buff===id?1.15:1,swift=buff==='park'?1.25:1,guard=buff==='clinic'?1.25:1;
-    return {name:'희범',kind:'hero',level:lv,type:TYPES[elementType]?elementType:'normal',maxHp:56+lv*8,
-      attack:Math.round((20+lv*5)*(1+point('power')*.05)*boost('home')),
-      defense:Math.round((16+lv*4)*(1+point('control')*.05)*guard),
-      spAttack:Math.round((20+lv*5)*(1+point('spin')*.05)*boost('home')),
-      spDefense:Math.round((18+lv*4)*(1+point('focus')*.05)*guard),
-      speed:Math.round((18+lv*3)*(1+point('footwork')*.05)*swift),crit:Math.min(.5,1/24+point('crit')*.05+(buff==='park'?.1:0)),
+    return {name:'희범',kind:'hero',level:lv,type:TYPES[elementType]?elementType:'normal',maxHp:56+lv*8+bonus('hp'),
+      attack:Math.round((20+lv*5)*(1+point('power')*.05)*boost('home'))+bonus('attack'),
+      defense:Math.round((16+lv*4)*(1+point('control')*.05)*guard)+bonus('defense'),
+      spAttack:Math.round((20+lv*5)*(1+point('spin')*.05)*boost('home'))+bonus('spAttack'),
+      spDefense:Math.round((18+lv*4)*(1+point('focus')*.05)*guard)+bonus('spDefense'),
+      speed:Math.round((18+lv*3)*(1+point('footwork')*.05)*swift)+bonus('speed'),crit:Math.min(.5,1/24+point('crit')*.05+(buff==='park'?.1:0)+(Number.isFinite(equipment.crit)?Math.max(0,equipment.crit):0)),
       moves:['drive','quick','cut','guard',...(lv>=2?[special[racket]||'crescent']:[]),...(lv>=4?['counter']:[]),...(lv>=7?['chiquita']:[]),...(lv>=10?['meteor']:[]),...(lv>=13?['zenith']:[])]};
   }
   function normalizeVitals(v={},p){
@@ -47,7 +47,7 @@
   const prefixes=['새싹','단풍','사막','달빛','파도','운하','왕관','별빛'];
   function enemyProfile(zoneIndex,zoneLevel,index,elementType){
     const lv=finite(zoneLevel,1,999,1)+(index===2?1:0),kinds=['ball','slime','hedgehog'],types=Object.keys(TYPES),type=TYPES[elementType]?elementType:types[Math.floor(Math.random()*types.length)];
-    return {name:prefixes[zoneIndex]+' '+['통통볼','스핀젤리','커트고슴'][index],kind:kinds[index],level:lv,type,maxHp:30+lv*7,
+    return {name:prefixes[zoneIndex]+' '+['퐁글이','빙글젤리','가시커트'][index],kind:kinds[index],level:lv,type,maxHp:30+lv*7,
       attack:16+lv*4,defense:14+lv*4,spAttack:16+lv*4,spDefense:14+lv*4,speed:14+lv*3+(index===2?6:0),crit:1/24,
       moves:index===0?['drive','quick','guard',lv>=3?'thunder':'cut']:index===1?['cut','guard','drive',lv>=3?'crescent':'quick']:['quick','cut','drive',lv>=3?'phantom':'guard']};
   }
