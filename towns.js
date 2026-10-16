@@ -1,4 +1,4 @@
-/* Exploration uses world coordinates; the existing rally engine owns each match. */
+/* Exploration, persistent health, and rewards shared by turn battles and boss rallies. */
 (() => {
   const screen=$('rpg-screen'), modal=$('rpg-modal'), key='beamrpg.v3';
   const zones=[
@@ -11,9 +11,9 @@
     {id:'one',name:'1부 마을',level:13,diff:'b1',bossDiff:'pro',boss:'백야범',face:'plain',color:'#c7bb8c',ground:'#9daba0',road:'#e7e3d3',theme:'royal',home:'챔피언 레지던스',park:'왕관 정원',gym:'크라운 챔피언십',xp:220,rivals:[['챔피언 도전자','jersey'],['황금 백핸드','percival'],['무패의 수비수','ajae']]},
     {id:'camp',name:'선수촌',level:15,diff:'pro',bossDiff:'boss',boss:'탁구 마왕',face:'boss',color:'#ba7d92',ground:'#838498',road:'#d5c5d2',theme:'citadel',home:'국가대표 숙소',park:'별빛 올림픽 공원',gym:'마왕의 아레나',xp:260,rivals:[['국가대표 후보','jersey'],['월드 투어 선수','percival'],['전설의 수비수','sleepy']]}
   ];
-  const statText={power:['파워','타구 속도 +5%'],spin:['회전','타구 회전 +5%'],control:['컨트롤','PERFECT 타이밍 폭 +3%'],footwork:['풋워크','회전 공 실수 확률 −10%'],crit:['치명타','치명타 확률 +5% · 속도 2배'],focus:['집중력','필살기 게이지 +10%']};
+  const statText={power:['파워','공격 +5% · 타구 속도 +5%'],spin:['회전','특수공격 +5% · 타구 회전 +5%'],control:['컨트롤','방어 +5% · PERFECT 폭 +3%'],footwork:['풋워크','스피드 +5% · 회전 공 실수 −10%'],crit:['치명타','급소 확률 +5% · 탁구 치명타 +5%'],focus:['집중력','특수방어 +5% · 필살기 게이지 +10%']};
   const milestones=[[2,'라켓 필살기'],[4,'고요한 호흡'],[7,'치키타 스파이럴'],[10,'챔피언 심장'],[13,'제니스 오버드라이브']];
-  const facilityNames={shop:'라켓 공방',cafe:'랠리 카페',training:'트레이닝 센터',clinic:'스포츠 클리닉',hall:'리그 기념관'};
+  const facilityNames={shop:'라켓 공방',cafe:'랠리 카페',training:'트레이닝 센터',clinic:'치유 센터',hall:'리그 기념관'};
   const prices={basic:0,shake:120,cpen:150,jpen:200,defense:180};
   const read=k=>{try{const v=JSON.parse(localStorage.getItem(k));return v&&typeof v==='object'&&!Array.isArray(v)?v:{};}catch{return {};}};
   const saved=read(key), legacy=Object.keys(saved).length?saved:read('beamrpg.v2');
@@ -31,6 +31,11 @@
   s.positions=legacy.mapVersion===2&&legacy.positions&&typeof legacy.positions==='object'?legacy.positions:{};
   s.mapVersion=2;s.introSeen=legacy.introSeen===true;delete s.worldPos;delete s.townPos;delete s.pos;
   const zone=()=>zones.find(z=>z.id===s.zone),need=()=>100+(s.level-1)*40;
+  const heroProfile=()=>BeamCombat.profile(s),combatConfig=()=>({...s,zoneIndex:zones.indexOf(zone()),zoneLevel:zone().level});
+  s.vitals=BeamCombat.normalizeVitals(s.vitals,heroProfile());
+  s.combat=s.place==='town'?BeamCombat.restore(s.combat,combatConfig()):null;
+  if(s.combat)s.vitals=BeamCombat.extractVitals(s.combat);
+  let battleUI=null;
   const unlocks=()=>milestones.filter(([lv])=>s.level>=lv).map(([,name])=>name);
   window.beamRpgMilestones=()=>({level:s.level,unlocks:unlocks()});
   let scene,sceneId,player,map,ctx,mini,grid,cols,rows,path=[],target=null,last=0,grace=480,travelled=0,rolls=0,facing=1,direction='down',walking=false,latched=null,lastSave=0;
@@ -79,10 +84,10 @@
     render();save();
   }
   function render(){
-    const z=zone(),safe=s.place!=='town';
+    const z=zone(),safe=s.place!=='town',hp=heroProfile().maxHp;
     screen.innerHTML=`<div class="rpg-shell"><header class="rpg-head"><div class="brand"><div class="eyebrow">A LITTLE TOWN. A BIG ADVENTURE.</div><h1>BEAMRPG <span>대환장 파티</span></h1></div><div class="rpg-actions"><button id="town-stats">희범의 성장</button><button id="town-guide" class="secondary">안내</button></div></header>
-      <div class="town-status"><div class="hero-badge"><canvas id="hero-face" width="72" height="72" aria-hidden="true"></canvas><div><b>Lv. ${s.level} 희범</b><small>${RACKETS[s.racket].name}</small></div></div><div class="xp-status"><span>경험치 <b>${s.xp} / ${need()}</b></span><div class="rpg-bar"><i style="width:${Math.min(100,s.xp/need()*100)}%"></i></div></div><div class="town-wallet"><b>${s.coins.toLocaleString()} G</b><small>${s.rested?'휴식 준비 완료':s.meal?`식사 보너스 ${s.meal}승`:`보스 격파 ${Object.keys(s.wins).length} / 8`}</small></div></div>
-      <div class="map-layout"><canvas id="town-map" tabindex="0" aria-label="${title()}. 클릭, 방향키 또는 WASD로 희범 이동. 시설 목록으로 목적지를 선택할 수 있습니다."></canvas><div class="map-overlay"><div class="map-location"><div class="eyebrow">${s.place==='world'?'THE LEAGUE ROAD':safe?'A MOMENT TO REST':`REGION ${zones.indexOf(z)+1} / 8 · Lv. ${z.level}`}</div><h2>${title()}</h2><p>${s.place==='world'?'8개의 마을, 하나의 챔피언을 향해':safe?'안전 지역 · 여유롭게 둘러보세요':'광장과 시설 앞은 안전 · 외곽 산책 중 선수 조우'}</p></div><div class="minimap-wrap"><canvas id="town-minimap" width="176" height="132" role="img" aria-label="현재 지역 미니맵"></canvas><span>REGION MAP</span></div><div class="map-hint">클릭하여 걷기 <span>·</span> WASD / 방향키 <span>·</span> E 시설 이용</div></div><nav class="destination-panel" aria-label="걸어서 방문할 목적지"><h3>${s.place==='world'?'다음 모험을 골라요':'마을 둘러보기'}</h3><div class="destination-list">${scene.portals.map((p,i)=>{const q=p.action==='zone'?zones.find(z=>z.id===p.value):null;return `<button data-destination="${i}" ${q?`data-zone="${q.id}"`:''}><span>${p.action==='return'?'↩ ':''}${p.label}</span><small>${q?s.wins[q.id]?'★ 보스 격파':open(q)?'입장 가능 · Lv. '+q.level:'이전 마을 보스 격파 필요':p.action==='return'?'출구까지 걸어가기':p.action==='service'?'가까이 가서 이용하기':'입구까지 걸어가기'}</small></button>`;}).join('')}</div><p class="journey-note">${s.place==='world'?'희범의 발걸음으로 이어지는 리그. 마을 보스를 이기면 다음 길이 열립니다.':'작은 골목도 천천히 걸어보세요. 모든 시설은 입구에 닿으면 들어갑니다.'}</p></nav></div>
+      <div class="town-status"><div class="hero-badge"><canvas id="hero-face" width="72" height="72" aria-hidden="true"></canvas><div><b>Lv. ${s.level} 희범</b><small>${RACKETS[s.racket].name}</small></div></div><div class="xp-status"><span class="health-label">HP <b>${s.vitals.hp} / ${hp}</b></span><div class="rpg-bar health-bar"><i style="width:${s.vitals.hp/hp*100}%;background:${s.vitals.hp/hp<.25?'#e78075':s.vitals.hp/hp<.5?'#ebca7d':'#91d8bd'}"></i></div><span>경험치 <b>${s.xp} / ${need()}</b></span><div class="rpg-bar"><i style="width:${Math.min(100,s.xp/need()*100)}%"></i></div></div><div class="town-wallet"><b>${s.coins.toLocaleString()} G</b><small>${s.rested?'휴식 준비 완료':s.meal?`식사 보너스 ${s.meal}승`:`보스 격파 ${Object.keys(s.wins).length} / 8`}</small></div></div>
+      <div class="map-layout"><canvas id="town-map" tabindex="0" aria-label="${title()}. 클릭, 방향키 또는 WASD로 희범 이동. 시설 목록으로 목적지를 선택할 수 있습니다."></canvas><div class="map-overlay"><div class="map-location"><div class="eyebrow">${s.place==='world'?'THE LEAGUE ROAD':safe?'A MOMENT TO REST':`REGION ${zones.indexOf(z)+1} / 8 · Lv. ${z.level}`}</div><h2>${title()}</h2><p>${s.place==='world'?'8개의 마을, 하나의 챔피언을 향해':safe?'안전 지역 · 여유롭게 둘러보세요':'광장과 시설 앞은 안전 · 외곽 산책 중 몬스터 조우'}</p></div><div class="minimap-wrap"><canvas id="town-minimap" width="176" height="132" role="img" aria-label="현재 지역 미니맵"></canvas><span>REGION MAP</span></div><div class="map-hint">클릭하여 걷기 <span>·</span> WASD / 방향키 <span>·</span> E 시설 이용</div></div><nav class="destination-panel" aria-label="걸어서 방문할 목적지"><h3>${s.place==='world'?'다음 모험을 골라요':'마을 둘러보기'}</h3><div class="destination-list">${scene.portals.map((p,i)=>{const q=p.action==='zone'?zones.find(z=>z.id===p.value):null;return `<button data-destination="${i}" ${q?`data-zone="${q.id}"`:''}><span>${p.action==='return'?'↩ ':''}${p.label}</span><small>${q?s.wins[q.id]?'★ 보스 격파':open(q)?'입장 가능 · Lv. '+q.level:'이전 마을 보스 격파 필요':p.action==='return'?'출구까지 걸어가기':p.action==='service'?'가까이 가서 이용하기':'입구까지 걸어가기'}</small></button>`;}).join('')}</div><p class="journey-note">${s.place==='world'?'희범의 발걸음으로 이어지는 리그. 마을 보스를 이기면 다음 길이 열립니다.':'작은 골목도 천천히 걸어보세요. 모든 시설은 입구에 닿으면 들어갑니다.'}</p></nav></div>
       <footer class="town-bottom"><p id="town-message" role="status">${safe?'집·공원·건물 안에서는 대결이 발생하지 않습니다.':'먼저 집에서 쉬고, 라켓 공방을 들른 뒤 체육관으로 향해 보세요.'}</p><div class="town-controls" aria-label="희범 이동"><button data-dir="ArrowUp" aria-label="위로 이동">▲</button><button data-dir="ArrowLeft" aria-label="왼쪽으로 이동">◀</button><button data-dir="ArrowDown" aria-label="아래로 이동">▼</button><button data-dir="ArrowRight" aria-label="오른쪽으로 이동">▶</button></div></footer></div>`;
     map=$('town-map');ctx=map.getContext('2d');mini=$('town-minimap');drawFace($('hero-face'),{...LOOKS.heebeom,face:null,tousled:true});
     map.onclick=e=>{if(!modal.hidden)return;const r=map.getBoundingClientRect(),p={x:(e.clientX-r.left)/camera.scale+camera.x,y:(e.clientY-r.top)/camera.scale+camera.y};const door=scene.portals.find(q=>Math.hypot(p.x-q.x,p.y-q.y)<70);door?goPortal(door):walkTo(p);};
@@ -90,8 +95,8 @@
     screen.querySelectorAll('[data-dir]').forEach(b=>{b.onpointerdown=e=>{if(!modal.hidden)return;e.preventDefault();stop();keys.add(b.dataset.dir);b.setPointerCapture(e.pointerId);};b.onpointerup=b.onpointercancel=b.onlostpointercapture=()=>{keys.delete(b.dataset.dir);save();};b.onclick=e=>{if(e.detail===0){const [x,y]=dirs[b.dataset.dir];walkTo({x:player.x+x*96,y:player.y+y*96});}};});
     $('town-stats').onclick=()=>s.pendingUpgrades?upgrade():showStats();$('town-guide').onclick=guide;map.focus({preventScroll:true});
   }
-  function showStats(){show({title:'희범의 성장 기록',body:`<p>배운 기술: ${unlocks().join(' · ')||'Lv.2에 첫 필살기를 배웁니다.'}</p><div class="stat-grid">${Object.entries(statText).map(([k,[n,fx]])=>`<div class="stat-item"><b>${n} +${s.stats[k]}</b><small>${fx}</small></div>`).join('')}</div><p>${milestones.map(([lv,n])=>`Lv.${lv} ${n}`).join(' · ')}</p><p>휴식 ${s.rested?'준비됨':'없음'} · 식사 보너스 ${s.meal}승 남음</p>`});}
-  function guide(){show({title:'희범의 새로운 동네',body:'<p>지도나 오른쪽 목적지를 누르면 희범이 건물과 물을 피해 걸어갑니다. 방향키·WASD·화면 버튼으로 직접 움직일 수도 있어요.</p><p>건물의 문에 닿으면 내부로 들어갑니다. 내부 안내 위치에 닿거나 가까이서 E를 누르면 시설을 이용합니다. 출구로 걸으면 원래 마을로 돌아옵니다.</p><p>광장과 시설 주변은 안전합니다. 마을 외곽을 걷는 동안 확률적으로 탁구 선수를 만납니다. 집과 공원에서는 대결이 일어나지 않습니다.</p><p>체육관 안에서 보스에게 도전하세요. 승리하면 경험치·골드를 얻고 다음 마을이 열립니다. 진행은 이 브라우저에 자동 저장됩니다.</p>'},'<button id="story-replay">스토리 다시 보기</button><button id="town-close" class="secondary">계속 걷기</button>');$('story-replay').onclick=playIntro;}
+  function showStats(){const p=heroProfile();show({title:'희범의 성장 기록',body:`<p>HP ${s.vitals.hp} / ${p.maxHp} · 회복약 ${s.vitals.potions}개 · ${BeamCombat.TYPES[p.type].name} 타입</p><p>턴제 기술: ${p.moves.map(id=>`${BeamCombat.MOVES[id].name} (PP ${s.vitals.pp[id]}/${BeamCombat.MOVES[id].pp})`).join(' · ')}</p><p>배운 기술: ${unlocks().join(' · ')||'Lv.2에 첫 필살기를 배웁니다.'}</p><div class="stat-grid">${Object.entries(statText).map(([k,[n,fx]])=>`<div class="stat-item"><b>${n} +${s.stats[k]}</b><small>${fx}</small></div>`).join('')}</div><p>${milestones.map(([lv,n])=>`Lv.${lv} ${n}`).join(' · ')}</p><p>보스·훈련 휴식 ${s.rested?'준비됨':'없음'} · 식사 보너스 ${s.meal}승 남음</p>`});}
+  function guide(){show({title:'희범의 새로운 동네',body:'<p>지도나 오른쪽 목적지를 누르면 희범이 건물과 물을 피해 걸어갑니다. 방향키·WASD·화면 버튼으로 직접 움직일 수도 있어요.</p><p>건물의 문에 닿으면 내부로 들어갑니다. 내부 안내 위치에 닿거나 가까이서 E를 누르면 시설을 이용합니다. 출구로 걸으면 원래 마을로 돌아옵니다.</p><p>광장과 시설 주변은 안전합니다. 마을 외곽을 걸으면 몬스터와 턴제 전투를 합니다. 기술 4개 중 하나를 선택해 상대 HP를 먼저 0으로 만들면 승리합니다. 집과 공원에서는 대결이 일어나지 않습니다.</p><p>기술마다 PP가 있고, 스피드와 기술 우선도에 따라 먼저 행동합니다. 파워 → 회전 → 스피드 → 파워 상성은 2배 데미지, 반대는 절반입니다. 전투 후 HP·PP는 유지되며 집이나 치유 센터에서 무료로 회복합니다. 가방의 회복약 사용도 한 턴입니다. 도망에 실패하면 상대가 공격합니다.</p><p>체육관 보스와 코치 훈련은 기존 탁구 스윙 경기입니다. 체육관 안에서 보스에게 도전하세요. 승리하면 경험치·골드를 얻고 다음 마을이 열립니다. 진행은 이 브라우저에 자동 저장됩니다.</p>'},'<button id="story-replay">스토리 다시 보기</button><button id="town-close" class="secondary">계속 걷기</button>');$('story-replay').onclick=playIntro;}
   function playIntro(){
     stop();BeamStory.play({modal,screen,zones,onFinish:()=>{s.introSeen=true;save();close();if(s.pendingUpgrades)upgrade();}});
   }
@@ -124,13 +129,15 @@
       show({title:'랠리 카페',body:`<p>창가에서 쉬어 가세요. 챔피언 샌드위치를 먹으면 <strong>다음 3번 승리의 경험치가 20% 증가</strong>합니다.</p><p>가격 40 G · 가진 골드 ${s.coins} G · 현재 ${s.meal}승 남음</p>`},`<button id="facility-action" ${s.coins<40||s.meal>0?'disabled':''}>${s.meal?'식사 효과 적용 중':'샌드위치 주문 · 40 G'}</button>`+done);
       $('facility-action').onclick=()=>{if(s.coins<40||s.meal>0)return;s.coins-=40;s.meal=3;save();render();service('cafe');};
     }else if(facility==='training'){
-      show({title:'트레이닝 센터',body:`<p>코치와 한 게임을 치르며 경기 감각을 익혀보세요. 일반 대결과 같은 탁구 조작입니다.</p><p>이 마을 첫 훈련 승리 시 ${z.xp} XP를 얻습니다. ${s.trained[z.id]?'첫 훈련 보상 수령 완료 · 이후에는 연습 경기입니다.':'경기에서 져도 경험치를 잃지 않습니다.'}</p>`},'<button id="facility-action">코치와 훈련 경기</button>'+done);
+      show({title:'트레이닝 센터',body:`<p>코치와 탁구를 치며 보스전의 스윙 조작을 익혀보세요. 훈련 경기에서는 HP와 PP를 사용하지 않습니다.</p><p>이 마을 첫 훈련 승리 시 ${z.xp} XP를 얻습니다. ${s.trained[z.id]?'첫 훈련 보상 수령 완료 · 이후에는 연습 경기입니다.':'경기에서 져도 경험치를 잃지 않습니다.'}</p>`},'<button id="facility-action">코치와 훈련 경기</button>'+done);
       $('facility-action').onclick=()=>battle({name:'전담 코치',face:'plain',boss:false,training:true});
     }else if(facility==='hall'){
       show({title:'리그 기념관',body:`<p>희범이 걸어온 길 · 트로피 ${Object.keys(s.wins).length} / 8</p><div class="stat-grid">${zones.map(z=>`<div class="stat-item"><b>${s.wins[z.id]?'★':'☆'} ${z.name}</b><small>${s.wins[z.id]?z.boss+' 격파':z.boss+'에게 도전하세요'}</small></div>`).join('')}</div>`});
     }else{
-      const home=facility==='home';show({title:home?z.home:facility==='park'?z.park:'스포츠 클리닉',body:`<p>${home?'희범의 방에는 푹신한 침대와 라켓, 여행 기록이 놓여 있습니다.':facility==='park'?'물가 벤치에서 호흡을 고르며 다음 승부를 준비합니다.':'전담 트레이너가 긴장을 풀고 다음 경기를 준비하도록 도와줍니다.'}</p><p><strong>충분한 휴식: 다음 대결의 PERFECT 판정 범위 +10%</strong></p><p>무료 · 중첩되지 않습니다. ${s.rested?'이미 휴식 효과가 준비되어 있어요.':''}</p>`},'<button id="facility-action">쉬어 가기</button>'+done);
-      $('facility-action').onclick=()=>{s.rested=true;grace=800;save();render();show({title:'준비 완료!',body:'<p>마음이 편안해졌습니다. 다음 대결의 PERFECT 판정이 10% 넓어집니다.</p>'});};
+      const home=facility==='home',healing=home||facility==='clinic';
+      show({title:home?z.home:facility==='park'?z.park:'치유 센터',body:`<p>${home?'침대에서 푹 쉬고 모험을 이어가세요.':healing?'희범의 HP와 모든 기술의 PP를 무료로 회복합니다.':'물가 벤치에서 호흡을 고르며 다음 보스전을 준비합니다.'}</p>${healing?`<p><strong>HP ${s.vitals.hp} / ${heroProfile().maxHp} · HP·PP 완전 회복</strong></p>`:''}<p>휴식하면 다음 보스·훈련 경기의 PERFECT 판정 범위가 10% 넓어집니다.</p>${facility==='clinic'?`<p>회복약 ${s.vitals.potions}개 · 전투에서 HP 40 회복 · 구입 25 G</p>`:''}`},`<button id="facility-action">${healing?'HP·PP 전부 회복':'쉬어 가기'}</button>${facility==='clinic'?`<button id="buy-potion" ${s.coins<25||s.vitals.potions>=99?'disabled':''}>회복약 구입 · 25 G</button>`:''}`+done);
+      $('facility-action').onclick=()=>{if(healing)s.vitals=BeamCombat.heal(s.vitals,heroProfile());s.rested=true;grace=800;save();render();show({title:healing?'회복 완료!':'준비 완료!',body:`<p>${healing?'희범의 HP와 모든 기술의 PP가 가득 찼습니다. ':''}다음 보스·훈련 경기의 PERFECT 판정이 10% 넓어집니다.</p>`});};
+      modal.querySelector('#buy-potion')?.addEventListener('click',()=>{if(s.coins<25||s.vitals.potions>=99)return;s.coins-=25;s.vitals.potions++;save();render();service('clinic');});
     }
   }
   function encounter(distance){
@@ -138,11 +145,30 @@
     if(grace>0){grace=Math.max(0,grace-distance);return;}
     if(Math.hypot(player.x-scene.width/2,player.y-scene.height/2)<300||scene.portals.some(p=>Math.hypot(player.x-p.x,player.y-p.y)<155))return;
     travelled+=distance;if(travelled<160)return;travelled-=160;rolls++;
-    if(Math.random()<.16||rolls>=12){const [name,face]=zone().rivals[Math.floor(Math.random()*zone().rivals.length)];battle({name,face,boss:false});}
+    if(Math.random()<.16||rolls>=12)normalBattle();
+  }
+  function normalBattle(){
+    if(rpgOn()||battleUI)return;stop();modal.hidden=true;screen.inert=true;
+    if(!s.combat)s.combat=BeamCombat.create(combatConfig());
+    save();battleUI=BeamBattleUI.open({state:s.combat,zone:zone(),onAction:action=>{
+      BeamCombat.step(s.combat,action);s.vitals=BeamCombat.extractVitals(s.combat);save();battleUI.update(s.combat);
+    },onFinish:finishNormal});
+  }
+  function finishNormal(){
+    const b=s.combat;if(!b?.outcome)return;
+    battleUI?.destroy();battleUI=null;screen.inert=false;s.vitals=BeamCombat.extractVitals(b);s.combat=null;
+    let gain=0,gold=0;
+    if(b.outcome==='win'){
+      gain=zone().xp;if(s.meal){gain=Math.round(gain*1.2);s.meal--;}gold=45+zones.indexOf(zone())*10;gainXp(gain);s.coins+=gold;
+    }
+    grace=800;travelled=rolls=0;
+    if(b.outcome==='lose'){s.place='interior';s.facility='clinic';s.vitals=BeamCombat.heal(s.vitals,heroProfile());buildScene(null,true);}else{render();save();}
+    show({title:b.outcome==='win'?'승리!':b.outcome==='lose'?'치유 센터에서 회복했습니다':'무사히 돌아왔습니다',body:`<p>${b.enemy.name}과의 대결</p><p>${b.outcome==='win'?`경험치 +${gain} · 골드 +${gold} G`:b.outcome==='lose'?'희범의 HP가 0이 되어 치유 센터로 돌아왔습니다. HP·PP를 모두 회복했고, 경험치와 골드는 잃지 않았습니다.':'남은 HP와 PP는 유지됩니다. 집이나 치유 센터에서 회복하세요.'}</p><p>HP ${s.vitals.hp} / ${heroProfile().maxHp}</p>${s.pendingUpgrades?`<p>Lv. ${s.level} · 강화 ${s.pendingUpgrades}개를 고를 수 있습니다.</p>`:''}`},s.pendingUpgrades?'<button id="town-upgrade">강화 고르기</button>':undefined);
+    modal.querySelector('#town-upgrade')?.addEventListener('click',upgrade);
   }
   function specialType(baseType){const b=rpgOn();if(!b)return baseType;if(b.activeSpecial)return b.activeSpecial;const turn=s.specialTurn++;b.activeSpecial=s.level>=13&&turn%3===2?'zenith':s.level>=7&&turn%2?'chiquita':baseType;save();return b.activeSpecial;}
   function battle(rival){
-    if(rpgOn())return;stop();const z=zone(),rest=s.rested;s.rested=false;
+    if(rpgOn()||battleUI)return;stop();const z=zone(),rest=s.rested;s.rested=false;
     window.beamRpgV2={active:true,zone:z,boss:rival.boss,rival,stats:s.stats,level:s.level,specialType};
     setCharacter('heebeom');setRacket(s.racket);$('difficulty').value=rival.training?'b7':rival.boss?(z.id==='camp'?'pro':z.bossDiff):z.diff;applySettings();setMode(rival.boss&&z.id==='camp'?'boss':'match');
     modal.hidden=true;screen.hidden=true;document.body.classList.add('rpg-battle');resize();begin();P.EQUIP.len*=(1+s.stats.control*.03)*(s.level>=4?1.15:1)*(rest?1.1:1);save();toast(`${z.name} · ${rival.name}${rival.boss?' 보스':' 등장'}!`,3);
@@ -152,7 +178,7 @@
     if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});
     document.body.classList.remove('rpg-battle');screen.hidden=false;grace=600;travelled=rolls=0;render();save();
   }
-  function gainXp(amount){s.xp+=amount;while(s.xp>=need()){s.xp-=need();s.level++;s.pendingUpgrades++;}}
+  function gainXp(amount){s.xp+=amount;while(s.xp>=need()){s.xp-=need();s.level++;s.pendingUpgrades++;}s.vitals=BeamCombat.normalizeVitals(s.vitals,heroProfile());}
   function finish(){
     const b=rpgOn();if(!b||playing)return;const won=you>=11&&you-cpu>=2,score=`${you} : ${cpu}`;b.active=false;
     let gain=0,gold=0,first=false;
@@ -171,7 +197,7 @@
   const character=$('character');if(!character.querySelector('[value="heebeom"]'))character.prepend(new Option('희범','heebeom'));setCharacter('heebeom');setRacket(s.racket);
   modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.setAttribute('aria-labelledby','town-dialog-title');
   modal.addEventListener('keydown',e=>{if(e.key==='Escape'&&!s.pendingUpgrades)close();if(e.key==='Tab'){const buttons=[...modal.querySelectorAll('button:not(:disabled)')],first=buttons[0],end=buttons.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();end?.focus();}else if(!e.shiftKey&&document.activeElement===end){e.preventDefault();first?.focus();}}});
-  document.addEventListener('keydown',e=>{if(screen.hidden||!modal.hidden)return;const k=e.key.length===1?e.key.toLowerCase():e.key;if(k==='e'){const p=scene.portals.find(p=>Math.hypot(player.x-p.x,player.y-p.y)<85);if(p)activate(p);return;}if(!dirs[k])return;e.preventDefault();path=[];target=null;keys.add(k);});
+  document.addEventListener('keydown',e=>{if(screen.hidden||screen.inert||!modal.hidden)return;const k=e.key.length===1?e.key.toLowerCase():e.key;if(k==='e'){const p=scene.portals.find(p=>Math.hypot(player.x-p.x,player.y-p.y)<85);if(p)activate(p);return;}if(!dirs[k])return;e.preventDefault();path=[];target=null;keys.add(k);});
   document.addEventListener('keyup',e=>{const k=e.key.length===1?e.key.toLowerCase():e.key;keys.delete(k);if(dirs[k])save();});
   window.addEventListener('blur',stop);window.addEventListener('beforeunload',save);window.addEventListener('pagehide',save);document.addEventListener('visibilitychange',()=>{if(document.hidden){stop();save();}});
   function draw(t){
@@ -195,5 +221,5 @@
     }if(!screen.hidden)draw(t);}
     requestAnimationFrame(tick);
   }
-  buildScene();screen.hidden=false;if(!s.introSeen)playIntro();else if(s.pendingUpgrades)upgrade();requestAnimationFrame(tick);
+  buildScene();screen.hidden=false;if(s.combat)normalBattle();else if(!s.introSeen)playIntro();else if(s.pendingUpgrades)upgrade();requestAnimationFrame(tick);
 })();

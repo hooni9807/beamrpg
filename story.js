@@ -12,7 +12,7 @@
         dialogue:'“당신의 첫 랠리를 기다립니다.” 평범한 아침, 희범의 집에 여덟 마을의 탁구 리그로 향하는 초대장이 도착했다.',
         kind:'interior', facility:'home', zone:seven, focus:{x:450,y:390}, player:{x:450,y:530}, width:1100, height:680, tone:'morning'},
       {chapter:'02 · 첫 번째 라이벌', title:'시작은 7부 마을에서', speaker:'아재범',
-        dialogue:'“희범아, 우선 나부터 넘어 봐! 지더라도 다시 오면 돼.” 마을에서 만나는 선수들과 대결하고, 조금씩 실력을 키워 나가자.',
+        dialogue:'“희범아, 우선 나부터 넘어 봐! 지더라도 다시 오면 돼.” 마을의 몬스터와 기술을 겨루며 성장하고, 체육관 보스에게 탁구로 도전하자.',
         kind:'town', zone:seven, focus:{x:1120,y:650}, player:{x:1120,y:820}, width:1500, height:1050, tone:'afternoon'},
       {chapter:'03 · 리그의 끝에서', title:'아직 닿지 못한 코트', speaker:'탁구 마왕',
         dialogue:'“7부부터 1부까지… 그 길을 건너온 자를 기다리겠다.” 마지막 목적지 선수촌에는 누구도 쉽게 넘지 못한 상대가 있다.',

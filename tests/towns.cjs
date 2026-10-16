@@ -10,7 +10,7 @@ const root=path.resolve(__dirname,'..'),origin='https://beamrpg.test';
       const u=new URL(route.request().url());if(u.origin!==origin)return route.abort();
       if(u.pathname==='/seed')return route.fulfill({contentType:'text/html',body:'<!doctype html><title>Seed</title>'});
       const file=path.join(root,u.pathname==='/'?'index.html':u.pathname),types={'.html':'text/html','.js':'text/javascript','.css':'text/css','.png':'image/png'};
-      try{let body=await fs.readFile(file);if(u.pathname==='/towns.js')body=Buffer.from(body.toString().replace('  buildScene();screen.hidden=false;', '  window.__townTest={zones,get scene(){return scene},get player(){return player}};buildScene();screen.hidden=false;'));await route.fulfill({body,contentType:types[path.extname(file)]||'text/plain'});}catch{return route.fulfill({status:404,body:''});}
+      try{let body=await fs.readFile(file);if(u.pathname==='/towns.js')body=Buffer.from(body.toString().replace('  buildScene();screen.hidden=false;', '  window.__townTest={zones,normalBattle,get combat(){return s.combat},get scene(){return scene},get player(){return player}};buildScene();screen.hidden=false;'));await route.fulfill({body,contentType:types[path.extname(file)]||'text/plain'});}catch{return route.fulfill({status:404,body:''});}
     });
     const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
     await page.goto(origin);await page.clock.install();await page.evaluate(()=>Math.random=()=>.9);
@@ -71,6 +71,35 @@ const root=path.resolve(__dirname,'..'),origin='https://beamrpg.test';
     await visit('service','home');await page.locator('#facility-action').click();assert.equal((await state()).rested,true);await page.locator('#town-close').click();
     await visit('return');assert.equal((await state()).place,'town');
     await visit('facility','park');assert.equal((await state()).place,'park');await page.screenshot({path:'/tmp/beamrpg-park-new.png'});await visit('return');
+    // Ordinary encounters spend persistent HP/PP and resume at the last completed turn.
+    await page.evaluate(()=>{window.__townTest.normalBattle();Math.random=()=>.4;});
+    assert.equal(await page.locator('.beam-combat').count(),1);assert.equal(await page.evaluate(()=>playing),false);
+    assert.equal(await page.locator('[data-move]').count(),4);
+    await page.locator('[data-move="quick"]').click();await tick(650);
+    const fighting=await state();assert(fighting.vitals.hp<64);assert.equal(fighting.vitals.pp.quick,19);
+    await page.screenshot({path:'/tmp/beamrpg-turn-desktop.png'});
+    await page.reload();await tick(80);assert.deepEqual((await state()).combat,fighting.combat,'battle survives reload');
+    await page.keyboard.press('Escape');assert.equal(await page.locator('.beam-combat').count(),1,'Escape never bypasses an enemy turn');
+    await page.setViewportSize({width:390,height:844});await tick(80);await page.screenshot({path:'/tmp/beamrpg-turn-mobile.png'});
+    assert.equal(await page.evaluate(()=>document.querySelector('.beam-combat').scrollWidth<=innerWidth),true);
+    await page.locator('[data-menu="bag"]').click();await page.getByRole('button',{name:'회복약 사용',exact:true}).click();await tick(650);
+    assert.equal((await state()).vitals.potions,2);
+    await page.locator('[data-menu="fight"]').click();
+    await page.evaluate(()=>{const b=window.__townTest.combat;b.enemy.hp=1;b.enemy.stages.speed=-6;Math.random=()=>.9;});
+    await page.locator('[data-move="drive"]').click();await tick(650);assert.equal((await state()).combat.outcome,'win');
+    const won=await state();await page.reload();await tick(80);
+    await page.getByRole('button',{name:'마을로 돌아가기',exact:true}).click();
+    assert.equal((await state()).xp,won.xp+70);assert.equal((await state()).combat,null);assert.equal((await state()).vitals.pp.quick,19);
+    const rewarded=await state();await page.reload();await tick(80);assert.equal((await state()).xp,rewarded.xp,'reward is credited once');
+    await page.setViewportSize({width:1440,height:960});
+    await visit('facility','clinic');await visit('service','clinic');await page.locator('#facility-action').click();
+    assert.equal((await state()).vitals.hp,64);assert.equal((await state()).vitals.pp.quick,20);await page.locator('#town-close').click();await visit('return');
+    // Fainting returns to the local healing center, without erasing progression.
+    await page.evaluate(()=>{window.__townTest.normalBattle();const b=window.__townTest.combat;b.hero.hp=1;b.hero.stages.speed=-6;Math.random=()=>.4;});
+    await page.locator('[data-move="drive"]').click();await tick(650);assert.equal((await state()).combat.outcome,'lose');
+    await page.getByRole('button',{name:'치유 센터로 이동',exact:true}).click();
+    assert.equal((await state()).facility,'clinic');assert.equal((await state()).place,'interior');assert.equal((await state()).vitals.hp,64);
+    assert.equal((await state()).xp,rewarded.xp);await page.locator('#town-close').click();
     await reload({...await state(),mapVersion:undefined,positions:undefined,level:13,xp:33,coins:500,wins:{seven:true,six:true,five:true,four:true,three:true},place:'town',zone:'two'});
     assert.equal((await state()).level,13);assert.equal((await state()).xp,33);assert.equal((await state()).legacyCamp,true);
     await visit('facility','shop');await visit('service','shop');await page.locator('[data-racket="cpen"]').click();assert.equal((await state()).coins,350);assert.equal(await page.evaluate(()=>racketType),'cpen');await page.locator('#town-close').click();
@@ -78,6 +107,6 @@ const root=path.resolve(__dirname,'..'),origin='https://beamrpg.test';
     await page.evaluate(()=>{you=11;cpu=0;playing=false;});await tick(50);assert.equal((await state()).wins.two,true);assert.match(await page.locator('#rpg-modal').innerText(),/1부 마을이 열렸습니다/);
     await reload({...await state(),place:'town',zone:'one',pendingUpgrades:0});await page.screenshot({path:'/tmp/beamrpg-one-new.png'});
     await page.setViewportSize({width:390,height:844});await tick(100);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.screenshot({path:'/tmp/beamrpg-mobile-new.png'});
-    assert.deepEqual(errors,[]);console.log('PASS: intro completion/skip/replay, saved progress, keyboard/mobile, towns and battle flow.');
+    assert.deepEqual(errors,[]);console.log('PASS: intro, saved position, turn battle/resume/rewards/defeat/healing, mobile and boss rally flow.');
   }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

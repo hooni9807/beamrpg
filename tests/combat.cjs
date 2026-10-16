@@ -1,0 +1,33 @@
+const assert=require('node:assert/strict');
+const C=require('../combat.js');
+const config={level:1,stats:{},racket:'basic',zoneIndex:0,zoneLevel:1,enemyIndex:0};
+const fresh=()=>C.create(config),move=(b,id,rng=()=>.5)=>C.step(b,{type:'move',move:id},rng);
+const b=fresh(),hp=b.hero.hp,enemyHp=b.enemy.hp;
+move(b,'drive',()=>.3);assert(b.hero.hp<hp&&b.enemy.hp<enemyHp);assert.equal(b.hero.pp.drive,24);assert.equal(b.turn,2);
+assert.equal(C.effectiveness('power','spin'),2);assert.equal(C.effectiveness('spin','power'),.5);
+// Priority overrides speed, and a fainted opponent cannot retaliate.
+const first=fresh();first.hero.speed=1;first.enemy.speed=999;first.enemy.hp=1;first.enemy.moves=['drive'];
+move(first,'quick');assert.equal(first.outcome,'win');assert.equal(first.hero.hp,first.hero.maxHp);
+const last=fresh();last.hero.hp=1;last.hero.speed=1;last.enemy.moves=['quick'];move(last,'drive');
+assert.equal(last.outcome,'lose');assert.equal(last.hero.pp.drive,25,'fainted hero spends no PP');
+// Switching equipment must never restore previously spent special PP.
+const v=C.normalizeVitals({hp:12,pp:{crescent:0},potions:2},C.profile(config));
+assert.equal(C.normalizeVitals(v,C.profile({...config,level:7,racket:'shake'})).pp.crescent,0);
+const healed=C.heal(v,C.profile(config));assert.equal(healed.hp,64);assert.equal(healed.pp.crescent,10);assert.equal(healed.potions,2);
+const exhausted=fresh();for(const id of exhausted.hero.moves)exhausted.hero.pp[id]=0;
+const before=JSON.stringify(exhausted);move(exhausted,'drive');assert.equal(JSON.stringify(exhausted),before);
+move(exhausted,'struggle');assert(exhausted.hero.hp<=exhausted.hero.maxHp-16);assert(exhausted.enemy.hp<exhausted.enemy.maxHp);
+const item=fresh();item.hero.hp=10;item.enemy.moves=['drive'];C.step(item,{type:'potion'},()=>.5);
+assert.equal(item.potions,2);assert(item.hero.hp<50&&item.hero.hp>10);assert.equal(item.turn,2);
+const full=fresh(),fullBefore=JSON.stringify(full);C.step(full,{type:'potion'});assert.equal(JSON.stringify(full),fullBefore);
+const run=fresh();C.step(run,{type:'run'},()=>.99);assert.equal(run.outcome,null);assert(run.hero.hp<run.hero.maxHp);
+C.step(run,{type:'run'},()=>0);assert.equal(run.outcome,'escaped');
+const resume=C.restore(JSON.parse(JSON.stringify(b)),config);assert.deepEqual(resume,b);
+assert.equal(C.restore({...b,enemyIndex:19},config),null);
+assert.equal(C.restore({...b,hero:{...b.hero,hp:-1}},config),null);
+assert.equal(C.restore({...b,outcome:'win'},config),null);
+assert.equal(C.restore({...b,hero:{...b.hero,moves:['<script>']}},config),null);
+for(const level of [1,2,4,7,10,13])assert.equal(C.profile({...config,level}).moves.length,4);
+assert(C.profile({...config,level:7}).moves.includes('chiquita'));
+assert(C.profile({...config,level:13}).moves.includes('zenith'));
+console.log('PASS: damage, priority, fainting, PP, healing, items, escape, save validation and milestones.');

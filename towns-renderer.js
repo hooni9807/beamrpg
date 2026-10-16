@@ -11,8 +11,8 @@
     one:   {grass:'#a6ab86', dark:'#657457', leaf:'#6b8860', light:'#a5b67d', roof:'#6b7892', trim:'#f0d49a', water:'#6babb8', flower:'#f7da8a'},
     camp:  {grass:'#8ca38f', dark:'#526d62', leaf:'#486e68', light:'#8da88c', roof:'#725879', trim:'#e5c6a1', water:'#719cae', flower:'#e8aec2'}
   };
-  const facilityNames = {home:'희범의 집', shop:'라켓 공방', cafe:'랠리 카페', training:'트레이닝 센터', clinic:'스포츠 클리닉', hall:'리그 기념관', gym:'리그 체육관', park:'마을 공원'};
-  const serviceNames = {home:'침대에서 푹 쉬기', shop:'라켓 살펴보기', cafe:'샌드위치 주문하기', training:'훈련 시작하기', clinic:'컨디션 회복하기', hall:'리그 기록 보기', gym:'보스에게 도전', park:'공원에서 쉬어가기'};
+  const facilityNames = {home:'희범의 집', shop:'라켓 공방', cafe:'랠리 카페', training:'트레이닝 센터', clinic:'치유 센터', hall:'리그 기념관', gym:'리그 체육관', park:'마을 공원'};
+  const serviceNames = {home:'침대에서 푹 쉬기', shop:'라켓 살펴보기', cafe:'샌드위치 주문하기', training:'훈련 시작하기', clinic:'HP·PP 회복하기', hall:'리그 기록 보기', gym:'보스에게 도전', park:'공원에서 쉬어가기'};
   const rect = (c,x,y,w,h,color) => {c.fillStyle=color;c.fillRect(x,y,w,h);};
   const ellipse = (c,x,y,rx,ry,color) => {c.fillStyle=color;c.beginPath();c.ellipse(x,y,rx,ry,0,0,TAU);c.fill();};
   function poly(c,points,color) {c.fillStyle=color;c.beginPath();points.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.closePath();c.fill();}
@@ -83,7 +83,7 @@
     building(scene,'home',192,224,256,224,z.home||'희범의 집');
     building(scene,'shop',672,224,256,224,'라켓 공방');
     building(scene,'cafe',1312,224,256,224,'랠리 카페');
-    building(scene,'clinic',1792,224,256,224,'스포츠 클리닉');
+    building(scene,'clinic',1792,224,256,224,'치유 센터');
     building(scene,'training',160,832,320,224,'트레이닝 센터');
     building(scene,'hall',656,832,288,224,'리그 기념관');
     building(scene,'gym',1264,800,352,256,z.gym||'리그 체육관');
